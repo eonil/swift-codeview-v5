@@ -1,0 +1,25 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "BTree",
+        "repositoryURL": "https://github.com/eonil/BTree",
+        "state": {
+          "branch": "master",
+          "revision": "b95c306e268f90e96efe76dce354192f4ea8d716",
+          "version": null
+        }
+      },
+      {
+        "package": "SBTL",
+        "repositoryURL": "https://github.com/eonil/swift-sbtl",
+        "state": {
+          "branch": "master",
+          "revision": "f0e4c0f877ddc635839fb606a7ef14d6a056f530",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}

@@ -3,40 +3,24 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 50;
+	objectVersion = 52;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		45242DDC22E9D1530023B7B5 /* CodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45927B2622E9CACD005946EA /* CodeView.swift */; };
 		45242DE122E9D1FE0023B7B5 /* DemoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45242DE022E9D1FE0023B7B5 /* DemoView.swift */; };
-		45242DE322F160170023B7B5 /* IMPLString.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45242DE222F160170023B7B5 /* IMPLString.swift */; };
-		45242DE522F160C50023B7B5 /* CodeSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45242DE422F160C50023B7B5 /* CodeSource.swift */; };
-		45927B0F22E9CA6F005946EA /* IMPLTextInputClientView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45927B0E22E9CA6F005946EA /* IMPLTextInputClientView.swift */; };
 		45927B1722E9CAAB005946EA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45927B1622E9CAAB005946EA /* AppDelegate.swift */; };
 		45927B1922E9CAAB005946EA /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45927B1822E9CAAB005946EA /* ViewController.swift */; };
 		45927B1B22E9CAAD005946EA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 45927B1A22E9CAAD005946EA /* Assets.xcassets */; };
 		45927B1E22E9CAAD005946EA /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 45927B1C22E9CAAD005946EA /* Main.storyboard */; };
-		45927B2522E9CAB8005946EA /* libCodeView5.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 45927B0222E9CA5E005946EA /* libCodeView5.a */; };
-		45927B2922E9CB43005946EA /* IMPLSurfaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45927B2822E9CB43005946EA /* IMPLSurfaceView.swift */; };
-		45C3184022F25BAF00963636 /* CRDT.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C3183F22F25BAF00963636 /* CRDT.swift */; };
+		BA17B70F231CD89100A41B6C /* CodeView5 in Frameworks */ = {isa = PBXBuildFile; productRef = BA17B70E231CD89100A41B6C /* CodeView5 */; };
+		BA17B714231CE30100A41B6C /* SBTL in Frameworks */ = {isa = PBXBuildFile; productRef = BA17B713231CE30100A41B6C /* SBTL */; };
+		BAF6F3BD231FA93000A4C86F /* BTree in Frameworks */ = {isa = PBXBuildFile; productRef = BAF6F3BC231FA93000A4C86F /* BTree */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXContainerItemProxy section */
-		45B38F6F22E9D0620003B2BF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 45927AFA22E9CA5E005946EA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 45927B0122E9CA5E005946EA;
-			remoteInfo = CodeView5;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		45242DE022E9D1FE0023B7B5 /* DemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoView.swift; sourceTree = "<group>"; };
-		45242DE222F160170023B7B5 /* IMPLString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMPLString.swift; sourceTree = "<group>"; };
 		45242DE422F160C50023B7B5 /* CodeSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSource.swift; sourceTree = "<group>"; };
 		45242DE622F165C50023B7B5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		45927B0222E9CA5E005946EA /* libCodeView5.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libCodeView5.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		45927B0E22E9CA6F005946EA /* IMPLTextInputClientView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMPLTextInputClientView.swift; sourceTree = "<group>"; };
 		45927B1422E9CAAB005946EA /* CodeView5Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodeView5Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		45927B1622E9CAAB005946EA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -46,23 +30,27 @@
 		45927B1F22E9CAAD005946EA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		45927B2022E9CAAD005946EA /* CodeView5Demo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CodeView5Demo.entitlements; sourceTree = "<group>"; };
 		45927B2622E9CACD005946EA /* CodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeView.swift; sourceTree = "<group>"; };
-		45927B2822E9CB43005946EA /* IMPLSurfaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMPLSurfaceView.swift; sourceTree = "<group>"; };
-		45C3183F22F25BAF00963636 /* CRDT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CRDT.swift; sourceTree = "<group>"; };
+		BA17B70C231CD85400A41B6C /*  */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ""; sourceTree = SOURCE_ROOT; };
+		BA17B710231CE0EE00A41B6C /* CodeStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeStorage.swift; sourceTree = "<group>"; };
+		BA1BAC3B231FC6B4007E8DE5 /* CodeSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSelection.swift; sourceTree = "<group>"; };
+		BAE35E8F2320149D00F1813D /* CodeLineID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeLineID.swift; sourceTree = "<group>"; };
+		BAE35E912320157C00F1813D /* Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Layout.swift; sourceTree = "<group>"; };
+		BAE35E9323209FF200F1813D /* CodeLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeLine.swift; sourceTree = "<group>"; };
+		BAE35E952320A36E00F1813D /* CodeStorageSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeStorageSelection.swift; sourceTree = "<group>"; };
+		BAF6F3BE231FB8C400A4C86F /* TextTyping.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextTyping.swift; sourceTree = "<group>"; };
+		BAF6F3BF231FB8C400A4C86F /* TextTypingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextTypingView.swift; sourceTree = "<group>"; };
+		BAF6F3C0231FB8C400A4C86F /* TextTypingNote.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextTypingNote.swift; sourceTree = "<group>"; };
+		BAF6F3C1231FB8C400A4C86F /* TextTypingControl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextTypingControl.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		45927B0022E9CA5E005946EA /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		45927B1122E9CAAB005946EA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				45927B2522E9CAB8005946EA /* libCodeView5.a in Frameworks */,
+				BAF6F3BD231FA93000A4C86F /* BTree in Frameworks */,
+				BA17B70F231CD89100A41B6C /* CodeView5 in Frameworks */,
+				BA17B714231CE30100A41B6C /* SBTL in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -73,7 +61,8 @@
 			isa = PBXGroup;
 			children = (
 				45242DE622F165C50023B7B5 /* README.md */,
-				45927B0422E9CA5E005946EA /* CodeView5 */,
+				BA17B70C231CD85400A41B6C /*  */,
+				BA17B70D231CD87100A41B6C /* CodeView5 */,
 				45927B1522E9CAAB005946EA /* CodeView5Demo */,
 				45927B0322E9CA5E005946EA /* Products */,
 				45927B2422E9CAB8005946EA /* Frameworks */,
@@ -83,23 +72,9 @@
 		45927B0322E9CA5E005946EA /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				45927B0222E9CA5E005946EA /* libCodeView5.a */,
 				45927B1422E9CAAB005946EA /* CodeView5Demo.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		45927B0422E9CA5E005946EA /* CodeView5 */ = {
-			isa = PBXGroup;
-			children = (
-				45927B2622E9CACD005946EA /* CodeView.swift */,
-				45242DE422F160C50023B7B5 /* CodeSource.swift */,
-				45927B2822E9CB43005946EA /* IMPLSurfaceView.swift */,
-				45927B0E22E9CA6F005946EA /* IMPLTextInputClientView.swift */,
-				45242DE222F160170023B7B5 /* IMPLString.swift */,
-				45C3183F22F25BAF00963636 /* CRDT.swift */,
-			);
-			path = CodeView5;
 			sourceTree = "<group>";
 		};
 		45927B1522E9CAAB005946EA /* CodeView5Demo */ = {
@@ -123,36 +98,30 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-/* End PBXGroup section */
-
-/* Begin PBXHeadersBuildPhase section */
-		45927AFE22E9CA5E005946EA /* Headers */ = {
-			isa = PBXHeadersBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXHeadersBuildPhase section */
-
-/* Begin PBXNativeTarget section */
-		45927B0122E9CA5E005946EA /* CodeView5 */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 45927B0B22E9CA5E005946EA /* Build configuration list for PBXNativeTarget "CodeView5" */;
-			buildPhases = (
-				45927AFE22E9CA5E005946EA /* Headers */,
-				45927AFF22E9CA5E005946EA /* Sources */,
-				45927B0022E9CA5E005946EA /* Frameworks */,
-			);
-			buildRules = (
-			);
-			dependencies = (
+		BA17B70D231CD87100A41B6C /* CodeView5 */ = {
+			isa = PBXGroup;
+			children = (
+				45927B2622E9CACD005946EA /* CodeView.swift */,
+				45242DE422F160C50023B7B5 /* CodeSource.swift */,
+				BA17B710231CE0EE00A41B6C /* CodeStorage.swift */,
+				BAE35E952320A36E00F1813D /* CodeStorageSelection.swift */,
+				BAE35E9323209FF200F1813D /* CodeLine.swift */,
+				BA1BAC3B231FC6B4007E8DE5 /* CodeSelection.swift */,
+				BAE35E8F2320149D00F1813D /* CodeLineID.swift */,
+				BAE35E912320157C00F1813D /* Layout.swift */,
+				BAF6F3BE231FB8C400A4C86F /* TextTyping.swift */,
+				BAF6F3C1231FB8C400A4C86F /* TextTypingControl.swift */,
+				BAF6F3C0231FB8C400A4C86F /* TextTypingNote.swift */,
+				BAF6F3BF231FB8C400A4C86F /* TextTypingView.swift */,
+				45927B0E22E9CA6F005946EA /* IMPLTextInputClientView.swift */,
 			);
 			name = CodeView5;
-			productName = CodeView5;
-			productReference = 45927B0222E9CA5E005946EA /* libCodeView5.a */;
-			productType = "com.apple.product-type.library.static";
+			path = Sources/CodeView5;
+			sourceTree = "<group>";
 		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
 		45927B1322E9CAAB005946EA /* CodeView5Demo */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 45927B2122E9CAAD005946EA /* Build configuration list for PBXNativeTarget "CodeView5Demo" */;
@@ -164,9 +133,13 @@
 			buildRules = (
 			);
 			dependencies = (
-				45B38F7022E9D0620003B2BF /* PBXTargetDependency */,
 			);
 			name = CodeView5Demo;
+			packageProductDependencies = (
+				BA17B70E231CD89100A41B6C /* CodeView5 */,
+				BA17B713231CE30100A41B6C /* SBTL */,
+				BAF6F3BC231FA93000A4C86F /* BTree */,
+			);
 			productName = CodeView5Demo;
 			productReference = 45927B1422E9CAAB005946EA /* CodeView5Demo.app */;
 			productType = "com.apple.product-type.application";
@@ -181,10 +154,6 @@
 				LastUpgradeCheck = 1100;
 				ORGANIZATIONNAME = Eonil;
 				TargetAttributes = {
-					45927B0122E9CA5E005946EA = {
-						CreatedOnToolsVersion = 11.0;
-						LastSwiftMigration = 1100;
-					};
 					45927B1322E9CAAB005946EA = {
 						CreatedOnToolsVersion = 11.0;
 					};
@@ -199,11 +168,14 @@
 				Base,
 			);
 			mainGroup = 45927AF922E9CA5E005946EA;
+			packageReferences = (
+				BA17B712231CE30100A41B6C /* XCRemoteSwiftPackageReference "swift-sbtl" */,
+				BAF6F3BB231FA93000A4C86F /* XCRemoteSwiftPackageReference "BTree" */,
+			);
 			productRefGroup = 45927B0322E9CA5E005946EA /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				45927B0122E9CA5E005946EA /* CodeView5 */,
 				45927B1322E9CAAB005946EA /* CodeView5Demo */,
 			);
 		};
@@ -222,19 +194,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		45927AFF22E9CA5E005946EA /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				45C3184022F25BAF00963636 /* CRDT.swift in Sources */,
-				45242DE322F160170023B7B5 /* IMPLString.swift in Sources */,
-				45242DE522F160C50023B7B5 /* CodeSource.swift in Sources */,
-				45927B0F22E9CA6F005946EA /* IMPLTextInputClientView.swift in Sources */,
-				45927B2922E9CB43005946EA /* IMPLSurfaceView.swift in Sources */,
-				45242DDC22E9D1530023B7B5 /* CodeView.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		45927B1022E9CAAB005946EA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -246,14 +205,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXTargetDependency section */
-		45B38F7022E9D0620003B2BF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 45927B0122E9CA5E005946EA /* CodeView5 */;
-			targetProxy = 45B38F6F22E9D0620003B2BF /* PBXContainerItemProxy */;
-		};
-/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		45927B1C22E9CAAD005946EA /* Main.storyboard */ = {
@@ -376,43 +327,6 @@
 			};
 			name = Release;
 		};
-		45927B0C22E9CA5E005946EA /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				DEFINES_MODULE = YES;
-				EXECUTABLE_PREFIX = lib;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@loader_path/../Frameworks",
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
-		45927B0D22E9CA5E005946EA /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Automatic;
-				DEFINES_MODULE = YES;
-				EXECUTABLE_PREFIX = lib;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/../Frameworks",
-					"@loader_path/../Frameworks",
-				);
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Release;
-		};
 		45927B2222E9CAAD005946EA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -425,6 +339,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				PRODUCT_BUNDLE_IDENTIFIER = Eonil.CodeView5Demo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -445,6 +360,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 10.15;
 				PRODUCT_BUNDLE_IDENTIFIER = Eonil.CodeView5Demo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -465,15 +381,6 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		45927B0B22E9CA5E005946EA /* Build configuration list for PBXNativeTarget "CodeView5" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				45927B0C22E9CA5E005946EA /* Debug */,
-				45927B0D22E9CA5E005946EA /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		45927B2122E9CAAD005946EA /* Build configuration list for PBXNativeTarget "CodeView5Demo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -484,6 +391,42 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		BA17B712231CE30100A41B6C /* XCRemoteSwiftPackageReference "swift-sbtl" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/eonil/swift-sbtl/";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+		BAF6F3BB231FA93000A4C86F /* XCRemoteSwiftPackageReference "BTree" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/eonil/BTree";
+			requirement = {
+				branch = master;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		BA17B70E231CD89100A41B6C /* CodeView5 */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = CodeView5;
+		};
+		BA17B713231CE30100A41B6C /* SBTL */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BA17B712231CE30100A41B6C /* XCRemoteSwiftPackageReference "swift-sbtl" */;
+			productName = SBTL;
+		};
+		BAF6F3BC231FA93000A4C86F /* BTree */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BAF6F3BB231FA93000A4C86F /* XCRemoteSwiftPackageReference "BTree" */;
+			productName = BTree;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 45927AFA22E9CA5E005946EA /* Project object */;
 }

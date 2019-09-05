@@ -9,7 +9,7 @@ Design Choices
 - Aims for best maintainanceability. Simplicity over performance.
 - Aims "good enough" performance. Not best performance.
 - No word-wrap. 
-- No "complete" IME support. I implemented IME support, but do not invest much time on it. 
+- No "complete" level of IME support. I implemented IME support, but do not invest much time on it. 
 
 - Unidirectional I/O. User input simply gets delivered to main loop
   and makes change in data source, and changed source will be delivered
