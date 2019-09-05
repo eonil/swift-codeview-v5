@@ -10,31 +10,67 @@ import Foundation
 import Combine
 import AppKit
 
+/// Rendering and interaction surface for code-text.
+///
+/// `CodeView` is builds simple REPL.
+/// - Read: `typing` manages end-user's typing input with IME support.
+/// - Eval: `source` is a full value-semantic state and modifier around it.
+/// - Print: `rendering` manages code-text rendering. Also provides layout calculation.
+///
+/// Typing
+/// ------
+/// - This is pure input.
+/// - Scans end-user intentions.
+/// - Scanned result will be sent to `source` as messages.
+/// - Typing is an independent actor. Messages are passed using `Combine` bidirectionally.
+///
+/// Source
+/// ------
+/// - This is fully value semantic. No shared mutable reference.
+/// - This is referentially transparent. Same input produces same output. No global state.
+/// - Source is not an independent actor. Processing is done by simple function call.
+/// - Source is pure value & functions. There's no concept of event.
+///
+/// Rendering
+/// ---------
+/// - This is pure output. Renders `source` to screen.
+/// - In this case, `source` itself becomes message to render.
+/// - Renderer is not an independent actor. Rendering is done by simple function call.
+///
+/// Design Choicese
+/// ---------------
+/// - Prefer value-semantic and pure-functions over independent actor.
+/// - Prefer function call over message passing.
+/// - Prefer forward message passing over backward message passing (event emission).
+///
 public final class CodeView: NSView {
     private let typing = TextTyping()
-    private let codeFont = NSFont(name: "SF Mono", size: NSFont.systemFontSize)!
     private var pipes = [AnyCancellable]()
     private var source = CodeSource()
-    private var imeIncompleteText = IMEIncompleteText?.none
-    private struct IMEIncompleteText {
-        var content = ""
-        var selection = Range<String.Index>(uncheckedBounds: (.zero, .zero))
-    }
+    private var imeState = IMEState?.none
     
+    /// Vertical caret movement between lines needs base X coordinate to align them on single line.
+    /// Here the basis X cooridnate will be stored to provide aligned vertical movement.
     private var moveVerticalAxisX = CGFloat?.none
     private func findAxisXForVerticalMovement() -> CGFloat {
         let p = source.caretPosition
         let line = source.storage.lines[p.line]
         let s = line[..<p.characterIndex]
-        let ctline = CTLine.make(with: String(s), font: codeFont)
+        let ctline = CTLine.make(with: String(s), font: rendering.config.font)
         let w = CTLineGetBoundsWithOptions(ctline, []).width
         return w
     }
-
+    
+    private var rendering = CodeRendering()
+    
+    public let control = PassthroughSubject<Control,Never>()
     public enum Control {
-        case setSourceURL(URL?)
         /// Pushes modified source.
-//        case setSource(CodeSource)
+        case source(CodeSource)
+    }
+    public let note = PassthroughSubject<Note,Never>()
+    public enum Note {
+        case source(CodeSource)
     }
 
     private func install() {
@@ -45,15 +81,16 @@ public final class CodeView: NSView {
             .sink(receiveValue: { [weak self] in self?.process($0) })
             .store(in: &pipes)
         wantsLayer = true
+        rendering.config.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? rendering.config.font
     }
     private func process(_ n:TextTypingNote) {
         switch n {
         case let .previewIncompleteText(content, selection):
             source.replaceCharactersInCurrentSelection(with: "")
-            imeIncompleteText = IMEIncompleteText(content: content, selection: selection)
+            imeState = IMEState(incompleteText: content, selectionInIncompleteText: selection)
             setNeedsDisplay(bounds)
         case let .placeText(s):
-            imeIncompleteText = nil
+            imeState = nil
             source.replaceCharactersInCurrentSelection(with: s)
             setNeedsDisplay(bounds)
         case let .issueEditingCommand(sel):
@@ -84,16 +121,16 @@ public final class CodeView: NSView {
                 source.moveToRightEndOfLineAndModifySelection()
             case #selector(moveUp(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                source.moveUp(font: codeFont, at: moveVerticalAxisX!)
+                source.moveUp(font: rendering.config.font, at: moveVerticalAxisX!)
             case #selector(moveDown(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                source.moveDown(font: codeFont, at: moveVerticalAxisX!)
+                source.moveDown(font: rendering.config.font, at: moveVerticalAxisX!)
             case #selector(moveUpAndModifySelection(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                source.moveUpAndModifySelection(font: codeFont, at: moveVerticalAxisX!)
+                source.moveUpAndModifySelection(font: rendering.config.font, at: moveVerticalAxisX!)
             case #selector(moveDownAndModifySelection(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                source.moveDownAndModifySelection(font: codeFont, at: moveVerticalAxisX!)
+                source.moveDownAndModifySelection(font: rendering.config.font, at: moveVerticalAxisX!)
             case #selector(moveToBeginningOfDocument(_:)):
                 source.moveToBeginningOfDocument()
             case #selector(moveToBeginningOfDocumentAndModifySelection(_:)):
@@ -111,6 +148,9 @@ public final class CodeView: NSView {
             case #selector(insertNewline(_:)):
                 moveVerticalAxisX = nil
                 source.insertNewLine()
+            case #selector(insertTab(_:)):
+                moveVerticalAxisX = nil
+                source.insertTab()
             case #selector(deleteBackward(_:)):
                 moveVerticalAxisX = nil
                 source.deleteBackward()
@@ -122,6 +162,7 @@ public final class CodeView: NSView {
                 source.deleteToEndOfLine()
             default:
                 assert(false,"Unhandled editing command: \(sel)")
+                break
             }
             setNeedsDisplay(bounds)
         }
@@ -146,88 +187,14 @@ public final class CodeView: NSView {
     public override func keyDown(with event: NSEvent) {
         typing.processKeyDown(event)
     }
+    
     public override var intrinsicContentSize: NSSize {
-        return CGSize(width: 0, height: codeFont.lineHeight)
+        return rendering.measureContentSize(source: source, imeState: imeState)
     }
     public override var isFlipped: Bool { true }
     public override func draw(_ dirtyRect: NSRect) {
-        let h = codeFont.lineHeight
-        let visibleLineIndices = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
-        let lineIndicesToDraw = source.storage.lines.indices.clamped(to: visibleLineIndices)
-        let selectedRange = source.selectionRange
-        let selectedLineRange = source.selectionLineRange
-        let visibleSelectedLineRange = selectedLineRange.clamped(to: visibleLineIndices)
         let cgctx = NSGraphicsContext.current!.cgContext
-        
-        // Draw selection background.
-        for lineIndex in visibleSelectedLineRange {
-            let r = source.selectionRange
-            let line = source.storage.lines[lineIndex]
-            let i0 = r.lowerBound.line == lineIndex ? r.lowerBound.characterIndex : line.startIndex
-            let i1 = r.upperBound.line == lineIndex ? r.upperBound.characterIndex : line.endIndex
-            let s1 = line[..<i0]
-            let s2 = line[i0..<i1]
-            let ctline1 = CTLine.make(with: String(s1), font: codeFont)
-            let ctline2 = CTLine.make(with: String(s2), font: codeFont)
-            let lineBounds1 = CTLineGetBoundsWithOptions(ctline1, [])
-            let lineBounds2 = CTLineGetBoundsWithOptions(ctline2, [])
-            let bgFrame = CGRect(
-                x: lineBounds1.maxX,
-                y: -codeFont.descender + codeFont.lineHeight * CGFloat(lineIndex),
-                width: lineBounds2.width,
-                height: lineBounds2.height)
-            cgctx.setFillColor(NSColor.selectedTextBackgroundColor.cgColor)
-            cgctx.fill(bgFrame)
-        }
-        // Draw characters.
-        cgctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
-        for lineIndex in lineIndicesToDraw {
-            if selectedLineRange.contains(lineIndex) {
-                // Draws selected part differently.
-            }
-            let line = source.storage.lines[lineIndex]
-            func charactersToDrawWithConsideringIME() -> String {
-                guard let imeState = imeIncompleteText else { return line.utf8Characters }
-                guard selectedRange.upperBound.line == lineIndex else { return line.utf8Characters }
-                let chidx = selectedRange.upperBound.characterIndex
-                return line.utf8Characters.replacingCharacters(in: chidx..<chidx, with: imeState.content)
-            }
-            let chs = charactersToDrawWithConsideringIME()
-            let ctline = CTLine.make(with: chs, font: codeFont)
-            // First line need to be moved down by line-height
-            // as CG places it above zero point.
-            cgctx.textPosition = CGPoint(x: 0, y: h + h * CGFloat(lineIndex))
-            CTLineDraw(ctline, cgctx)
-        }
-        
-        // Draw caret.
-        if selectedRange.isEmpty {
-            let p = source.caretPosition
-            let line = source.storage.lines[p.line]
-            let s = line[..<p.characterIndex]
-            let ctline = CTLine.make(with: String(s), font: codeFont)
-            let lineBounds = CTLineGetBoundsWithOptions(ctline, [])
-            let x = lineBounds.width
-            let y = -codeFont.descender + codeFont.lineHeight * CGFloat(p.line)
-            let caretFrame = CGRect(x: x, y: y, width: 1, height: h)
-            cgctx.setFillColor(NSColor.white.cgColor)
-            cgctx.fill(caretFrame)
-        }
-    }
-}
-
-private extension NSFont {
-    var lineHeight: CGFloat {
-        return -descender + ascender
-    }
-}
-
-private extension Range {
-    /// Returns a smallest range that can contain both of `self` and `otherRange`.
-    func smallestContainer(with otherRange:Range) -> Range {
-        let a = Swift.min(lowerBound, otherRange.lowerBound)
-        let b = Swift.max(upperBound, otherRange.upperBound)
-        return a..<b
+        rendering.draw(source: source, imeState: imeState, in: dirtyRect, with: cgctx)
     }
 }
 

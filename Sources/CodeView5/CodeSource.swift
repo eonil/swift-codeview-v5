@@ -28,19 +28,22 @@ import Foundation
 ///
 /// Most editing command moves caret and selection together.
 ///
-struct CodeSource {
-    init() {
+public struct CodeSource {
+    public init() {
         storage.lines.append(CodeLine())
     }
     
+    /// Changes in config will be applied from next editing.
+    public var config = CodeSourceEditingConfig()
+    
     /// Assigning new storage invalidates any caret/selection and set them to default value.
-    fileprivate(set) var storage = CodeStorage()
+    public fileprivate(set) var storage = CodeStorage()
     
     /// Caret position.
     ///
     /// This value must be in storage range.
     /// Setting an invalid position crashes program.
-    var caretPosition = CodeStoragePosition.zero {
+    public var caretPosition = CodeStoragePosition.zero {
         willSet(x) {
             precondition(isValidPosition(x))
         }
@@ -57,33 +60,23 @@ struct CodeSource {
     /// maximum line index can be `1`.
     /// All positions in this value must be in storage range.
     /// Setting an invalid position crashes program.
-    var selectionRange = Range<CodeStoragePosition>(uncheckedBounds: (.zero, .zero)) {
+    public var selectionRange = Range<CodeStoragePosition>(uncheckedBounds: (.zero, .zero)) {
         willSet(x) {
             precondition(isValidPosition(x.lowerBound))
             precondition(isValidPosition(x.upperBound))
         }
     }
     /// Includes range.upperBound.line
-    var selectionLineRange: Range<Int> { selectionRange.lowerBound.line..<selectionRange.upperBound.line+1 }
+    public var selectionLineRange: Range<Int> { selectionRange.lowerBound.line..<selectionRange.upperBound.line+1 }
     
 //    var styles = [CodeLine]()
 }
-extension CodeSource {
+public extension CodeSource {
     var startPosition: CodeStoragePosition { .zero }
     var endPosition: CodeStoragePosition {
         /// `CodeSource` guarantees having one line at least always.
         CodeStoragePosition(line: storage.lines.count-1, characterIndex: storage.lines.last!.endIndex)
     }
-//    var endPosition: CodeStoragePosition {
-//        guard !storage.lines.isEmpty else { return .zero }
-//        let lastLine = storage.lines.last!
-//        if lastLine.isEmpty {
-//            return CodeStoragePosition(line: storage.lines.endIndex-1, characterIndex: lastLine.endIndex)
-//        }
-//        else {
-//            return CodeStoragePosition(line: storage.lines.endIndex, characterIndex: .zero)
-//        }
-//    }
     func isValidPosition(_ p:CodeStoragePosition) -> Bool {
         if p.line < storage.lines.count {
             let line = storage.lines[p.line]
@@ -110,7 +103,7 @@ extension CodeSource {
         return a..<b
     }
 }
-extension CodeSource {
+public extension CodeSource {
     private func position(after p: CodeStoragePosition) -> CodeStoragePosition {
         let line = storage.lines[p.line]
         let i = line.index(after: p.characterIndex)
@@ -139,31 +132,6 @@ extension CodeSource {
         selectionRange = q..<q
         selectionAnchorPosition = q
     }
-//    /// - Parameter selection: What to select after replacement operation.
-//    mutating func replaceCharactersInCurrentSelection(with s:String, selection: SelectionReplacement) {
-//        // Update storage.
-//        storage.removeCharacters(in: selectionRange)
-//        let r = storage.insertCharacters(s, at: selectionRange.lowerBound)
-//        // Always keep one line at least.
-//        if storage.lines.isEmpty {
-//            storage.lines.append(CodeLine())
-//        }
-//        // Move selection.
-//        switch selection {
-//        case .atStartingOfReplacementCharactersWithZeroLength:
-//            caretPosition = r.lowerBound
-//            selectionRange = r.lowerBound..<r.lowerBound
-//        case .atEndOfReplacementCharactersWithZeroLength:
-//            selectionRange = r.upperBound..<r.upperBound
-//        case .allOfReplacementCharacters:
-//            selectionRange = r.lowerBound..<r.upperBound
-//        }
-//    }
-//    enum SelectionReplacement {
-//        case atStartingOfReplacementCharactersWithZeroLength
-//        case atEndOfReplacementCharactersWithZeroLength
-//        case allOfReplacementCharacters
-//    }
 }
 
 //struct CodeLine {
@@ -252,7 +220,7 @@ extension CodeSource {
         modifySelectionWithAnchor(to: x.caretPosition)
     }
     mutating func moveToLeftEndOfLine() {
-        let p = selectionRange.upperBound
+        let p = caretPosition
         let line = storage.lines[p.line]
         let q = CodeStoragePosition(line: p.line, characterIndex: line.startIndex)
         caretPosition = q
@@ -260,7 +228,7 @@ extension CodeSource {
         selectionAnchorPosition = nil
     }
     mutating func moveToRightEndOfLine() {
-        let p = selectionRange.upperBound
+        let p = caretPosition
         let line = storage.lines[p.line]
         let q = CodeStoragePosition(line: p.line, characterIndex: line.endIndex)
         caretPosition = q
@@ -336,6 +304,16 @@ extension CodeSource {
     /// Inserts a new line replacing current selection.
     mutating func insertNewLine() {
         replaceCharactersInCurrentSelection(with: "\n")
+        if config.autoIndent {
+            let upLine = storage.lines[caretPosition.line-1]
+            let n = upLine.countPrefix(config.tabReplacement)
+            for _ in 0..<n {
+                replaceCharactersInCurrentSelection(with: config.tabReplacement)
+            }
+        }
+    }
+    mutating func insertTab() {
+        replaceCharactersInCurrentSelection(with: config.tabReplacement)
     }
     mutating func deleteBackward() {
         moveLeftAndModifySelection()
@@ -356,13 +334,13 @@ extension CodeSource {
 }
 
 // MARK: Support Functions
-extension CodeSource {
+private extension CodeSource {
     func characterIndex(at x:CGFloat, in line:CodeLine, with f:NSFont) -> String.Index? {
-        let s = String(line.utf8Characters)
+        let s = String(line.content)
         let ctline = CTLine.make(with: s, font: f)
         let utf16Offset = CTLineGetStringIndexForPosition(ctline, CGPoint(x: x, y: 0))
         guard utf16Offset != kCFNotFound else { return nil }
-        return line.utf8Characters.utf16.index(line.utf8Characters.startIndex, offsetBy: utf16Offset)
+        return line.content.utf16.index(line.content.utf16.startIndex, offsetBy: utf16Offset)
     }
 //    func printCaretAndSelection() {
 //        print("caret: \(stringify(caretPosition))")

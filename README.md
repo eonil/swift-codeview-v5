@@ -20,7 +20,7 @@ Unidirectional I/O & IME
 - macOS IME requires synchronous access to whole source text at any time.
 - Asynchronous I/O requires flawless conflict resolution and it's complicated.
   I avoid it. Just wait for *Xi-Editor* for this. 
-- `CodeView` retains base source state and modifies according to user input.
+- `CodeView` retains and modifies base source state according to user input.
 - `CodeView` emits modified source state.
 - External owner can modify the source and push to `CodeView` back.
 - `CodeView` can reject external push.

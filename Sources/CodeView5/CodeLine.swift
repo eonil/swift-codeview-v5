@@ -8,59 +8,78 @@
 
 import Foundation
 
-struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
-    typealias Element = Character
-    typealias Index = String.Index
-    typealias SubSequence = String.SubSequence
+/// A opque collection of characters representing a line.
+///
+/// Features
+/// --------
+/// - Ensures all characters are in UTF-8 encoded form in memory.
+/// - Provides O(1) access UTF-8 encoded representation.
+/// - Provides O(1) access to `Character` count.
+/// - Provides O(1) access to UTF-16 code unit count.
+///
+/// - Note:
+///     This type almost equal with `String`, but does not conform `StringProtocol`
+///     Because it's been prohibited by Swift designers.
+///
+public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
+    public typealias Element = Character
+    public typealias Index = String.Index
+    public typealias SubSequence = String.SubSequence
     
-//    /// It's really really hard to keep everything strictly in UTF-8 with `Swift.String`.
-//    /// Working with `String.Index` is very error prone.
-//    /// I just use raw bytes.
-//    private(set) var utf8CodeUnits = ContiguousArray<UInt8>()
-    private(set) var utf8Characters = ""
+    /// `CodeLine` ensures this to store all characters in UTF-8 encoded form in memory.
+    private(set) var content = ""
     private(set) var precomputedCharacterCount = 0
     private(set) var precomputedUTF16CodeUnitCount = 0
 
-    init() {
-    }
-    init(_ s:String) {
-        utf8Characters = s
-        utf8Characters.makeContiguousUTF8()
-        assert(utf8Characters.isContiguousUTF8)
+    public init() {}
+    public init(_ s:String) {
+        content = s
+        content.makeContiguousUTF8()
+        assert(content.isContiguousUTF8)
         precomputedCharacterCount = s.count
         precomputedUTF16CodeUnitCount = s.utf16.count
     }
     init(utf8Characters s: String, precomputedCharacterCount cc: Int, precomputedUTF16CodeUnitCount utf16uc: Int) {
-        utf8Characters = s
-        utf8Characters.makeContiguousUTF8()
-        assert(utf8Characters.isContiguousUTF8)
+        content = s
+        content.makeContiguousUTF8()
+        assert(content.isContiguousUTF8)
         precomputedCharacterCount = cc
         precomputedUTF16CodeUnitCount = utf16uc
     }
-    var startIndex: String.Index { utf8Characters.startIndex }
-    var endIndex: String.Index { utf8Characters.endIndex }
-    func index(after i: String.Index) -> String.Index { utf8Characters.index(after: i) }
-    func index(before i: String.Index) -> String.Index { utf8Characters.index(before: i) }
-    subscript(_ i: String.Index) -> Character { utf8Characters[i] }
-    subscript(_ r: Range<String.Index>) -> Substring { utf8Characters[r] }
-    mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
-        let removingCharacters = utf8Characters[subrange]
+    
+    public var count: Int { precomputedCharacterCount }
+    public var startIndex: String.Index { content.startIndex }
+    public var endIndex: String.Index { content.endIndex }
+    public func index(after i: String.Index) -> String.Index { content.index(after: i) }
+    public func index(before i: String.Index) -> String.Index { content.index(before: i) }
+    public subscript(_ i: String.Index) -> Character { content[i] }
+    public subscript(_ r: Range<String.Index>) -> Substring { content[r] }
+    public mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
+        let removingCharacters = content[subrange]
         let removingCharacterCount = removingCharacters.count
         let removingUTF16CodeUnitCount = removingCharacters.utf16.count
         let insertingCharacters = String(makingContiguousUTF8: newElements)
         let insertingCharacterCount = insertingCharacters.count
         let insertingUTF16CodeUnitCount = insertingCharacters.utf16.count
-        utf8Characters.replaceSubrange(subrange, with: insertingCharacters)
-        utf8Characters.makeContiguousUTF8()
-        assert(utf8Characters.isContiguousUTF8)
+        content.replaceSubrange(subrange, with: insertingCharacters)
+        content.makeContiguousUTF8()
+        assert(content.isContiguousUTF8)
         precomputedCharacterCount += -removingCharacterCount + insertingCharacterCount
         precomputedUTF16CodeUnitCount += -removingUTF16CodeUnitCount + insertingUTF16CodeUnitCount
     }
-    
-//    /// UTF-8 code unit offset based index.
-//    struct Index1: Comparable {
-//        let utf8Offset: Int
-//    }
+}
+
+extension CodeLine {
+    func countPrefix(_ s:String) -> Int {
+        let chc = s.count
+        var c = 0
+        var ss = content[.zero...]
+        while ss.hasPrefix(s) {
+            ss = ss.dropFirst(chc)
+            c += 1
+        }
+        return c
+    }
 }
 
 private extension String {
