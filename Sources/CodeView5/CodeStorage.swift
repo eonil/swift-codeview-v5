@@ -62,23 +62,29 @@ struct CodeStorage {
 extension CodeStorage {
     mutating func removeCharacters(in range: Range<CodeStoragePosition>) {
         guard !range.isEmpty else { return }
-//        let startLineIndex = range.lowerBound.line
-//        let endLineIndex = range.upperBound.characterIndex == .zero ? range.upperBound.line : range.upperBound.line + 1
-        /// Include line at upper bound in processing.
-        let lineIndices = range.lowerBound.line..<min(lines.endIndex, range.upperBound.line + 1)
-        for lineIndex in lineIndices.reversed() {
-            let line = lines[lineIndex]
-            let chidx0 = lineIndex == range.lowerBound.line ? range.lowerBound.characterIndex : line.startIndex
-            let chidx1 = lineIndex == range.upperBound.line ? range.upperBound.characterIndex : line.endIndex
-            if chidx0 == line.startIndex && chidx1 == line.endIndex {
-                // Remove whole line.
-                lines.remove(at: lineIndex)
-            }
-            else {
-                // Replace subcontent in line.
-                lines[lineIndex].replaceSubrange(chidx0..<chidx1, with: EmptyCollection())
-            }
-        }
+        let firstLineIndex = range.lowerBound.line
+        let firstLineChars = lines[firstLineIndex][..<range.lowerBound.characterIndex]
+        let lastLineIndex = range.upperBound.line
+        let lastLineChars = lines[lastLineIndex][range.upperBound.characterIndex...]
+        lines.removeSubrange(firstLineIndex...lastLineIndex)
+        lines.insert(CodeLine(firstLineChars + lastLineChars), at: firstLineIndex)
+////        let startLineIndex = range.lowerBound.line
+////        let endLineIndex = range.upperBound.characterIndex == .zero ? range.upperBound.line : range.upperBound.line + 1
+//        /// Include line at upper bound in processing.
+//        let lineIndices = range.lowerBound.line..<min(lines.endIndex, range.upperBound.line + 1)
+//        for lineIndex in lineIndices.reversed() {
+//            let line = lines[lineIndex]
+//            let chidx0 = lineIndex == range.lowerBound.line ? range.lowerBound.characterIndex : line.startIndex
+//            let chidx1 = lineIndex == range.upperBound.line ? range.upperBound.characterIndex : line.endIndex
+//            if chidx0 == line.startIndex && chidx1 == line.endIndex {
+//                // Remove whole line.
+//                lines.remove(at: lineIndex)
+//            }
+//            else {
+//                // Replace subcontent in line.
+//                lines[lineIndex].replaceSubrange(chidx0..<chidx1, with: EmptyCollection())
+//            }
+//        }
     }
     /// This handles newlines automatically by split them into multiple lines.
     /// - Returns: Range of newrly inserted characters.
@@ -90,17 +96,16 @@ extension CodeStorage {
 //            lines.append(CodeLine())
 //        }
         // Insert characters.
-        let lineSubstrs = chs.split(separator: "\n", maxSplits: .max, omittingEmptySubsequences: false)
-        assert(lineSubstrs.count != 0)
-        switch lineSubstrs.count {
+        let lineChars = chs.split(separator: "\n", maxSplits: .max, omittingEmptySubsequences: false)
+        assert(lineChars.count != 0)
+        switch lineChars.count {
         case 1:
             // Insert into existing line.
-            let chs = lineSubstrs.first!
+            let chs = lineChars.first!
             var line = lines[p.line]
             line.insert(contentsOf: chs, at: p.characterIndex)
             lines[p.line] = line
-            let distance = chs.distance(from: chs.startIndex, to: chs.endIndex)
-            let chidx = line.index(p.characterIndex, offsetBy: distance)
+            let chidx = line.utf8Characters.utf8.index(p.characterIndex, offsetBy: chs.utf8.count)
             return p..<CodeStoragePosition(line: p.line, characterIndex: chidx)
         default:
             // Pop target line.
@@ -110,23 +115,22 @@ extension CodeStorage {
             var lastLine = CodeLine(line[p.characterIndex...])
             
             // Prepare for offset-based operation.
-            let offsetRange = 0..<lineSubstrs.count
+            let offsetRange = 0..<lineChars.count
             // Insert line.
             let firstOffset = offsetRange.first!
-            firstLine.append(contentsOf: lineSubstrs[firstOffset])
+            firstLine.append(contentsOf: lineChars[firstOffset])
             lines.insert(firstLine, at: p.line + firstOffset)
             // Insert new middle lines.
             for offset in offsetRange.dropFirst().dropLast() {
-                let line = CodeLine(lineSubstrs[offset])
+                let line = CodeLine(lineChars[offset])
                 lines.insert(line, at: p.line + offset)
             }
             // Insert last line.
             let lastOffset = offsetRange.last!
-            let lastSubstr = lineSubstrs[lastOffset]
-            lastLine.insert(contentsOf: lineSubstrs[lastOffset], at: lastLine.startIndex)
+            let lastChars = lineChars[lastOffset]
+            lastLine.insert(contentsOf: lineChars[lastOffset], at: lastLine.startIndex)
             lines.insert(lastLine, at: p.line + lastOffset)
-            let distance = lastSubstr.distance(from: lastSubstr.startIndex, to: lastSubstr.endIndex)
-            let chidx = lastLine.index(.zero, offsetBy: distance)
+            let chidx = lastLine.utf8Characters.utf8.index(lastLine.utf8Characters.startIndex, offsetBy: lastChars.utf8.count)
             return p..<CodeStoragePosition(line: p.line + lastOffset, characterIndex: chidx)
         }
     }

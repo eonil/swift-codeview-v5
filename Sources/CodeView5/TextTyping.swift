@@ -39,7 +39,6 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
     let note = PassthroughSubject<TextTypingNote,Never>()
     
     func doCommand(by selector: Selector) {
-        print("\(#function): \(selector)")
         note.send(.issueEditingCommand(selector))
     }
     

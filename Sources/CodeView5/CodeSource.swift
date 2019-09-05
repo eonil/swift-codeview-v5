@@ -18,36 +18,80 @@ import Foundation
 /// - When extporting text into single `String`, just simply join all lines with new-line character.
 /// - This manages selection always consistently.
 ///
+/// Caret & Selection
+/// -----------------
+/// Caret and selection exist independently.
+/// End user controls caret and can control selection range.
+/// Sometimes caret and selection need to be set equally due to UX reason.
+/// In that case, you need to set them all. There's no automatic synchronization.
+/// Renderer is supposed to hide caret if selection is non-zero length.
+///
+/// Most editing command moves caret and selection together.
+///
 struct CodeSource {
+    init() {
+        storage.lines.append(CodeLine())
+    }
+    
     /// Assigning new storage invalidates any caret/selection and set them to default value.
     fileprivate(set) var storage = CodeStorage()
-    /// Assigning invalid position crashes program.
+    
+    /// Caret position.
+    ///
+    /// This value must be in storage range.
+    /// Setting an invalid position crashes program.
     var caretPosition = CodeStoragePosition.zero {
         willSet(x) {
             precondition(isValidPosition(x))
         }
     }
     
-    fileprivate(set) var storageSelection = CodeStorageSelection()
-        
-    /// Assigning invalid position crashes program.
+    /// When you start selection by moving carets, this value will be set
+    /// to mark starting position of the selection.
+    private var selectionAnchorPosition = CodeStoragePosition?.none
+    
+    /// Selected character range over multiple lines.
+    ///
+    /// Selection includes character at `lowerBound` and excluding character at `upperBound`.
+    /// Lines of all positions must be indices to existing lines. For example, if there are two lines,
+    /// maximum line index can be `1`.
+    /// All positions in this value must be in storage range.
+    /// Setting an invalid position crashes program.
     var selectionRange = Range<CodeStoragePosition>(uncheckedBounds: (.zero, .zero)) {
         willSet(x) {
             precondition(isValidPosition(x.lowerBound))
             precondition(isValidPosition(x.upperBound))
         }
     }
+    /// Includes range.upperBound.line
+    var selectionLineRange: Range<Int> { selectionRange.lowerBound.line..<selectionRange.upperBound.line+1 }
+    
 //    var styles = [CodeLine]()
-    init() {
-        storage.lines.append(CodeLine())
-    }
+}
+extension CodeSource {
     var startPosition: CodeStoragePosition { .zero }
-    var endPosition: CodeStoragePosition { CodeStoragePosition(line: storage.lines.endIndex, characterIndex: .zero) }
+    var endPosition: CodeStoragePosition {
+        /// `CodeSource` guarantees having one line at least always.
+        CodeStoragePosition(line: storage.lines.count-1, characterIndex: storage.lines.last!.endIndex)
+    }
+//    var endPosition: CodeStoragePosition {
+//        guard !storage.lines.isEmpty else { return .zero }
+//        let lastLine = storage.lines.last!
+//        if lastLine.isEmpty {
+//            return CodeStoragePosition(line: storage.lines.endIndex-1, characterIndex: lastLine.endIndex)
+//        }
+//        else {
+//            return CodeStoragePosition(line: storage.lines.endIndex, characterIndex: .zero)
+//        }
+//    }
     func isValidPosition(_ p:CodeStoragePosition) -> Bool {
-        guard p.line < storage.lines.count else { return false }
-        let line = storage.lines[p.line]
-        guard p.characterIndex < line.endIndex else { return false }
-        return true
+        if p.line < storage.lines.count {
+            let line = storage.lines[p.line]
+            return p.characterIndex <= line.endIndex
+        }
+        else {
+            return p.line == storage.lines.count && p.characterIndex == .zero
+        }
     }
     /// Gets a new valid position that is nearest to supplied position.
     func nearestValidPosition(_ p:CodeStoragePosition) -> CodeStoragePosition {
@@ -78,30 +122,48 @@ extension CodeSource {
         return CodeStoragePosition(line: p.line, characterIndex: i)
     }
     
+    /// Replaces characters in current selection.
+    /// 
     /// - Parameter selection: What to select after replacement operation.
-    mutating func replaceCharactersInCurrentSelection(with s:String, selection: SelectionReplacement) {
+    mutating func replaceCharactersInCurrentSelection(with s:String) {
         // Update storage.
-        storage.removeCharacters(in: storageSelection.range)
-        let r = storage.insertCharacters(s, at: storageSelection.range.lowerBound)
+        storage.removeCharacters(in: selectionRange)
+        let r = storage.insertCharacters(s, at: selectionRange.lowerBound)
         // Always keep one line at least.
         if storage.lines.isEmpty {
             storage.lines.append(CodeLine())
         }
-        // Move selection.
-        switch selection {
-        case .atStartingOfReplacementCharactersWithZeroLength:
-            storageSelection.range = r.lowerBound..<r.lowerBound
-        case .atEndOfReplacementCharactersWithZeroLength:
-            storageSelection.range = r.upperBound..<r.upperBound
-        case .allOfReplacementCharacters:
-            storageSelection.range = r.lowerBound..<r.upperBound
-        }
+        // Move carets and selection.
+        let q = r.upperBound
+        caretPosition = q
+        selectionRange = q..<q
+        print(q)
     }
-    enum SelectionReplacement {
-        case atStartingOfReplacementCharactersWithZeroLength
-        case atEndOfReplacementCharactersWithZeroLength
-        case allOfReplacementCharacters
-    }
+//    /// - Parameter selection: What to select after replacement operation.
+//    mutating func replaceCharactersInCurrentSelection(with s:String, selection: SelectionReplacement) {
+//        // Update storage.
+//        storage.removeCharacters(in: selectionRange)
+//        let r = storage.insertCharacters(s, at: selectionRange.lowerBound)
+//        // Always keep one line at least.
+//        if storage.lines.isEmpty {
+//            storage.lines.append(CodeLine())
+//        }
+//        // Move selection.
+//        switch selection {
+//        case .atStartingOfReplacementCharactersWithZeroLength:
+//            caretPosition = r.lowerBound
+//            selectionRange = r.lowerBound..<r.lowerBound
+//        case .atEndOfReplacementCharactersWithZeroLength:
+//            selectionRange = r.upperBound..<r.upperBound
+//        case .allOfReplacementCharacters:
+//            selectionRange = r.lowerBound..<r.upperBound
+//        }
+//    }
+//    enum SelectionReplacement {
+//        case atStartingOfReplacementCharactersWithZeroLength
+//        case atEndOfReplacementCharactersWithZeroLength
+//        case allOfReplacementCharacters
+//    }
 }
 
 //struct CodeLine {
@@ -122,118 +184,174 @@ extension CodeSource {
 import AppKit
 import CoreText
 extension CodeSource {
+    private mutating func modifySelectionWithAnchor(to p:CodeStoragePosition) {
+        let oldAnchorPosition = selectionAnchorPosition ?? caretPosition
+        let a = min(p, oldAnchorPosition)
+        let b = max(p, oldAnchorPosition)
+        caretPosition = p
+        selectionRange = a..<b
+        selectionAnchorPosition = oldAnchorPosition
+    }
+    private mutating func moveToEndOfUpLine() {
+        guard caretPosition != startPosition else { return }
+        let lineIndex = caretPosition.line - 1
+        let charIndex = storage.lines[lineIndex].endIndex
+        caretPosition = CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+        selectionRange = caretPosition..<caretPosition
+        selectionAnchorPosition = nil
+    }
+    private mutating func moveToStartOfDownLine() {
+        guard caretPosition != endPosition else { return }
+        let lineIndex = caretPosition.line + 1
+        let charIndex = storage.lines[lineIndex].startIndex
+        caretPosition = CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+        selectionRange = caretPosition..<caretPosition
+        selectionAnchorPosition = nil
+    }
+    
     mutating func moveLeft() {
-        let p = storageSelection.range.lowerBound
+        guard caretPosition != startPosition else { return }
+        let p = caretPosition
         let line = storage.lines[p.line]
-        guard line.startIndex < p.characterIndex else { return }
-        let i = line.index(before: p.characterIndex)
-        let q = CodeStoragePosition(line: p.line, characterIndex: i)
-        storageSelection.range = q..<q
+        if line.startIndex < p.characterIndex {
+            let i = line.index(before: p.characterIndex)
+            let q = CodeStoragePosition(line: p.line, characterIndex: i)
+            caretPosition = q
+            selectionRange = caretPosition..<caretPosition
+            selectionAnchorPosition = nil
+        }
+        else {
+            moveToEndOfUpLine()
+        }
     }
     mutating func moveRight() {
-        let p = storageSelection.range.upperBound
+        guard caretPosition != endPosition else { return }
+        let p = caretPosition
         let line = storage.lines[p.line]
-        guard p.characterIndex < line.endIndex else { return }
-        let i = line.index(after: p.characterIndex)
-        let q = CodeStoragePosition(line: p.line, characterIndex: i)
-        storageSelection.range = q..<q
+        if p.characterIndex < line.endIndex {
+            let i = line.index(after: p.characterIndex)
+            let q = CodeStoragePosition(line: p.line, characterIndex: i)
+            caretPosition = q
+            selectionRange = caretPosition..<caretPosition
+            selectionAnchorPosition = nil
+        }
+        else {
+            moveToStartOfDownLine()
+        }
     }
+    /// Moves caret to left by one character and expand selection to new caret position.
     mutating func moveLeftAndModifySelection() {
-        let p = storageSelection.range.lowerBound
-        let line = storage.lines[p.line]
-        guard line.startIndex < p.characterIndex else { return }
-        let i = line.index(before: p.characterIndex)
-        let q = CodeStoragePosition(line: p.line, characterIndex: i)
-        storageSelection.range = q..<storageSelection.range.upperBound
+        var x = self
+        x.moveLeft()
+        modifySelectionWithAnchor(to: x.caretPosition)
     }
+    /// Moves caret to right by one character and expand selection to new caret position.
     mutating func moveRightAndModifySelection() {
-        let p = storageSelection.range.upperBound
-        let line = storage.lines[p.line]
-        guard p.characterIndex < line.endIndex else { return }
-        let i = line.index(after: p.characterIndex)
-        let q = CodeStoragePosition(line: p.line, characterIndex: i)
-        storageSelection.range = storageSelection.range.lowerBound..<q
+        var x = self
+        x.moveRight()
+        modifySelectionWithAnchor(to: x.caretPosition)
     }
     mutating func moveToLeftEndOfLine() {
-        let p = storageSelection.range.upperBound
+        let p = selectionRange.upperBound
         let line = storage.lines[p.line]
         let q = CodeStoragePosition(line: p.line, characterIndex: line.startIndex)
-        storageSelection.range = q..<q
+        caretPosition = q
+        selectionRange = q..<q
+        selectionAnchorPosition = nil
     }
     mutating func moveToRightEndOfLine() {
-        let p = storageSelection.range.upperBound
+        let p = selectionRange.upperBound
         let line = storage.lines[p.line]
         let q = CodeStoragePosition(line: p.line, characterIndex: line.endIndex)
-        storageSelection.range = q..<q
+        caretPosition = q
+        selectionRange = q..<q
+        selectionAnchorPosition = nil
+    }
+    mutating func moveToLeftEndOfLineAndModifySelection() {
+        var x = self
+        x.moveToLeftEndOfLine()
+        modifySelectionWithAnchor(to: x.caretPosition)
+    }
+    mutating func moveToRightEndOfLineAndModifySelection() {
+        var x = self
+        x.moveToRightEndOfLine()
+        modifySelectionWithAnchor(to: x.caretPosition)
     }
     mutating func moveUp(font f: NSFont, at x: CGFloat) {
-        let p = storageSelection.range.lowerBound
+        let p = caretPosition
         guard 0 < p.line else { return }
         let li = p.line - 1
         let line = storage.lines[li]
-        guard let ci = characterIndex(at: x, in: line, with: f) else { return }
+        let ci = characterIndex(at: x, in: line, with: f) ?? line.endIndex
         let q = CodeStoragePosition(line: li, characterIndex: ci)
-        storageSelection.range = q..<q
+        caretPosition = q
+        selectionRange = q..<q
+        selectionAnchorPosition = nil
     }
-    mutating func moveDown(font f: NSFont, at x: CGFloat) {
-        let p = storageSelection.range.upperBound
+    mutating func moveDown(font f:NSFont, at x:CGFloat) {
+        let p = caretPosition
         guard p.line < storage.lines.count-1 else { return }
         let li = p.line + 1
         let line = storage.lines[li]
-        guard let ci = characterIndex(at: x, in: line, with: f) else { return }
+        let ci = characterIndex(at: x, in: line, with: f) ?? line.endIndex
         let q = CodeStoragePosition(line: li, characterIndex: ci)
-        storageSelection.range = q..<q
+        caretPosition = q
+        selectionRange = q..<q
+        selectionAnchorPosition = nil
+    }
+    mutating func moveUpAndModifySelection(font f:NSFont, at p:CGFloat) {
+        var x = self
+        x.moveUp(font: f, at: p)
+        modifySelectionWithAnchor(to: x.caretPosition)
+    }
+    mutating func moveDownAndModifySelection(font f:NSFont, at p:CGFloat) {
+        var x = self
+        x.moveDown(font: f, at: p)
+        modifySelectionWithAnchor(to: x.caretPosition)
+    }
+    mutating func moveToBeginningOfDocument() {
+        caretPosition = startPosition
+        selectionRange = startPosition..<startPosition
+        selectionAnchorPosition = nil
+    }
+    mutating func moveToEndOfDocument() {
+        caretPosition = endPosition
+        selectionRange = endPosition..<endPosition
+        selectionAnchorPosition = nil
+    }
+    mutating func moveToBeginningOfDocumentAndModifySelection() {
+        var x = self
+        x.moveToBeginningOfDocument()
+        modifySelectionWithAnchor(to: x.caretPosition)
+    }
+    mutating func moveToEndOfDocumentAndModifySelection() {
+        var x = self
+        x.moveToEndOfDocument()
+        modifySelectionWithAnchor(to: x.caretPosition)
+    }
+    mutating func selectAll() {
+        selectionRange = startPosition..<endPosition
     }
     
     /// Inserts a new line replacing current selection.
     mutating func insertNewLine() {
-        replaceCharactersInCurrentSelection(with: "\n", selection: .atEndOfReplacementCharactersWithZeroLength)
+        replaceCharactersInCurrentSelection(with: "\n")
     }
-    /// Implementation
-    /// --------------
-    /// Basic implementation strategy is;
-    /// 1. Expand selection by one character before if selection is empty.
-    /// 2. Delete selection.
     mutating func deleteBackward() {
-        if storageSelection.range.isEmpty {
-            // Expand selection to one character before.
-            let p = storageSelection.range.lowerBound
-            // If current character is at start position, select last of last line.
-            // Otherwise, just expand to last character.
-            if p.characterIndex == .zero {
-                // If current line is the first line, do not expand.
-                // It effectively makes this operations as no-op.
-                // Otherwise, just expand to last of last line.
-                if p.line == 0 {
-                }
-                else {
-                    let p0LineIndex = p.line - 1
-                    let p0CharIndex = storage.lines[p0LineIndex].endIndex
-                    let p0 = CodeStoragePosition(line: p0LineIndex, characterIndex: p0CharIndex)
-                    let p1 = storageSelection.range.upperBound
-                    storageSelection.range = p0..<p1
-                }
-            }
-            else {
-                let line = storage.lines[p.line]
-                let preidx = line.index(before: p.characterIndex)
-                storageSelection.range = CodeStoragePosition(line: p.line, characterIndex: preidx)..<storageSelection.range.upperBound
-            }
-        }
-        // Delete selection.
-        replaceCharactersInCurrentSelection(with: "", selection: .allOfReplacementCharacters)
+        moveLeftAndModifySelection()
+        replaceCharactersInCurrentSelection(with: "")
     }
-    
-    mutating func selectAll() {
-        if storage.lines.isEmpty {
-            let p = CodeStoragePosition.zero
-            storageSelection.range = p..<p
-        }
-        else {
-            let p0 = CodeStoragePosition(line: 0, characterIndex: .zero)
-            let p1 = CodeStoragePosition(line: storage.lines.count-1, characterIndex: storage.lines.last!.endIndex)
-            storageSelection.range = p0..<p1
-        }
+    mutating func deleteToBeginningOfLine() {
+        let oldSelectionRange = selectionRange
+        moveToLeftEndOfLine()
+        selectionRange = caretPosition..<oldSelectionRange.upperBound
+        replaceCharactersInCurrentSelection(with: "")
+    }
+    mutating func deleteToEndOfLine() {
+        let oldSelectionRange = selectionRange
+        moveToRightEndOfLine()
+        selectionRange = oldSelectionRange.lowerBound..<caretPosition
+        replaceCharactersInCurrentSelection(with: "")
     }
 }
 

@@ -23,7 +23,7 @@ public final class CodeView: NSView {
     
     private var moveVerticalAxisX = CGFloat?.none
     private func findAxisXForVerticalMovement() -> CGFloat {
-        let p = source.storageSelection.range.upperBound
+        let p = source.caretPosition
         let line = source.storage.lines[p.line]
         let s = line[..<p.characterIndex]
         let ctline = CTLine.make(with: String(s), font: codeFont)
@@ -47,16 +47,14 @@ public final class CodeView: NSView {
         wantsLayer = true
     }
     private func process(_ n:TextTypingNote) {
-        print(#function)
-        print(n)
         switch n {
         case let .previewIncompleteText(content, selection):
-            source.replaceCharactersInCurrentSelection(with: "", selection: .allOfReplacementCharacters)
+            source.replaceCharactersInCurrentSelection(with: "")
             imeIncompleteText = IMEIncompleteText(content: content, selection: selection)
             setNeedsDisplay(bounds)
         case let .placeText(s):
             imeIncompleteText = nil
-            source.replaceCharactersInCurrentSelection(with: s, selection: .atEndOfReplacementCharactersWithZeroLength)
+            source.replaceCharactersInCurrentSelection(with: s)
             setNeedsDisplay(bounds)
         case let .issueEditingCommand(sel):
             switch sel {
@@ -78,25 +76,56 @@ public final class CodeView: NSView {
             case #selector(moveToRightEndOfLine(_:)):
                 moveVerticalAxisX = nil
                 source.moveToRightEndOfLine()
+            case #selector(moveToLeftEndOfLineAndModifySelection(_:)):
+                moveVerticalAxisX = nil
+                source.moveToLeftEndOfLineAndModifySelection()
+            case #selector(moveToRightEndOfLineAndModifySelection(_:)):
+                moveVerticalAxisX = nil
+                source.moveToRightEndOfLineAndModifySelection()
             case #selector(moveUp(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 source.moveUp(font: codeFont, at: moveVerticalAxisX!)
             case #selector(moveDown(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 source.moveDown(font: codeFont, at: moveVerticalAxisX!)
+            case #selector(moveUpAndModifySelection(_:)):
+                moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
+                source.moveUpAndModifySelection(font: codeFont, at: moveVerticalAxisX!)
+            case #selector(moveDownAndModifySelection(_:)):
+                moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
+                source.moveDownAndModifySelection(font: codeFont, at: moveVerticalAxisX!)
+            case #selector(moveToBeginningOfDocument(_:)):
+                source.moveToBeginningOfDocument()
+            case #selector(moveToBeginningOfDocumentAndModifySelection(_:)):
+                moveVerticalAxisX = nil
+                source.moveToBeginningOfDocumentAndModifySelection()
+            case #selector(moveToEndOfDocument(_:)):
+                moveVerticalAxisX = nil
+                source.moveToEndOfDocument()
+            case #selector(moveToEndOfDocumentAndModifySelection(_:)):
+                moveVerticalAxisX = nil
+                source.moveToEndOfDocumentAndModifySelection()
+            case #selector(selectAll(_:)):
+                moveVerticalAxisX = nil
+                source.selectAll()
             case #selector(insertNewline(_:)):
+                moveVerticalAxisX = nil
                 source.insertNewLine()
             case #selector(deleteBackward(_:)):
+                moveVerticalAxisX = nil
                 source.deleteBackward()
+            case #selector(deleteToBeginningOfLine(_:)):
+                moveVerticalAxisX = nil
+                source.deleteToBeginningOfLine()
+            case #selector(deleteToEndOfLine(_:)):
+                moveVerticalAxisX = nil
+                source.deleteToEndOfLine()
             default:
                 assert(false,"Unhandled editing command: \(sel)")
             }
             setNeedsDisplay(bounds)
         }
-        
-        print(source.storageSelection)
     }
-    
     public override init(frame f: NSRect) {
         super.init(frame: f)
         install()
@@ -122,33 +151,24 @@ public final class CodeView: NSView {
     }
     public override var isFlipped: Bool { true }
     public override func draw(_ dirtyRect: NSRect) {
-        print(#function)
         let h = codeFont.lineHeight
         let visibleLineIndices = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
         let lineIndicesToDraw = source.storage.lines.indices.clamped(to: visibleLineIndices)
-        let selectedRange = source.storageSelection.range
-        let selectedLineRange = source.storageSelection.lineRange
+        let selectedRange = source.selectionRange
+        let selectedLineRange = source.selectionLineRange
         let visibleSelectedLineRange = selectedLineRange.clamped(to: visibleLineIndices)
         let cgctx = NSGraphicsContext.current!.cgContext
-        func makeCTLine(_ s:String) -> CTLine {
-            let achs = NSAttributedString(string: s, attributes: [
-                NSAttributedString.Key.font : codeFont,
-                .foregroundColor: NSColor.white,
-            ])
-            return CTLineCreateWithAttributedString(achs)
-        }
         
         // Draw selection background.
-        print(selectedLineRange)
         for lineIndex in visibleSelectedLineRange {
-            let r = source.storageSelection.range
+            let r = source.selectionRange
             let line = source.storage.lines[lineIndex]
             let i0 = r.lowerBound.line == lineIndex ? r.lowerBound.characterIndex : line.startIndex
             let i1 = r.upperBound.line == lineIndex ? r.upperBound.characterIndex : line.endIndex
             let s1 = line[..<i0]
             let s2 = line[i0..<i1]
-            let ctline1 = makeCTLine(String(s1))
-            let ctline2 = makeCTLine(String(s2))
+            let ctline1 = CTLine.make(with: String(s1), font: codeFont)
+            let ctline2 = CTLine.make(with: String(s2), font: codeFont)
             let lineBounds1 = CTLineGetBoundsWithOptions(ctline1, [])
             let lineBounds2 = CTLineGetBoundsWithOptions(ctline2, [])
             let bgFrame = CGRect(
@@ -173,7 +193,7 @@ public final class CodeView: NSView {
                 return line.utf8Characters.replacingCharacters(in: chidx..<chidx, with: imeState.content)
             }
             let chs = charactersToDrawWithConsideringIME()
-            let ctline = makeCTLine(chs)
+            let ctline = CTLine.make(with: chs, font: codeFont)
             // First line need to be moved down by line-height
             // as CG places it above zero point.
             cgctx.textPosition = CGPoint(x: 0, y: h + h * CGFloat(lineIndex))
@@ -182,10 +202,10 @@ public final class CodeView: NSView {
         
         // Draw caret.
         if selectedRange.isEmpty {
-            let p = selectedRange.lowerBound
+            let p = source.caretPosition
             let line = source.storage.lines[p.line]
             let s = line[..<p.characterIndex]
-            let ctline = makeCTLine(String(s))
+            let ctline = CTLine.make(with: String(s), font: codeFont)
             let lineBounds = CTLineGetBoundsWithOptions(ctline, [])
             let x = lineBounds.width
             let y = -codeFont.descender + codeFont.lineHeight * CGFloat(p.line)
