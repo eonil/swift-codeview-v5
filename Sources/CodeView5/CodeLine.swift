@@ -13,6 +13,10 @@ struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
     typealias Index = String.Index
     typealias SubSequence = String.SubSequence
     
+//    /// It's really really hard to keep everything strictly in UTF-8 with `Swift.String`.
+//    /// Working with `String.Index` is very error prone.
+//    /// I just use raw bytes.
+//    private(set) var utf8CodeUnits = ContiguousArray<UInt8>()
     private(set) var utf8Characters = ""
     private(set) var precomputedCharacterCount = 0
     private(set) var precomputedUTF16CodeUnitCount = 0
@@ -33,10 +37,10 @@ struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
         precomputedCharacterCount = cc
         precomputedUTF16CodeUnitCount = utf16uc
     }
-    var startIndex: String.Index { utf8Characters.utf8.startIndex }
-    var endIndex: String.Index { utf8Characters.utf8.endIndex }
-    func index(after i: String.Index) -> String.Index { utf8Characters.utf8.index(after: i) }
-    func index(before i: String.Index) -> String.Index { utf8Characters.utf8.index(before: i) }
+    var startIndex: String.Index { utf8Characters.startIndex }
+    var endIndex: String.Index { utf8Characters.endIndex }
+    func index(after i: String.Index) -> String.Index { utf8Characters.index(after: i) }
+    func index(before i: String.Index) -> String.Index { utf8Characters.index(before: i) }
     subscript(_ i: String.Index) -> Character { utf8Characters[i] }
     subscript(_ r: Range<String.Index>) -> Substring { utf8Characters[r] }
     mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {

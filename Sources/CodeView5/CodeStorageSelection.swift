@@ -10,6 +10,8 @@ import Foundation
 
 struct CodeStorageSelection {
     var range = Range<CodeStoragePosition>(uncheckedBounds: (lower: .zero, upper: .zero))
+    /// Includes range.upperBound.line
+    var lineRange: Range<Int> { range.lowerBound.line..<range.upperBound.line+1 }
     var isEmpty: Bool {
         return range.lowerBound == range.upperBound
     }
