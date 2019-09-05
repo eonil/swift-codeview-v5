@@ -137,7 +137,7 @@ extension CodeSource {
         let q = r.upperBound
         caretPosition = q
         selectionRange = q..<q
-        print(q)
+        selectionAnchorPosition = q
     }
 //    /// - Parameter selection: What to select after replacement operation.
 //    mutating func replaceCharactersInCurrentSelection(with s:String, selection: SelectionReplacement) {
@@ -364,4 +364,19 @@ extension CodeSource {
         guard utf16Offset != kCFNotFound else { return nil }
         return line.utf8Characters.utf16.index(line.utf8Characters.startIndex, offsetBy: utf16Offset)
     }
+//    func printCaretAndSelection() {
+//        print("caret: \(stringify(caretPosition))")
+//        print("selection lower: \(stringify(selectionRange.lowerBound))")
+//        print("selection upper: \(stringify(selectionRange.upperBound))")
+//        if let x = selectionAnchorPosition {
+//            print("selection anchor: \(stringify(x))")
+//        }
+//    }
+//    func stringify(_ p:CodeStoragePosition) -> String {
+//        let line = storage.lines[p.line]
+//        let ss = line[..<p.characterIndex]
+//        let chs = Array(ss)
+//        return "\(chs)"
+//    }
 }
+

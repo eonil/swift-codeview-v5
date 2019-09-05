@@ -19,9 +19,7 @@
 
 /* Begin PBXFileReference section */
 		45242DE022E9D1FE0023B7B5 /* DemoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DemoView.swift; sourceTree = "<group>"; };
-		45242DE422F160C50023B7B5 /* CodeSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSource.swift; sourceTree = "<group>"; };
 		45242DE622F165C50023B7B5 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
-		45927B0E22E9CA6F005946EA /* IMPLTextInputClientView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IMPLTextInputClientView.swift; sourceTree = "<group>"; };
 		45927B1422E9CAAB005946EA /* CodeView5Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CodeView5Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		45927B1622E9CAAB005946EA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		45927B1822E9CAAB005946EA /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -29,18 +27,7 @@
 		45927B1D22E9CAAD005946EA /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
 		45927B1F22E9CAAD005946EA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		45927B2022E9CAAD005946EA /* CodeView5Demo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CodeView5Demo.entitlements; sourceTree = "<group>"; };
-		45927B2622E9CACD005946EA /* CodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeView.swift; sourceTree = "<group>"; };
 		BA17B70C231CD85400A41B6C /*  */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ""; sourceTree = SOURCE_ROOT; };
-		BA17B710231CE0EE00A41B6C /* CodeStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeStorage.swift; sourceTree = "<group>"; };
-		BA1BAC3B231FC6B4007E8DE5 /* CodeSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeSelection.swift; sourceTree = "<group>"; };
-		BAE35E8F2320149D00F1813D /* CodeLineID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeLineID.swift; sourceTree = "<group>"; };
-		BAE35E912320157C00F1813D /* Layout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Layout.swift; sourceTree = "<group>"; };
-		BAE35E9323209FF200F1813D /* CodeLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeLine.swift; sourceTree = "<group>"; };
-		BAE35E952320A36E00F1813D /* CodeStorageSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeStorageSelection.swift; sourceTree = "<group>"; };
-		BAF6F3BE231FB8C400A4C86F /* TextTyping.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextTyping.swift; sourceTree = "<group>"; };
-		BAF6F3BF231FB8C400A4C86F /* TextTypingView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextTypingView.swift; sourceTree = "<group>"; };
-		BAF6F3C0231FB8C400A4C86F /* TextTypingNote.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextTypingNote.swift; sourceTree = "<group>"; };
-		BAF6F3C1231FB8C400A4C86F /* TextTypingControl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TextTypingControl.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,7 +49,6 @@
 			children = (
 				45242DE622F165C50023B7B5 /* README.md */,
 				BA17B70C231CD85400A41B6C /*  */,
-				BA17B70D231CD87100A41B6C /* CodeView5 */,
 				45927B1522E9CAAB005946EA /* CodeView5Demo */,
 				45927B0322E9CA5E005946EA /* Products */,
 				45927B2422E9CAB8005946EA /* Frameworks */,
@@ -96,27 +82,6 @@
 			children = (
 			);
 			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		BA17B70D231CD87100A41B6C /* CodeView5 */ = {
-			isa = PBXGroup;
-			children = (
-				45927B2622E9CACD005946EA /* CodeView.swift */,
-				45242DE422F160C50023B7B5 /* CodeSource.swift */,
-				BA17B710231CE0EE00A41B6C /* CodeStorage.swift */,
-				BAE35E952320A36E00F1813D /* CodeStorageSelection.swift */,
-				BAE35E9323209FF200F1813D /* CodeLine.swift */,
-				BA1BAC3B231FC6B4007E8DE5 /* CodeSelection.swift */,
-				BAE35E8F2320149D00F1813D /* CodeLineID.swift */,
-				BAE35E912320157C00F1813D /* Layout.swift */,
-				BAF6F3BE231FB8C400A4C86F /* TextTyping.swift */,
-				BAF6F3C1231FB8C400A4C86F /* TextTypingControl.swift */,
-				BAF6F3C0231FB8C400A4C86F /* TextTypingNote.swift */,
-				BAF6F3BF231FB8C400A4C86F /* TextTypingView.swift */,
-				45927B0E22E9CA6F005946EA /* IMPLTextInputClientView.swift */,
-			);
-			name = CodeView5;
-			path = Sources/CodeView5;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
