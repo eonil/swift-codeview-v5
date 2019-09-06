@@ -9,11 +9,40 @@ Design Choices
 - Aims for best maintainanceability. Simplicity over performance.
 - Aims "good enough" performance. Not best performance.
 - No word-wrap. 
-- No "complete" level of IME support. I implemented IME support, but do not invest much time on it. 
+- No "complete" level of IME support. I implemented IME support, but do not invest much time on it.
+- This is a quick bootstrapping implementation. Do not try to be perfect.
 
 - Unidirectional I/O. User input simply gets delivered to main loop
   and makes change in data source, and changed source will be delivered
-  to renderer. macOS IME requires immediate 
+  to renderer. macOS IME requires immediate
+  
+Supported Features
+-----------------------
+- Basic text editing.
+- Breakpoint marker editing.
+- Select by mouse.
+
+Planned Features
+----------------------
+- Jump to line. (scrolling)
+- Undo/redo.
+- Text snapshot import & export.
+- Copy & paste.
+  
+Desired but Avoided Goals
+-------------------------------
+- Tracking nesting structures.
+- Asynchronous editing.
+- Line number rendering.
+
+Non-Goals
+-----------------
+- Word wrap.
+
+Designed Limits
+-------------------
+- Maximum line count: `CodeLineKey.max`. (a.k.a. `Int32` at this point)
+
 
 Unidirectional I/O & IME
 ----------------------------

@@ -12,21 +12,46 @@ import SBTL
 import CodeView5CustomNSString
 
 public struct CodeStorage {
-    private var lineCharacterCounts = SBTL<Int>()
-    private var lineUTF8Characters = List<String>()
-    private var lineUTF16CodeUnitCounts = SBTL<Int>()
+    /// Unique keys for each lines.
+    /// This is unique only in current storage scope.
+    private var lineKeyList = List<CodeLineKey>()
+    /// Line unique key manager.
+    private var lineKeyManagement = CodeLineKeyManagement()
     
-    public var characterCount: Int { lineCharacterCounts.sum }
-    public var utf16CodeUnitCount: Int { lineUTF16CodeUnitCounts.sum }
+    private var lineContentList = List<String>()
+    private var lineCharacterCountList = SBTL<Int>()
+    private var lineUTF16CodeUnitCountList = SBTL<Int>()
+    private var lineCharacterStyleList = List<[CodeStyle]>()
+    
+    private var breakpointLineKeys = SortedSet<CodeLineKey>()
+    
+    public init() {}
+    /// Total character count in this storage.
+    public var characterCount: Int { lineCharacterCountList.sum }
+    /// Total code unit count in this storage.
+    public var utf16CodeUnitCount: Int { lineUTF16CodeUnitCountList.sum }
     public func utf16CodeUnit(at i:Int) -> UTF16.CodeUnit {
-        let (i,x) = lineUTF16CodeUnitCounts.indexAndOffset(for: i)
-        let utf8s = lineUTF8Characters[i]
+        let (i,x) = lineUTF16CodeUnitCountList.indexAndOffset(for: i)
+        let utf8s = lineContentList[i]
         let utf16s = utf8s.utf16
         let z = utf16s.index(utf16s.startIndex, offsetBy: x)
         let ch = utf16s[z]
         return ch
     }
-    
+    /// All keys in this storage for each lines at same indices.
+    public var keys: Keys {
+        get { Keys(of: self) }
+        set(x) { self = x.core }
+    }
+    public struct Keys: RandomAccessCollection {
+        fileprivate private(set) var core: CodeStorage
+        public init() { core = CodeStorage() }
+        public init(of c: CodeStorage) { core = c }
+        public var startIndex: Int { 0 }
+        public var endIndex: Int { core.lineCharacterCountList.count }
+        public subscript(_ i:Int) -> CodeLineKey { core.lineKeyList[i] }
+    }
+    /// All lines in this storage.
     public var lines: Lines {
         get { Lines(of: self) }
         set(x) { self = x.core }
@@ -36,24 +61,38 @@ public struct CodeStorage {
         public init() { core = CodeStorage() }
         public init(of c: CodeStorage) { core = c }
         public var startIndex: Int { 0 }
-        public var endIndex: Int { core.lineCharacterCounts.count }
+        public var endIndex: Int { core.lineCharacterCountList.count }
         public subscript(_ i:Int) -> CodeLine {
             get {
                 return CodeLine(
-                    utf8Characters: core.lineUTF8Characters[i],
-                    precomputedCharacterCount: core.lineCharacterCounts[i],
-                    precomputedUTF16CodeUnitCount: core.lineUTF16CodeUnitCounts[i])
+                    utf8Characters: core.lineContentList[i],
+                    precomputedCharacterCount: core.lineCharacterCountList[i],
+                    precomputedUTF16CodeUnitCount: core.lineUTF16CodeUnitCountList[i],
+                    characterStyles: core.lineCharacterStyleList[i])
             }
             set(x) {
-                core.lineUTF8Characters[i] = x.content
-                core.lineCharacterCounts[i] = x.precomputedCharacterCount
-                core.lineUTF16CodeUnitCounts[i] = x.precomputedUTF16CodeUnitCount
+                core.lineContentList[i] = x.content
+                core.lineCharacterCountList[i] = x.precomputedCharacterCount
+                core.lineUTF16CodeUnitCountList[i] = x.precomputedUTF16CodeUnitCount
+                core.lineCharacterStyleList[i] = x.characterStyles
             }
         }
         public mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
-            core.lineUTF8Characters.replaceSubrange(subrange, with: newElements.lazy.map({ $0.content }))
-            core.lineCharacterCounts.replaceSubrange(subrange, with: newElements.lazy.map({ $0.precomputedCharacterCount }))
-            core.lineUTF16CodeUnitCounts.replaceSubrange(subrange, with: newElements.lazy.map({ $0.precomputedUTF16CodeUnitCount }))
+            /// Update keys.
+            let q = subrange.relative(to: self)
+            for k in core.lineKeyList[q] {
+                core.breakpointLineKeys.remove(k)
+                core.lineKeyManagement.deallocate(k)
+            }
+            core.lineKeyList.removeSubrange(q)
+            let newKeys = core.lineKeyManagement.allocate(newElements.count)
+            core.lineKeyList.insert(contentsOf: newKeys, at: q.lowerBound)
+            
+            /// Update contents.
+            core.lineContentList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.content }))
+            core.lineCharacterCountList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.precomputedCharacterCount }))
+            core.lineUTF16CodeUnitCountList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.precomputedUTF16CodeUnitCount }))
+            core.lineCharacterStyleList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.characterStyles }))
         }
     }
 }
@@ -112,6 +151,38 @@ extension CodeStorage {
             let chidx = lastLine.content.utf8.index(lastLine.content.startIndex, offsetBy: lastChars.utf8.count)
             return p..<CodeStoragePosition(line: p.line + lastOffset, characterIndex: chidx)
         }
+    }
+}
+
+// MARK: BreakPoint Query
+public extension CodeStorage {
+    /// Breakpoints need to be set only at debugger startup.
+    /// - Complexity: O(n) where n is number of lines.
+    func breakPointLineIndices() -> [Int] {
+        let ks = Set(breakpointLineKeys)
+        let idxs = lineKeyList.enumerated().compactMap({ i,k in ks.contains(k) ? i : nil })
+        return idxs
+    }
+}
+
+// MARK: BreakPoint Editing
+extension CodeStorage {
+    func containsBreakPoint(at lineIndex: Int) -> Bool {
+        let k = lineKeyList[lineIndex]
+        return breakpointLineKeys.contains(k)
+    }
+    mutating func toggleBreakPoint(at line: Int) {
+        let k = lineKeyList[line]
+        if breakpointLineKeys.contains(k) { breakpointLineKeys.remove(k) }
+        else { breakpointLineKeys.insert(k) }
+    }
+    mutating func insertBreakPoint(at line: Int) -> CodeLineKey {
+        let k = lineKeyList[line]
+        breakpointLineKeys.insert(k)
+        return k
+    }
+    mutating func removeBreakPoint(for k: CodeLineKey) {
+        breakpointLineKeys.remove(k)
     }
 }
 

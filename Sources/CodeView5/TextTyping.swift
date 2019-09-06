@@ -29,7 +29,14 @@ final class TextTyping {
     func deactivate() {
         context.deactivate()
     }
-    func processKeyDown(_ e:NSEvent) {
+//    /// Complete current completion session by accepting any text in completion.
+//    func complete() {
+//        context.discardMarkedText()
+//        if client.isMarked {
+//            note.send(.placeText(client.markedTextBuffer as String))
+//        }
+//    }
+    func processEvent(_ e:NSEvent) {
         context.handleEvent(e)
     }
 }
@@ -42,12 +49,12 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
         note.send(.issueEditingCommand(selector))
     }
     
-    private var isMarked = false
+    private(set) var isMarked = false
     /// Marked text.
-    private var markedTextBuffer = NSString()
+    private(set) var markedTextBuffer = NSString()
     /// Selection position in marked text.
     /// This is separated from selection in document.
-    private var markedTextSelectedRange = NSRange(location: 0, length: 0)
+    private(set) var markedTextSelectedRange = NSRange(location: 0, length: 0)
     
     func insertText(_ string: Any, replacementRange: NSRange) {
         /// Insert into target position.

@@ -80,7 +80,6 @@ public final class CodeView: NSView {
             .receive(on: ImmediateScheduler.shared)
             .sink(receiveValue: { [weak self] in self?.process($0) })
             .store(in: &pipes)
-        wantsLayer = true
         rendering.config.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? rendering.config.font
     }
     private func process(_ n:TextTypingNote) {
@@ -151,6 +150,12 @@ public final class CodeView: NSView {
             case #selector(insertTab(_:)):
                 moveVerticalAxisX = nil
                 source.insertTab()
+            case #selector(insertBacktab(_:)):
+                moveVerticalAxisX = nil
+                source.insertBacktab()
+            case #selector(deleteForward(_:)):
+                moveVerticalAxisX = nil
+                source.deleteForward()
             case #selector(deleteBackward(_:)):
                 moveVerticalAxisX = nil
                 source.deleteBackward()
@@ -166,6 +171,7 @@ public final class CodeView: NSView {
             }
             setNeedsDisplay(bounds)
         }
+        note.send(.source(source))
     }
     public override init(frame f: NSRect) {
         super.init(frame: f)
@@ -185,7 +191,45 @@ public final class CodeView: NSView {
         return super.resignFirstResponder()
     }
     public override func keyDown(with event: NSEvent) {
-        typing.processKeyDown(event)
+        typing.processEvent(event)
+    }
+    public override func mouseDown(with event: NSEvent) {
+        typing.processEvent(event)
+        let pw = event.locationInWindow
+        let pv = convert(pw, from: nil)
+        let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
+        if pv.x < layout.config.breakpointWidth {
+            guard let i = layout.lineIndex(at: pv.y) else { return }
+            // Toggle breakpoint.
+            source.toggleBreakPoint(at: i)
+        }
+        else {
+            guard let p = layout.position(at: pv) else { return }
+            source.caretPosition = p
+            source.selectionRange = p..<p
+            source.selectionAnchorPosition = p
+        }
+        setNeedsDisplay(bounds)
+        note.send(.source(source))
+    }
+    public override func mouseDragged(with event: NSEvent) {
+        typing.processEvent(event)
+        // Update caret and selection by mouse dragging.
+        let pw = event.locationInWindow
+        let pv = convert(pw, from: nil)
+        let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
+        guard let p = layout.position(at: pv) else { return }
+        let oldSource = source
+        source.modifySelectionWithAnchor(to: p)
+        // Render only if caret or selection has been changed.
+        let isRenderingInvalidated = source.caretPosition != oldSource.caretPosition || source.selectionRange != oldSource.selectionRange
+        if isRenderingInvalidated { setNeedsDisplay(bounds) }
+        note.send(.source(source))
+    }
+    public override func mouseUp(with event: NSEvent) {
+        typing.processEvent(event)
+        source.selectionAnchorPosition = nil
+        note.send(.source(source))
     }
     
     public override var intrinsicContentSize: NSSize {

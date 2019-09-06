@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import BTree
 
 /// Stores and manages semantic information of code text.
 ///
@@ -51,7 +52,11 @@ public struct CodeSource {
     
     /// When you start selection by moving carets, this value will be set
     /// to mark starting position of the selection.
-    private var selectionAnchorPosition = CodeStoragePosition?.none
+    public var selectionAnchorPosition = CodeStoragePosition?.none {
+        willSet(x) {
+            precondition(x == nil || isValidPosition(x!))
+        }
+    }
     
     /// Selected character range over multiple lines.
     ///
@@ -68,8 +73,12 @@ public struct CodeSource {
     }
     /// Includes range.upperBound.line
     public var selectionLineRange: Range<Int> { selectionRange.lowerBound.line..<selectionRange.upperBound.line+1 }
-    
+
 //    var styles = [CodeLine]()
+    
+    mutating func toggleBreakPoint(at line: Int) {
+        storage.toggleBreakPoint(at: line)
+    }
 }
 public extension CodeSource {
     var startPosition: CodeStoragePosition { .zero }
@@ -122,10 +131,7 @@ public extension CodeSource {
         // Update storage.
         storage.removeCharacters(in: selectionRange)
         let r = storage.insertCharacters(s, at: selectionRange.lowerBound)
-        // Always keep one line at least.
-        if storage.lines.isEmpty {
-            storage.lines.append(CodeLine())
-        }
+        
         // Move carets and selection.
         let q = r.upperBound
         caretPosition = q
@@ -152,7 +158,7 @@ public extension CodeSource {
 import AppKit
 import CoreText
 extension CodeSource {
-    private mutating func modifySelectionWithAnchor(to p:CodeStoragePosition) {
+    mutating func modifySelectionWithAnchor(to p:CodeStoragePosition) {
         let oldAnchorPosition = selectionAnchorPosition ?? caretPosition
         let a = min(p, oldAnchorPosition)
         let b = max(p, oldAnchorPosition)
@@ -306,14 +312,31 @@ extension CodeSource {
         replaceCharactersInCurrentSelection(with: "\n")
         if config.autoIndent {
             let upLine = storage.lines[caretPosition.line-1]
-            let n = upLine.countPrefix(config.tabReplacement)
+            let tabReplacement = config.makeTabReplacement()
+            let n = upLine.countPrefix(tabReplacement)
             for _ in 0..<n {
-                replaceCharactersInCurrentSelection(with: config.tabReplacement)
+                replaceCharactersInCurrentSelection(with: tabReplacement)
             }
         }
     }
     mutating func insertTab() {
-        replaceCharactersInCurrentSelection(with: config.tabReplacement)
+        let tabReplacement = config.makeTabReplacement()
+        replaceCharactersInCurrentSelection(with: tabReplacement)
+    }
+    mutating func insertBacktab() {
+        let line = storage.lines[caretPosition.line]
+        let n = line.countPrefix(" ")
+        guard n > 0 else { return }
+        let m = (n - 1) / config.tabSpaceCount
+        let k = n - m * config.tabSpaceCount
+        for _ in 0..<k {
+            deleteBackward()
+        }
+//        replaceCharactersInCurrentSelection(with: config.tabReplacement)
+    }
+    mutating func deleteForward() {
+        moveRightAndModifySelection()
+        replaceCharactersInCurrentSelection(with: "")
     }
     mutating func deleteBackward() {
         moveLeftAndModifySelection()

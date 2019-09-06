@@ -16,4 +16,7 @@ extension CTLine {
         ])
         return CTLineCreateWithAttributedString(x)
     }
+    var bounds: CGRect {
+        return CTLineGetBoundsWithOptions(self, [])
+    }
 }

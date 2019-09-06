@@ -18,6 +18,15 @@
           "revision": "f0e4c0f877ddc635839fb606a7ef14d6a056f530",
           "version": null
         }
+      },
+      {
+        "package": "TestUtil",
+        "repositoryURL": "https://github.com/eonil/swift-test-util",
+        "state": {
+          "branch": "master",
+          "revision": "3c803bc3e2a769280ec6ac4f6dc4f5f2270b46c3",
+          "version": null
+        }
       }
     ]
   },

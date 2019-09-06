@@ -18,7 +18,7 @@ import Foundation
 /// - Provides O(1) access to UTF-16 code unit count.
 ///
 /// - Note:
-///     This type almost equal with `String`, but does not conform `StringProtocol`
+///     This type is like `String`, but does not conform `StringProtocol`
 ///     Because it's been prohibited by Swift designers.
 ///
 public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
@@ -30,21 +30,26 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
     private(set) var content = ""
     private(set) var precomputedCharacterCount = 0
     private(set) var precomputedUTF16CodeUnitCount = 0
-
+    /// Styles matches to each character at same offset.
+    private(set) var characterStyles = [CodeStyle]()
+    
     public init() {}
     public init(_ s:String) {
+        let c = s.count
         content = s
         content.makeContiguousUTF8()
         assert(content.isContiguousUTF8)
-        precomputedCharacterCount = s.count
+        precomputedCharacterCount = c
         precomputedUTF16CodeUnitCount = s.utf16.count
+        characterStyles = Array(repeatElement(.plain, count: c))
     }
-    init(utf8Characters s: String, precomputedCharacterCount cc: Int, precomputedUTF16CodeUnitCount utf16uc: Int) {
+    init(utf8Characters s: String, precomputedCharacterCount cc: Int, precomputedUTF16CodeUnitCount utf16uc: Int, characterStyles ss: [CodeStyle]) {
         content = s
         content.makeContiguousUTF8()
         assert(content.isContiguousUTF8)
         precomputedCharacterCount = cc
         precomputedUTF16CodeUnitCount = utf16uc
+        characterStyles = ss
     }
     
     public var count: Int { precomputedCharacterCount }
@@ -66,10 +71,22 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
         assert(content.isContiguousUTF8)
         precomputedCharacterCount += -removingCharacterCount + insertingCharacterCount
         precomputedUTF16CodeUnitCount += -removingUTF16CodeUnitCount + insertingUTF16CodeUnitCount
+        let q = subrange.relative(to: content)
+        let a = content.distance(from: content.startIndex, to: q.lowerBound)
+        let b = content.distance(from: q.lowerBound, to: q.upperBound)
+        characterStyles.replaceSubrange(a..<(a+b), with: repeatElement(.plain, count: insertingCharacterCount))
     }
 }
 
 extension CodeLine {
+    func countPrefix(_ ch:Character) -> Int {
+        var c = 0
+        for ch1 in content {
+            if ch1 == ch { c += 1 }
+            else { break }
+        }
+        return c
+    }
     func countPrefix(_ s:String) -> Int {
         let chc = s.count
         var c = 0
