@@ -11,7 +11,8 @@ import AppKit
 import CodeView5
 
 final class DemoView: NSView {
-    private let impl = CodeView()
+    private let scrollCodeView = ScrollCodeView()
+//    private let codeView = CodeView()
 
     public override init(frame f: NSRect) {
         super.init(frame: f)
@@ -24,19 +25,25 @@ final class DemoView: NSView {
 
     public override var acceptsFirstResponder: Bool { return true }
     public override func becomeFirstResponder() -> Bool {
-        return window?.makeFirstResponder(impl) ?? false
+        return window?.makeFirstResponder(scrollCodeView) ?? false
     }
 
     ///
 
     private func install() {
-        impl.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(impl)
+        scrollCodeView.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(scrollCodeView)
         NSLayoutConstraint.activate([
-            impl.leftAnchor.constraint(equalTo: leftAnchor),
-            impl.rightAnchor.constraint(equalTo: rightAnchor),
-            impl.topAnchor.constraint(equalTo: topAnchor),
-            impl.bottomAnchor.constraint(equalTo: bottomAnchor),
+            scrollCodeView.leftAnchor.constraint(equalTo: leftAnchor),
+            scrollCodeView.rightAnchor.constraint(equalTo: rightAnchor),
+            scrollCodeView.topAnchor.constraint(equalTo: topAnchor),
+            scrollCodeView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
+//        scrollView.documentView = codeView
+//        codeView.translatesAutoresizingMaskIntoConstraints = false
+//        NSLayoutConstraint.activate([
+//            codeView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+//            codeView.widthAnchor.constraint(greaterThanOrEqualTo: scrollView.widthAnchor),
+//        ])
     }
 }

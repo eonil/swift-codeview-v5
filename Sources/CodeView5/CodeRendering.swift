@@ -11,9 +11,6 @@ import AppKit
 /// Renders `CodeSource` in a flipped space.
 struct CodeRendering {
     var config = CodeLayout.Config()
-    func measureContentSize(source :CodeSource, imeState: IMEState?) -> CGSize {
-        return CGSize(width: 0, height: config.lineHeight * CGFloat(source.storage.lines.count))
-    }
     func draw(source: CodeSource, imeState: IMEState?, in dirtyRect: CGRect, with cgctx: CGContext) {
         let h = config.lineHeight
         let visibleLineIndices = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
@@ -70,8 +67,16 @@ struct CodeRendering {
         }
         for lineIndex in visibleExistingLineIndices {
             let s = charactersToDrawWithConsideringIME(of: lineIndex)
-            sssn.drawText(s, at: lineIndex)
+            let f = layout.frameOfTextInLine(at: lineIndex)
+            sssn.drawText(s, in: f)
         }
+        // Draw line numbers.
+        for lineIndex in visibleExistingLineIndices {
+            let s = "\(lineIndex)"
+            let f = layout.frameOfLineNumber(at: lineIndex)
+            sssn.drawText(s, in: f)
+        }
+        
 //        // Draw debug info.
 //        for lineIndex in visibleExistingLineIndices {
 //            let s = "\(source.storage.keys[lineIndex])"
@@ -93,13 +98,23 @@ private struct CodeRenderingSession {
     let context: CGContext
     let source: CodeSource
     let imeState: IMEState?
-    func drawText(_ s:String, color c: NSColor = .textColor, indentation x: CGFloat = 0, at lineOffset: Int) {
+//    func drawText(_ s:String, color c: NSColor = .textColor, indentation x: CGFloat = 0, at lineOffset: Int) {
+//        let ctline = CTLine.make(with: s, font: config.font)
+//        // First line need to be moved down by line-height
+//        // as CG places it above zero point.
+//        context.textPosition = CGPoint(
+//            x: config.breakpointWidth + x,
+//            y: config.font.ascender + config.lineHeight * CGFloat(lineOffset))
+//        context.setFillColor(c.cgColor)
+//        CTLineDraw(ctline, context)
+//    }
+    func drawText(_ s:String, color c: NSColor = .textColor, in f:CGRect) {
         let ctline = CTLine.make(with: s, font: config.font)
         // First line need to be moved down by line-height
         // as CG places it above zero point.
         context.textPosition = CGPoint(
-            x: config.breakpointWidth + x,
-            y: config.font.ascender + config.lineHeight * CGFloat(lineOffset))
+            x: f.minX,
+            y: config.font.ascender + f.minY)
         context.setFillColor(c.cgColor)
         CTLineDraw(ctline, context)
     }

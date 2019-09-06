@@ -171,6 +171,14 @@ public final class CodeView: NSView {
             }
             setNeedsDisplay(bounds)
         }
+        // Force to resize for new source state.
+        invalidateIntrinsicContentSize()
+        layoutSubtreeIfNeeded()
+        // Scroll current line to be visible.
+        let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
+        let f = layout.frameOfLine(at: source.caretPosition.line)
+        scrollToVisible(f)
+        // Dispatch note.
         note.send(.source(source))
     }
     public override init(frame f: NSRect) {
@@ -199,12 +207,12 @@ public final class CodeView: NSView {
         let pv = convert(pw, from: nil)
         let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
         if pv.x < layout.config.breakpointWidth {
-            guard let i = layout.lineIndex(at: pv.y) else { return }
+            let i = layout.clampingLineIndex(at: pv.y) 
             // Toggle breakpoint.
             source.toggleBreakPoint(at: i)
         }
         else {
-            guard let p = layout.position(at: pv) else { return }
+            let p = layout.clampingPosition(at: pv)
             source.caretPosition = p
             source.selectionRange = p..<p
             source.selectionAnchorPosition = p
@@ -214,11 +222,12 @@ public final class CodeView: NSView {
     }
     public override func mouseDragged(with event: NSEvent) {
         typing.processEvent(event)
+        autoscroll(with: event)
         // Update caret and selection by mouse dragging.
         let pw = event.locationInWindow
         let pv = convert(pw, from: nil)
         let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
-        guard let p = layout.position(at: pv) else { return }
+        let p = layout.clampingPosition(at: pv)
         let oldSource = source
         source.modifySelectionWithAnchor(to: p)
         // Render only if caret or selection has been changed.
@@ -233,7 +242,9 @@ public final class CodeView: NSView {
     }
     
     public override var intrinsicContentSize: NSSize {
-        return rendering.measureContentSize(source: source, imeState: imeState)
+        let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
+        let z = layout.measureContentSize(source: source, imeState: imeState)
+        return CGSize(width: 300, height: z.height)
     }
     public override var isFlipped: Bool { true }
     public override func draw(_ dirtyRect: NSRect) {
@@ -241,4 +252,3 @@ public final class CodeView: NSView {
         rendering.draw(source: source, imeState: imeState, in: dirtyRect, with: cgctx)
     }
 }
-

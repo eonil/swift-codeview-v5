@@ -20,34 +20,70 @@ struct CodeLayout {
     let source: CodeSource
     let imeState: IMEState?
     let boundingWidth: CGFloat
-    
-    /// Finds offset of a line at a point.
-    /// - Returns: `nil` if supplied point is not belong to any line.
-    func lineIndex(at y:CGFloat) -> Int? {
+
+    func measureContentSize(source :CodeSource, imeState: IMEState?) -> CGSize {
+        return CGSize(width: 500, height: config.lineHeight * CGFloat(source.storage.lines.count))
+    }
+    /// Finds index to a line WITHOUT considering existence of target line.
+    func potentialLineIndex(at y:CGFloat) -> Int {
         let h = config.lineHeight
         let n = (y / h).rounded(.down)
-        guard let i = Int(exactly: n) else { return nil }
-        guard source.storage.lines.indices.contains(i) else { return nil }
+        let i = Int(exactly: n)!
         return i
+    }
+    /// Finds index to a line at a point.
+    func clampingLineIndex(at y:CGFloat) -> Int {
+        let i = potentialLineIndex(at: y)
+        return i.clamping(in: source.storage.lines.indices)
     }
     /// Finds position of a character in a line at a point.
     /// - Returns: `nil` if supplied point is not belong to any character in the line.
-    func characterIndex(at x:CGFloat, inLineAt offset:Int, with f:NSFont) -> String.Index? {
+    func clampingCharacterIndex(at x:CGFloat, inLineAt offset:Int, with f:NSFont) -> String.Index {
         let x1 = x - config.breakpointWidth
         let hh = config.lineHeight / 2
         let line = source.storage.lines[offset]
         let ctline = CTLine.make(with: line.content, font: f)
-        let utf16Offset = CTLineGetStringIndexForPosition(ctline, CGPoint(x: x1, y: hh))
-        guard utf16Offset != kCFNotFound else { return nil }
-        return line.content.utf16.index(line.content.utf16.startIndex, offsetBy: utf16Offset)
+        let f = ctline.bounds
+        let xs = f.minX...f.maxX
+        if xs.contains(x1) {
+            let utf16Offset = CTLineGetStringIndexForPosition(ctline, CGPoint(x: x1, y: hh))
+            precondition(utf16Offset != kCFNotFound)
+            let i = line.content.utf16.index(line.content.utf16.startIndex, offsetBy: utf16Offset)
+            return i
+        }
+        else {
+            let s = line.content
+            if x1 <= xs.lowerBound { return s.startIndex }
+            if x1 >= xs.upperBound { return s.endIndex }
+            fatalError("Unreachable code.")
+        }
     }
     /// Finds position of a character and its line at a point.
     /// - Returns: `nil` if supplied point is not belong to any character in any line.
-    func position(at p:CGPoint) -> CodeStoragePosition? {
-        guard let lineIndex = lineIndex(at: p.y) else { return nil }
-        guard let characterIndex = characterIndex(at: p.x, inLineAt: lineIndex, with: config.font) else { return nil }
-        return CodeStoragePosition(line: lineIndex, characterIndex: characterIndex)
+    func clampingPosition(at p:CGPoint) -> CodeStoragePosition {
+        let lineIndex = potentialLineIndex(at: p.y)
+        let storedlineIndices = source.storage.lines.indices
+        if storedlineIndices.contains(lineIndex) {
+            let charIndex = clampingCharacterIndex(at: p.x, inLineAt: lineIndex, with: config.font)
+            return CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+        }
+        else {
+            if lineIndex < storedlineIndices.lowerBound {
+                let lineIndex = storedlineIndices.first!
+                let lineContent = source.storage.lines[lineIndex].content
+                let charIndex = lineContent.startIndex
+                return CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+            }
+            if lineIndex >= storedlineIndices.upperBound {
+                let lineIndex = storedlineIndices.last!
+                let lineContent = source.storage.lines[lineIndex].content
+                let charIndex = lineContent.endIndex
+                return CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+            }
+            fatalError("Unreachable code.")
+        }
     }
+    
     func frameOfLine(at offset: Int) -> CGRect {
         let w = boundingWidth
         let h = config.lineHeight
@@ -59,6 +95,10 @@ struct CodeLayout {
         let s = source.storage.lines[offset].content
         let r = s.startIndex..<s.endIndex
         return frameOfTextSubrange(r, inLineAt: offset)
+    }
+    func frameOfLineNumber(at offset: Int) -> CGRect {
+        let lineFrame = frameOfLine(at: offset)
+        return lineFrame.divided(atDistance: config.breakpointWidth, from: .minXEdge).slice
     }
     /// This does not consider IME state.
     func frameOfTextSubrange(_ r:Range<String.Index>, inLineAt offset: Int) -> CGRect {
@@ -103,3 +143,12 @@ struct CodeLayout {
         return CGRect(x: 0, y: y, width: w, height: h)
     }
 }
+
+private extension Comparable {
+    func clamping(in r:Range<Self>) -> Self {
+        if self < r.lowerBound { return r.lowerBound }
+        if self > r.upperBound { return r.upperBound }
+        return self
+    }
+}
+
