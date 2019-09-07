@@ -23,8 +23,6 @@ public struct CodeStorage {
     private var lineUTF16CodeUnitCountList = SBTL<Int>()
     private var lineCharacterStyleList = List<[CodeStyle]>()
     
-    private var breakpointLineKeys = SortedSet<CodeLineKey>()
-    
     public init() {}
     /// Total character count in this storage.
     public var characterCount: Int { lineCharacterCountList.sum }
@@ -80,10 +78,7 @@ public struct CodeStorage {
         public mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
             /// Update keys.
             let q = subrange.relative(to: self)
-            for k in core.lineKeyList[q] {
-                core.breakpointLineKeys.remove(k)
-                core.lineKeyManagement.deallocate(k)
-            }
+            for k in core.lineKeyList[q] { core.lineKeyManagement.deallocate(k) }
             core.lineKeyList.removeSubrange(q)
             let newKeys = core.lineKeyManagement.allocate(newElements.count)
             core.lineKeyList.insert(contentsOf: newKeys, at: q.lowerBound)
@@ -151,38 +146,6 @@ extension CodeStorage {
             let chidx = lastLine.content.utf8.index(lastLine.content.startIndex, offsetBy: lastChars.utf8.count)
             return p..<CodeStoragePosition(line: p.line + lastOffset, characterIndex: chidx)
         }
-    }
-}
-
-// MARK: BreakPoint Query
-public extension CodeStorage {
-    /// Breakpoints need to be set only at debugger startup.
-    /// - Complexity: O(n) where n is number of lines.
-    func breakPointLineIndices() -> [Int] {
-        let ks = Set(breakpointLineKeys)
-        let idxs = lineKeyList.enumerated().compactMap({ i,k in ks.contains(k) ? i : nil })
-        return idxs
-    }
-}
-
-// MARK: BreakPoint Editing
-extension CodeStorage {
-    func containsBreakPoint(at lineIndex: Int) -> Bool {
-        let k = lineKeyList[lineIndex]
-        return breakpointLineKeys.contains(k)
-    }
-    mutating func toggleBreakPoint(at line: Int) {
-        let k = lineKeyList[line]
-        if breakpointLineKeys.contains(k) { breakpointLineKeys.remove(k) }
-        else { breakpointLineKeys.insert(k) }
-    }
-    mutating func insertBreakPoint(at line: Int) -> CodeLineKey {
-        let k = lineKeyList[line]
-        breakpointLineKeys.insert(k)
-        return k
-    }
-    mutating func removeBreakPoint(for k: CodeLineKey) {
-        breakpointLineKeys.remove(k)
     }
 }
 

@@ -8,9 +8,12 @@
 import Foundation
 
 extension Range where Bound == CodeStoragePosition {
+    var lineRange: Range<Int> {
+        return lowerBound.line..<upperBound.line
+    }
     /// This always include ending line index.
     var includedLineRange: Range<Int> {
-        lowerBound.line..<upperBound.line+1
+        return lowerBound.line..<upperBound.line+1
     }
     /// - Parameter lineIndexInStorage:
     ///     Index to a line in `CodeStorage.lines`.

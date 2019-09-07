@@ -72,9 +72,12 @@ public struct CodeSource {
         }
     }
 
-    mutating func toggleBreakPoint(at line: Int) {
-        storage.toggleBreakPoint(at: line)
-    }
+    
+    /// - TODO: Optimize this.
+    /// Need to be optimized.
+    /// This would be okay for a while as most people do not install
+    /// too many break-points.
+    public private(set) var breakpointLineIndices = Set<Int>()
 }
 public extension CodeSource {
     var startPosition: CodeStoragePosition { .zero }
@@ -127,6 +130,19 @@ public extension CodeSource {
         // Update storage.
         storage.removeCharacters(in: selectionRange)
         let r = storage.insertCharacters(s, at: selectionRange.lowerBound)
+        
+        // Update breakpoint positions.
+        let removeLineCount = selectionRange.lineRange.count
+        let newLineCharCount = s.filter({ $0 == "\n" }).count
+        breakpointLineIndices = Set(breakpointLineIndices.compactMap({ i in
+            if i <= selectionRange.lowerBound.line {
+                return i
+            }
+            else {
+                let k = i + -removeLineCount + newLineCharCount
+                return k <= selectionRange.lowerBound.line ? nil : k
+            }
+        }))
         
         // Move carets and selection.
         let q = r.upperBound
@@ -363,3 +379,20 @@ private extension CodeSource {
 //    }
 }
 
+// MARK: BreakPoint Editing
+extension CodeSource {
+    mutating func toggleBreakPoint(at lineIndex: Int) {
+        if breakpointLineIndices.contains(lineIndex) {
+            breakpointLineIndices.remove(lineIndex)
+        }
+        else {
+            breakpointLineIndices.insert(lineIndex)
+        }
+    }
+    mutating func insertBreakPoint(at lineIndex: Int)  {
+        breakpointLineIndices.insert(lineIndex)
+    }
+    mutating func removeBreakPoint(for lineIndex: Int) {
+        breakpointLineIndices.remove(lineIndex)
+    }
+}

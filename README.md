@@ -18,21 +18,21 @@ Design Choices
   and makes change in data source, and changed source will be delivered
   to renderer. macOS IME requires immediate
   
-Supported Features
------------------------
+Implemented Features
+--------------------------
 - Basic text editing.
 - Breakpoint marker editing.
 - Select by mouse.
-
-Planned Features
-----------------------
 - Jump to line. (scrolling)
 - Undo/redo.
 - Text snapshot import & export.
+
+Planned Features
+----------------------
 - Copy & paste.
   
-Desired but Avoided Goals
--------------------------------
+Non-Goal Features
+----------------------
 - Tracking nesting structures.
 - Asynchronous editing.
 - Line number rendering.
