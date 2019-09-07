@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="14845" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="B8D-0N-5wS">
+<document type="com.apple.InterfaceBuilder3.Cocoa.Storyboard.XIB" version="3.0" toolsVersion="14865.1" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" initialViewController="B8D-0N-5wS">
     <dependencies>
-        <deployment identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14845"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="14865.1"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <scenes>
@@ -711,14 +710,14 @@
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <customView translatesAutoresizingMaskIntoConstraints="NO" id="PzS-W2-zeI" customClass="DemoView" customModule="CodeView5Demo" customModuleProvider="target">
-                                <rect key="frame" x="20" y="20" width="440" height="230"/>
+                                <rect key="frame" x="0.0" y="0.0" width="480" height="270"/>
                             </customView>
                         </subviews>
                         <constraints>
-                            <constraint firstAttribute="bottom" secondItem="PzS-W2-zeI" secondAttribute="bottom" constant="20" id="4uU-Bb-mlI"/>
-                            <constraint firstItem="PzS-W2-zeI" firstAttribute="top" secondItem="m2S-Jp-Qdl" secondAttribute="top" constant="20" id="AQt-iQ-kw4"/>
-                            <constraint firstItem="PzS-W2-zeI" firstAttribute="leading" secondItem="m2S-Jp-Qdl" secondAttribute="leading" constant="20" id="R3E-A4-pGD"/>
-                            <constraint firstAttribute="trailing" secondItem="PzS-W2-zeI" secondAttribute="trailing" constant="20" id="zNY-yN-MAp"/>
+                            <constraint firstAttribute="bottom" secondItem="PzS-W2-zeI" secondAttribute="bottom" id="4uU-Bb-mlI"/>
+                            <constraint firstItem="PzS-W2-zeI" firstAttribute="top" secondItem="m2S-Jp-Qdl" secondAttribute="top" id="AQt-iQ-kw4"/>
+                            <constraint firstItem="PzS-W2-zeI" firstAttribute="leading" secondItem="m2S-Jp-Qdl" secondAttribute="leading" id="R3E-A4-pGD"/>
+                            <constraint firstAttribute="trailing" secondItem="PzS-W2-zeI" secondAttribute="trailing" id="zNY-yN-MAp"/>
                         </constraints>
                     </view>
                 </viewController>

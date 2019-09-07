@@ -27,7 +27,7 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
     public typealias SubSequence = String.SubSequence
     
     /// `CodeLine` ensures this to store all characters in UTF-8 encoded form in memory.
-    private(set) var content = ""
+    public private(set) var content = ""
     private(set) var precomputedCharacterCount = 0
     private(set) var precomputedUTF16CodeUnitCount = 0
     /// Styles matches to each character at same offset.

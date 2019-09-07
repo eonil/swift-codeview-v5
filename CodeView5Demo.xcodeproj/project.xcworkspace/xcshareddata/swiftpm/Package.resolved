@@ -12,10 +12,10 @@
       },
       {
         "package": "SBTL",
-        "repositoryURL": "https://github.com/eonil/swift-sbtl/",
+        "repositoryURL": "https://github.com/eonil/swift-sbtl",
         "state": {
           "branch": "master",
-          "revision": "f0e4c0f877ddc635839fb606a7ef14d6a056f530",
+          "revision": "99128520b62bc9241cdb5898bbe515683f260b7e",
           "version": null
         }
       },
