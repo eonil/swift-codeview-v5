@@ -64,3 +64,45 @@ Independent Actor
 - `CodeView` emits source state to external observer.
 - `CodeView` accepts source state push from external controller.
 - `CodeView` can reject external push. Internal base source takes priority.
+
+
+
+
+
+
+`CodeSource` vs `CodeStorage`
+-------------------------------------
+`CodeSource` contains all data to build a state of a `CodeView`.
+It contains configuration, storage and selection.
+`CodeStorage` contains only textual data. 
+You can think of relationship like this.
+
+    source = configuration + storage + selection
+    
+`CodeSource` also processes editing command.
+It converts editing commands into modifications 
+on line collections in storage.
+
+`CodeSource` is always a snapshot state of a moment.
+As `CodeSource` is value-semantic, you can freely copy,
+replace and update them independently without worrying
+about unexpected mutations.
+
+`CodeView` supports modification command from external 
+world by exchanging I/O messages, and you are supposed
+to pass `CodeSource` value as a new state.
+
+
+
+Undo/Redo and `CodeTimeline`
+--------------------------------------
+Undo/redo support is implemented using `CodeTimeline`.
+`CodeTimeline` simply stores copy of all `CodeSource`s 
+for each editing moments, and just swaps according to 
+undo/redo command.
+`CodeTimeline` is also pre value-semantic. There's no
+reference attached. You can copy, update and replace
+them as much as you want.
+
+`CodeView` keeps one timline and does not expose it to
+public.

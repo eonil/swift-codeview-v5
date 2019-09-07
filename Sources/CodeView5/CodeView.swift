@@ -68,8 +68,11 @@ public final class CodeView: NSView {
 // MARK: - External I/O
     public let control = PassthroughSubject<Control,Never>()
     public enum Control {
+        /// Resets whole content at once with clearig all undo/redo stack.
+        case reset(CodeSource)
         /// Pushes modified source.
-        case source(CodeSource)
+        /// This command keeps undo/redo stack.
+        case edit(CodeSource, nameForMenu:String)
     }
     public let note = PassthroughSubject<Note,Never>()
     public enum Note {
@@ -79,11 +82,9 @@ public final class CodeView: NSView {
 // MARK: - Initialization
     private func install() {
         wantsLayer = true
-        typing.note
-            .receive(on: ImmediateScheduler.shared)
-            .sink(receiveValue: { [weak self] in self?.process($0) })
-            .store(in: &pipes)
+        typing.note.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
         rendering.config.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? rendering.config.font
+        control.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
     }
     
     // MARK: - Undo/Redo Support
@@ -141,7 +142,22 @@ public final class CodeView: NSView {
         setNeedsDisplay(bounds)
     }
     
-// MARK: - Note Processing
+// MARK: - Message Processing
+    private func process(_ c:CodeView.Control) {
+        switch c {
+        case let .reset(s):
+            undoManager?.removeAllActions()
+            source = s
+            timeline = CodeTimeline(current: s)
+        case let .edit(s,n):
+            source = s
+            unrecordAllInsignificantTimelinePoints()
+            recordTimePoint(as: .alienEditing(nameForMenu: n))
+        }
+        render()
+        // Dispatch note.
+        note.send(.source(source))
+    }
     private func process(_ n:TextTypingNote) {
         switch n {
         case let .previewIncompleteText(content, selection):

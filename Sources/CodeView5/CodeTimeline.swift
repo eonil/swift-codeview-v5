@@ -14,7 +14,7 @@ struct CodeTimeline {
     private(set) var currentPoint = Point()
     private(set) var redoablePoints = List<Point>()
     struct Point {
-        var kind = CodeOperationKind.typingCharacter
+        var kind = CodeOperationKind.reloadAll
         /// If end-user wants to undo/redo quickly, you might want to
         /// undo/redo multiple steps at once. In that case, you need
         /// to group steps by some basis, and consecutive (near)
@@ -23,6 +23,9 @@ struct CodeTimeline {
         var snapshot = CodeSource()
     }
     init() {}
+    init(current s:CodeSource) {
+        currentPoint = Point(kind: .reloadAll, time: Date(), snapshot: s)
+    }
     var canUndo: Bool { !undoablePoints.isEmpty }
     var canRedo: Bool { !redoablePoints.isEmpty }
     mutating func record(_ s:CodeSource, as kind: CodeOperationKind) {
@@ -57,20 +60,30 @@ struct CodeTimeline {
 }
 
 enum CodeOperationKind {
+    /// Indicates whole source has been replaced by reloading by external I/O.
+    /// Though you can undo/redo this kind of point programmatically,
+    /// This won't be available to end-user as such reloading points
+    /// won't be registered to `UndoManager`.
+    case reloadAll
     case typingCharacter
     case typingNewLine
+    case alienEditing(nameForMenu: String)
     case editingInteraction
     var isSignificant: Bool {
         switch self {
+        case .reloadAll:            return true
         case .typingCharacter:      return false
         case .typingNewLine:        return true
+        case .alienEditing(_):      return true
         case .editingInteraction:   return false
         }
     }
     var nameForMenu: String {
         switch self {
+        case .reloadAll:            return ""
         case .typingCharacter:      return "Typing"
         case .typingNewLine:        return "Typing"
+        case let .alienEditing(n):  return n
         case .editingInteraction:   return "Editing"
         }
     }
