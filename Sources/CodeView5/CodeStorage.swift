@@ -118,8 +118,6 @@ extension CodeStorage {
             
             // Prepare for offset-based operation.
             let offsetRange = 0..<lineChars.count
-            lines.reserveCapacity(lines.count + offsetRange.count)
-            
             // Insert line.
             var insertingLines = [CodeLine]()
             insertingLines.reserveCapacity(offsetRange.count)
