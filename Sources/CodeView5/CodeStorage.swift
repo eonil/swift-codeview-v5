@@ -118,20 +118,26 @@ extension CodeStorage {
             
             // Prepare for offset-based operation.
             let offsetRange = 0..<lineChars.count
+            lines.reserveCapacity(lines.count + offsetRange.count)
+            
             // Insert line.
+            var insertingLines = [CodeLine]()
+            insertingLines.reserveCapacity(offsetRange.count)
             let firstOffset = offsetRange.first!
             firstLine.append(contentsOf: lineChars[firstOffset])
-            lines.insert(firstLine, at: p.line + firstOffset)
+            insertingLines.append(firstLine)
             // Insert new middle lines.
             for offset in offsetRange.dropFirst().dropLast() {
                 let line = CodeLine(lineChars[offset])
-                lines.insert(line, at: p.line + offset)
+                insertingLines.append(line)
             }
             // Insert last line.
             let lastOffset = offsetRange.last!
             let lastChars = lineChars[lastOffset]
             lastLine.insert(contentsOf: lineChars[lastOffset], at: lastLine.startIndex)
-            lines.insert(lastLine, at: p.line + lastOffset)
+            insertingLines.append(lastLine)
+            lines.insert(contentsOf: insertingLines, at: p.line + offsetRange.lowerBound)
+            
             let chidx = lastLine.content.utf8.index(lastLine.content.startIndex, offsetBy: lastChars.utf8.count)
             return p..<CodeStoragePosition(line: p.line + lastOffset, characterIndex: chidx)
         }
