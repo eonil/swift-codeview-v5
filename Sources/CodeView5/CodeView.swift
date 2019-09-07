@@ -46,8 +46,10 @@ import AppKit
 public final class CodeView: NSView {
     private let typing = TextTyping()
     private var pipes = [AnyCancellable]()
+    
     private var source = CodeSource()
     private var imeState = IMEState?.none
+    private var timeline = CodeTimeline()
     
     /// Vertical caret movement between lines needs base X coordinate to align them on single line.
     /// Here the basis X cooridnate will be stored to provide aligned vertical movement.
@@ -62,7 +64,8 @@ public final class CodeView: NSView {
     }
     
     private var rendering = CodeRendering()
-    
+
+// MARK: - External I/O
     public let control = PassthroughSubject<Control,Never>()
     public enum Control {
         /// Pushes modified source.
@@ -73,25 +76,81 @@ public final class CodeView: NSView {
         case source(CodeSource)
     }
 
+// MARK: - Initialization
     private func install() {
         wantsLayer = true
-        layer?.backgroundColor = NSColor.black.cgColor
         typing.note
             .receive(on: ImmediateScheduler.shared)
             .sink(receiveValue: { [weak self] in self?.process($0) })
             .store(in: &pipes)
         rendering.config.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? rendering.config.font
     }
+    
+    // MARK: - Undo/Redo Support
+    private func undoInTimeline() {
+        timeline.undo()
+        source = timeline.currentPoint.snapshot
+        undoManager?.registerUndo(withTarget: self, handler: { ss in ss.redoInTimeline() })
+        undoManager?.setActionName(timeline.redoablePoints.first!.kind.nameForMenu)
+        render()
+    }
+    private func redoInTimeline() {
+        timeline.redo()
+        source = timeline.currentPoint.snapshot
+        undoManager?.registerUndo(withTarget: self, handler: { ss in ss.undoInTimeline() })
+        undoManager?.setActionName(timeline.undoablePoints.last!.kind.nameForMenu)
+        render()
+    }
+    /// Unrecords small changed made by typing or other actions.
+    ///
+    /// Once end-user finished typing a line or large unit of text,
+    /// end-user would like to undo/redo that line at once instead of undo/redo
+    /// them for each characters one by one.
+    /// To provide such behavior, we need to "unrecord" existing small changes
+    /// made by typing small units. This method does that unrecording.
+    /// You are supposed to record a new snapshot point to make
+    /// large unit change.
+    private func unrecordAllInsignificantTimelinePoints() {
+        // Replace any existing small typing (character-level) actions
+        // with single large typing action on new-line.
+        let s = source
+        while !timeline.undoablePoints.isEmpty && !timeline.currentPoint.kind.isSignificant {
+            undoManager?.undo()
+        }
+        source = s
+    }
+    /// Records a new undo point.
+    ///
+    /// You are supposed to call this function BEFORE making next changes.
+    ///
+    private func recordTimePoint(as kind: CodeOperationKind) {
+        timeline.record(source, as: kind)
+        undoManager?.registerUndo(withTarget: self, handler: { ss in ss.undoInTimeline() })
+        undoManager?.setActionName(kind.nameForMenu)
+    }
+    
+// MARK: - Rendering
+    private func render() {
+        // Force to resize for new source state.
+        invalidateIntrinsicContentSize()
+        layoutSubtreeIfNeeded()
+        // Scroll current line to be visible.
+        let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
+        let f = layout.frameOfLine(at: source.caretPosition.line)
+        scrollToVisible(f)
+        setNeedsDisplay(bounds)
+    }
+    
+// MARK: - Note Processing
     private func process(_ n:TextTypingNote) {
         switch n {
         case let .previewIncompleteText(content, selection):
             source.replaceCharactersInCurrentSelection(with: "")
             imeState = IMEState(incompleteText: content, selectionInIncompleteText: selection)
-            setNeedsDisplay(bounds)
         case let .placeText(s):
             imeState = nil
             source.replaceCharactersInCurrentSelection(with: s)
-            setNeedsDisplay(bounds)
+            recordTimePoint(as: .typingCharacter)
         case let .issueEditingCommand(sel):
             switch sel {
             case #selector(moveLeft(_:)):
@@ -145,6 +204,8 @@ public final class CodeView: NSView {
                 moveVerticalAxisX = nil
                 source.selectAll()
             case #selector(insertNewline(_:)):
+                unrecordAllInsignificantTimelinePoints()
+                recordTimePoint(as: .typingNewLine)
                 moveVerticalAxisX = nil
                 source.insertNewLine()
             case #selector(insertTab(_:)):
@@ -166,21 +227,16 @@ public final class CodeView: NSView {
                 moveVerticalAxisX = nil
                 source.deleteToEndOfLine()
             default:
-                assert(false,"Unhandled editing command: \(sel)")
+//                assert(false,"Unhandled editing command: \(sel)")
                 break
             }
-            setNeedsDisplay(bounds)
         }
-        // Force to resize for new source state.
-        invalidateIntrinsicContentSize()
-        layoutSubtreeIfNeeded()
-        // Scroll current line to be visible.
-        let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
-        let f = layout.frameOfLine(at: source.caretPosition.line)
-        scrollToVisible(f)
+        render()
         // Dispatch note.
         note.send(.source(source))
     }
+    
+// MARK: - Method Overridings
     public override init(frame f: NSRect) {
         super.init(frame: f)
         install()

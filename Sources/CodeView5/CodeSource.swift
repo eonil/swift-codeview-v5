@@ -38,7 +38,13 @@ public struct CodeSource {
     public var config = CodeSourceEditingConfig()
     
     /// Assigning new storage invalidates any caret/selection and set them to default value.
-    public fileprivate(set) var storage = CodeStorage()
+    public private(set) var storage = CodeStorage()
+//    public mutating func setStorage(_ s:CodeStorage) {
+//        storage = s
+//        caretPosition = .zero
+//        selectionRange = Range<CodeStoragePosition>(uncheckedBounds: (.zero, .zero))
+//        selectionAnchorPosition = nil
+//    }
     
     /// Caret position.
     ///
