@@ -342,6 +342,7 @@ public final class CodeView: NSView {
     func paste(_:AnyObject) {
         guard let s = NSPasteboard.general.string(forType: .string) else { return }
         source.replaceCharactersInCurrentSelection(with: s)
+        recordTimePoint(as: .alienEditing(nameForMenu: "Paste"))
         render()
     }
     
