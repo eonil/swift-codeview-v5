@@ -53,13 +53,14 @@ struct CodeRendering {
         for lineIndex in visibleExistingLineIndices {
             let s = charactersToDrawWithConsideringIME(of: lineIndex)
             let f = layout.frameOfTextInLine(at: lineIndex)
-            sssn.drawText(s, in: f)
+            sssn.drawText(s, font: config.font, color: .textColor, in: f)
         }
         // Draw line numbers.
         for lineIndex in visibleExistingLineIndices {
             let s = "\(lineIndex)"
-            let f = layout.frameOfLineNumber(at: lineIndex)
-            sssn.drawText(s, in: f)
+            let f = layout.frameOfLineNumberArea(at: lineIndex)
+            let c = NSColor.textColor.blended(withFraction: 0.5, of: NSColor.textBackgroundColor)!
+            sssn.drawTextRightAligned(s, font: config.lineNumberFont, color: c, in: f)
         }
         
 //        // Draw debug info.
@@ -83,14 +84,23 @@ private struct CodeRenderingSession {
     let context: CGContext
     let source: CodeSource
     let imeState: IMEState?
-    func drawText(_ s:String, color c: NSColor = .textColor, in f:CGRect) {
-        let ctline = CTLine.make(with: s, font: config.font)
+    func drawText(_ s:String, font: NSFont, color c: NSColor = .textColor, in f:CGRect) {
+        let ctline = CTLine.make(with: s, font: font, color: c)
         // First line need to be moved down by line-height
         // as CG places it above zero point.
         context.textPosition = CGPoint(
             x: f.minX,
             y: config.font.ascender + f.minY)
-        context.setFillColor(c.cgColor)
+        CTLineDraw(ctline, context)
+    }
+    func drawTextRightAligned(_ s:String, font: NSFont, color c: NSColor = .textColor, in f:CGRect) {
+        let ctline = CTLine.make(with: s, font: font, color: c)
+        let w = ctline.bounds.width
+        // First line need to be moved down by line-height
+        // as CG places it above zero point.
+        context.textPosition = CGPoint(
+            x: f.maxX - w,
+            y: config.font.ascender + f.minY)
         CTLineDraw(ctline, context)
     }
     func drawBreakpoint(in f:CGRect) {

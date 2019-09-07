@@ -84,6 +84,7 @@ public final class CodeView: NSView {
         wantsLayer = true
         typing.note.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
         rendering.config.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? rendering.config.font
+        rendering.config.lineNumberFont = NSFont(name: "SF Compact", size: NSFont.smallSystemFontSize) ?? rendering.config.lineNumberFont
         control.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
     }
     
