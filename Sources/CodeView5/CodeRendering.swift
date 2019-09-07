@@ -22,7 +22,7 @@ struct CodeRendering {
         let layout = CodeLayout(config: config, source: source, imeState: imeState, boundingWidth: CGFloat(sssn.context.width))
         
         // Draw current line background.
-        let f = layout.frameOfLine(at: source.caretPosition.line)
+        let f = layout.frameOfLine(at: source.caretPosition.lineIndex)
         sssn.drawBox(f, color: .unemphasizedSelectedTextBackgroundColor)
         
         // Draw breakpoints.
@@ -46,7 +46,7 @@ struct CodeRendering {
         func charactersToDrawWithConsideringIME(of lineIndex: Int) -> String {
             let line = source.storage.lines[lineIndex]
             guard let imes = imeState else { return line.content }
-            guard selectedRange.upperBound.line == lineIndex else { return line.content }
+            guard selectedRange.upperBound.lineIndex == lineIndex else { return line.content }
             let chidx = selectedRange.upperBound.characterIndex
             return line.content.replacingCharacters(in: chidx..<chidx, with: imes.incompleteText)
         }

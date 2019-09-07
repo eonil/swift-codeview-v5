@@ -9,11 +9,11 @@ import Foundation
 
 extension Range where Bound == CodeStoragePosition {
     var lineRange: Range<Int> {
-        return lowerBound.line..<upperBound.line
+        return lowerBound.lineIndex..<upperBound.lineIndex
     }
     /// This always include ending line index.
     var includedLineRange: Range<Int> {
-        return lowerBound.line..<upperBound.line+1
+        return lowerBound.lineIndex..<upperBound.lineIndex+1
     }
     /// - Parameter lineIndexInStorage:
     ///     Index to a line in `CodeStorage.lines`.
@@ -21,8 +21,8 @@ extension Range where Bound == CodeStoragePosition {
     func characterRangeOfLine(at lineIndexInStorage: Int, in storage:CodeStorage) -> Range<String.Index> {
         precondition(storage.lines.indices.contains(lineIndexInStorage))
         let content = storage.lines[lineIndexInStorage].content
-        let a = lowerBound.line == lineIndexInStorage ? lowerBound.characterIndex : content.startIndex
-        let b = upperBound.line == lineIndexInStorage ? upperBound.characterIndex : content.endIndex
+        let a = lowerBound.lineIndex == lineIndexInStorage ? lowerBound.characterIndex : content.startIndex
+        let b = upperBound.lineIndex == lineIndexInStorage ? upperBound.characterIndex : content.endIndex
         return a..<b
     }
 }

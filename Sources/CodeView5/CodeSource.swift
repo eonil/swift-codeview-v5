@@ -32,6 +32,9 @@ import BTree
 public struct CodeSource {
     public init() {
         storage.lines.append(CodeLine())
+        let p = CodeStoragePosition(lineIndex: 0, characterIndex: storage.lines.first!.startIndex)
+        caretPosition = p
+        selectionRange = p..<p
     }
     
     /// Changes in config will be applied from next editing.
@@ -44,7 +47,7 @@ public struct CodeSource {
     ///
     /// This value must be in storage range.
     /// Setting an invalid position crashes program.
-    public var caretPosition = CodeStoragePosition.zero {
+    public var caretPosition: CodeStoragePosition {
         willSet(x) {
             precondition(isValidPosition(x))
         }
@@ -65,7 +68,7 @@ public struct CodeSource {
     /// maximum line index can be `1`.
     /// All positions in this value must be in storage range.
     /// Setting an invalid position crashes program.
-    public var selectionRange = Range<CodeStoragePosition>(uncheckedBounds: (.zero, .zero)) {
+    public var selectionRange: Range<CodeStoragePosition> {
         willSet(x) {
             precondition(isValidPosition(x.lowerBound))
             precondition(isValidPosition(x.upperBound))
@@ -80,26 +83,26 @@ public struct CodeSource {
     public private(set) var breakpointLineIndices = Set<Int>()
 }
 public extension CodeSource {
-    var startPosition: CodeStoragePosition { .zero }
+    var startPosition: CodeStoragePosition {
+        CodeStoragePosition(lineIndex: 0, characterIndex: storage.lines.first!.startIndex)
+    }
     var endPosition: CodeStoragePosition {
         /// `CodeSource` guarantees having one line at least always.
-        CodeStoragePosition(line: storage.lines.count-1, characterIndex: storage.lines.last!.endIndex)
+        CodeStoragePosition(lineIndex: storage.lines.count-1, characterIndex: storage.lines.last!.endIndex)
     }
+    /// Lines cannot be `lines.endIndex` becuase character-index cannot be defined
+    /// for non-existing lines.
     func isValidPosition(_ p:CodeStoragePosition) -> Bool {
-        if p.line < storage.lines.count {
-            let line = storage.lines[p.line]
-            return p.characterIndex <= line.endIndex
-        }
-        else {
-            return p.line == storage.lines.count && p.characterIndex == .zero
-        }
+        let line = storage.lines[p.lineIndex]
+        return storage.lines.indices.contains(p.lineIndex)
+            && (line.indices.contains(p.characterIndex) || p.characterIndex == line.endIndex)
     }
     /// Gets a new valid position that is nearest to supplied position.
     func nearestValidPosition(_ p:CodeStoragePosition) -> CodeStoragePosition {
         guard !isValidPosition(p) else { return p }
-        if p.line < storage.lines.count {
-            let line = storage.lines[p.line]
-            return CodeStoragePosition(line: p.line, characterIndex: line.endIndex)
+        if p.lineIndex < storage.lines.count {
+            let line = storage.lines[p.lineIndex]
+            return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: line.endIndex)
         }
         else {
             return endPosition
@@ -113,14 +116,14 @@ public extension CodeSource {
 }
 public extension CodeSource {
     private func position(after p: CodeStoragePosition) -> CodeStoragePosition {
-        let line = storage.lines[p.line]
+        let line = storage.lines[p.lineIndex]
         let i = line.index(after: p.characterIndex)
-        return CodeStoragePosition(line: p.line, characterIndex: i)
+        return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: i)
     }
     private func position(before p: CodeStoragePosition) -> CodeStoragePosition {
-        let line = storage.lines[p.line]
+        let line = storage.lines[p.lineIndex]
         let i = line.index(before: p.characterIndex)
-        return CodeStoragePosition(line: p.line, characterIndex: i)
+        return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: i)
     }
     
     func charactersInCurrentSelection() -> String {
@@ -138,12 +141,12 @@ public extension CodeSource {
         let removeLineCount = selectionRange.lineRange.count
         let newLineCharCount = s.filter({ $0 == "\n" }).count
         breakpointLineIndices = Set(breakpointLineIndices.compactMap({ i in
-            if i <= selectionRange.lowerBound.line {
+            if i <= selectionRange.lowerBound.lineIndex {
                 return i
             }
             else {
                 let k = i + -removeLineCount + newLineCharCount
-                return k <= selectionRange.lowerBound.line ? nil : k
+                return k <= selectionRange.lowerBound.lineIndex ? nil : k
             }
         }))
         
@@ -169,17 +172,17 @@ extension CodeSource {
     }
     private mutating func moveToEndOfUpLine() {
         guard caretPosition != startPosition else { return }
-        let lineIndex = caretPosition.line - 1
+        let lineIndex = caretPosition.lineIndex - 1
         let charIndex = storage.lines[lineIndex].endIndex
-        caretPosition = CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+        caretPosition = CodeStoragePosition(lineIndex: lineIndex, characterIndex: charIndex)
         selectionRange = caretPosition..<caretPosition
         selectionAnchorPosition = nil
     }
     private mutating func moveToStartOfDownLine() {
         guard caretPosition != endPosition else { return }
-        let lineIndex = caretPosition.line + 1
+        let lineIndex = caretPosition.lineIndex + 1
         let charIndex = storage.lines[lineIndex].startIndex
-        caretPosition = CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+        caretPosition = CodeStoragePosition(lineIndex: lineIndex, characterIndex: charIndex)
         selectionRange = caretPosition..<caretPosition
         selectionAnchorPosition = nil
     }
@@ -187,10 +190,10 @@ extension CodeSource {
     mutating func moveLeft() {
         guard caretPosition != startPosition else { return }
         let p = caretPosition
-        let line = storage.lines[p.line]
+        let line = storage.lines[p.lineIndex]
         if line.startIndex < p.characterIndex {
             let i = line.index(before: p.characterIndex)
-            let q = CodeStoragePosition(line: p.line, characterIndex: i)
+            let q = CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: i)
             caretPosition = q
             selectionRange = caretPosition..<caretPosition
             selectionAnchorPosition = nil
@@ -202,10 +205,10 @@ extension CodeSource {
     mutating func moveRight() {
         guard caretPosition != endPosition else { return }
         let p = caretPosition
-        let line = storage.lines[p.line]
+        let line = storage.lines[p.lineIndex]
         if p.characterIndex < line.endIndex {
             let i = line.index(after: p.characterIndex)
-            let q = CodeStoragePosition(line: p.line, characterIndex: i)
+            let q = CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: i)
             caretPosition = q
             selectionRange = caretPosition..<caretPosition
             selectionAnchorPosition = nil
@@ -228,16 +231,16 @@ extension CodeSource {
     }
     mutating func moveToLeftEndOfLine() {
         let p = caretPosition
-        let line = storage.lines[p.line]
-        let q = CodeStoragePosition(line: p.line, characterIndex: line.startIndex)
+        let line = storage.lines[p.lineIndex]
+        let q = CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: line.startIndex)
         caretPosition = q
         selectionRange = q..<q
         selectionAnchorPosition = nil
     }
     mutating func moveToRightEndOfLine() {
         let p = caretPosition
-        let line = storage.lines[p.line]
-        let q = CodeStoragePosition(line: p.line, characterIndex: line.endIndex)
+        let line = storage.lines[p.lineIndex]
+        let q = CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: line.endIndex)
         caretPosition = q
         selectionRange = q..<q
         selectionAnchorPosition = nil
@@ -254,22 +257,22 @@ extension CodeSource {
     }
     mutating func moveUp(font f: NSFont, at x: CGFloat) {
         let p = caretPosition
-        guard 0 < p.line else { return }
-        let li = p.line - 1
+        guard 0 < p.lineIndex else { return }
+        let li = p.lineIndex - 1
         let line = storage.lines[li]
         let ci = characterIndex(at: x, in: line, with: f) ?? line.endIndex
-        let q = CodeStoragePosition(line: li, characterIndex: ci)
+        let q = CodeStoragePosition(lineIndex: li, characterIndex: ci)
         caretPosition = q
         selectionRange = q..<q
         selectionAnchorPosition = nil
     }
     mutating func moveDown(font f:NSFont, at x:CGFloat) {
         let p = caretPosition
-        guard p.line < storage.lines.count-1 else { return }
-        let li = p.line + 1
+        guard p.lineIndex < storage.lines.count-1 else { return }
+        let li = p.lineIndex + 1
         let line = storage.lines[li]
         let ci = characterIndex(at: x, in: line, with: f) ?? line.endIndex
-        let q = CodeStoragePosition(line: li, characterIndex: ci)
+        let q = CodeStoragePosition(lineIndex: li, characterIndex: ci)
         caretPosition = q
         selectionRange = q..<q
         selectionAnchorPosition = nil
@@ -312,7 +315,7 @@ extension CodeSource {
     mutating func insertNewLine() {
         replaceCharactersInCurrentSelection(with: "\n")
         if config.autoIndent {
-            let upLine = storage.lines[caretPosition.line-1]
+            let upLine = storage.lines[caretPosition.lineIndex-1]
             let tabReplacement = config.makeTabReplacement()
             let n = upLine.countPrefix(tabReplacement)
             for _ in 0..<n {
@@ -325,7 +328,7 @@ extension CodeSource {
         replaceCharactersInCurrentSelection(with: tabReplacement)
     }
     mutating func insertBacktab() {
-        let line = storage.lines[caretPosition.line]
+        let line = storage.lines[caretPosition.lineIndex]
         let n = line.countPrefix(" ")
         guard n > 0 else { return }
         let m = (n - 1) / config.tabSpaceCount

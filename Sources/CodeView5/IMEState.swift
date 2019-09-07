@@ -9,7 +9,7 @@ import Foundation
 
 struct IMEState {
     var incompleteText = ""
-    var selectionInIncompleteText = Range<String.Index>(uncheckedBounds: (.zero, .zero))
+    var selectionInIncompleteText = "".startIndex..<"".endIndex
     var selectionInIncompleteTextAsUTF8CodeUnitOffset: Range<Int> {
         let r = selectionInIncompleteText
         let a = incompleteText.utf8.distance(from: incompleteText.utf8.startIndex, to: r.lowerBound)

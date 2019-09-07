@@ -71,7 +71,7 @@ extension CodeStorage {
         case 0:
             return ""
         case 1:
-            let lineIndex = range.lowerBound.line
+            let lineIndex = range.lowerBound.lineIndex
             let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
             return String(lines[lineIndex].content[charRange])
         default:
@@ -85,9 +85,9 @@ extension CodeStorage {
     }
     mutating func removeCharacters(in range: Range<CodeStoragePosition>) {
         guard !range.isEmpty else { return }
-        let firstLineIndex = range.lowerBound.line
+        let firstLineIndex = range.lowerBound.lineIndex
         let firstLineChars = lines[firstLineIndex][..<range.lowerBound.characterIndex]
-        let lastLineIndex = range.upperBound.line
+        let lastLineIndex = range.upperBound.lineIndex
         let lastLineChars = lines[lastLineIndex][range.upperBound.characterIndex...]
         lines.removeSubrange(firstLineIndex...lastLineIndex)
         lines.insert(CodeLine(firstLineChars + lastLineChars), at: firstLineIndex)
@@ -104,14 +104,14 @@ extension CodeStorage {
         case 1:
             // Insert into existing line.
             let chs = lineChars.first!
-            var line = lines[p.line]
+            var line = lines[p.lineIndex]
             line.insert(contentsOf: chs, at: p.characterIndex)
-            lines[p.line] = line
+            lines[p.lineIndex] = line
             let chidx = line.content.utf8.index(p.characterIndex, offsetBy: chs.utf8.count)
-            return p..<CodeStoragePosition(line: p.line, characterIndex: chidx)
+            return p..<CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: chidx)
         default:
             // Pop target line.
-            let line = lines.remove(at: p.line)
+            let line = lines.remove(at: p.lineIndex)
             // Split it into two parts.
             var firstLine = CodeLine(line[..<p.characterIndex])
             var lastLine = CodeLine(line[p.characterIndex...])
@@ -134,10 +134,10 @@ extension CodeStorage {
             let lastChars = lineChars[lastOffset]
             lastLine.insert(contentsOf: lineChars[lastOffset], at: lastLine.startIndex)
             insertingLines.append(lastLine)
-            lines.insert(contentsOf: insertingLines, at: p.line + offsetRange.lowerBound)
+            lines.insert(contentsOf: insertingLines, at: p.lineIndex + offsetRange.lowerBound)
             
             let chidx = lastLine.content.utf8.index(lastLine.content.startIndex, offsetBy: lastChars.utf8.count)
-            return p..<CodeStoragePosition(line: p.line + lastOffset, characterIndex: chidx)
+            return p..<CodeStoragePosition(lineIndex: p.lineIndex + lastOffset, characterIndex: chidx)
         }
     }
 }

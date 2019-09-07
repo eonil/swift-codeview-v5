@@ -68,20 +68,20 @@ struct CodeLayout {
         let storedlineIndices = source.storage.lines.indices
         if storedlineIndices.contains(lineIndex) {
             let charIndex = clampingCharacterIndex(at: p.x, inLineAt: lineIndex, with: config.font)
-            return CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+            return CodeStoragePosition(lineIndex: lineIndex, characterIndex: charIndex)
         }
         else {
             if lineIndex < storedlineIndices.lowerBound {
                 let lineIndex = storedlineIndices.first!
                 let lineContent = source.storage.lines[lineIndex].content
                 let charIndex = lineContent.startIndex
-                return CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+                return CodeStoragePosition(lineIndex: lineIndex, characterIndex: charIndex)
             }
             if lineIndex >= storedlineIndices.upperBound {
                 let lineIndex = storedlineIndices.last!
                 let lineContent = source.storage.lines[lineIndex].content
                 let charIndex = lineContent.endIndex
-                return CodeStoragePosition(line: lineIndex, characterIndex: charIndex)
+                return CodeStoragePosition(lineIndex: lineIndex, characterIndex: charIndex)
             }
             fatalError("Unreachable code.")
         }
@@ -130,8 +130,8 @@ struct CodeLayout {
     }
     func frameOfIMESelection() -> CGRect? {
         guard let imes = imeState else { return nil }
-        let lineFrame = frameOfLine(at: source.caretPosition.line)
-        let caretOrSelFrame = frameOfCaret() ?? frameOfSelectionInLine(at: source.caretPosition.line)
+        let lineFrame = frameOfLine(at: source.caretPosition.lineIndex)
+        let caretOrSelFrame = frameOfCaret() ?? frameOfSelectionInLine(at: source.caretPosition.lineIndex)
         let s = imes.incompleteText
         let r = imes.selectionInIncompleteText
         let x = caretOrSelFrame.maxX
@@ -145,11 +145,11 @@ struct CodeLayout {
     func frameOfCaret() -> CGRect? {
         guard source.selectionRange.isEmpty && (imeState?.selectionInIncompleteText.isEmpty ?? true) else { return nil }
         let p = source.caretPosition
-        let line = source.storage.lines[p.line]
+        let line = source.storage.lines[p.lineIndex]
         let x = CTLine.make(with: String(line[..<p.characterIndex]), font: config.font).bounds.width
-        let y = config.lineHeight * CGFloat(p.line)
+        let y = config.lineHeight * CGFloat(p.lineIndex)
         let sIME = imeState?.incompleteText ?? ""
-        let pIME = imeState?.selectionInIncompleteText.lowerBound ?? .zero
+        let pIME = imeState?.selectionInIncompleteText.lowerBound ?? "".startIndex
         let xIME = CTLine.make(with: String(sIME[..<pIME]), font: config.font).bounds.width
         let caretFrame = CGRect(
             x: config.bodyX + x + xIME,

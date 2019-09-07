@@ -90,7 +90,7 @@ extension CodeLine {
     func countPrefix(_ s:String) -> Int {
         let chc = s.count
         var c = 0
-        var ss = content[.zero...]
+        var ss = content[content.startIndex...]
         while ss.hasPrefix(s) {
             ss = ss.dropFirst(chc)
             c += 1

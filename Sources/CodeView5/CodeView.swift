@@ -56,7 +56,7 @@ public final class CodeView: NSView {
     private var moveVerticalAxisX = CGFloat?.none
     private func findAxisXForVerticalMovement() -> CGFloat {
         let p = source.caretPosition
-        let line = source.storage.lines[p.line]
+        let line = source.storage.lines[p.lineIndex]
         let s = line[..<p.characterIndex]
         let ctline = CTLine.make(with: String(s), font: rendering.config.font)
         let w = CTLineGetBoundsWithOptions(ctline, []).width
@@ -138,7 +138,7 @@ public final class CodeView: NSView {
         layoutSubtreeIfNeeded()
         // Scroll current line to be visible.
         let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
-        let f = layout.frameOfLine(at: source.caretPosition.line)
+        let f = layout.frameOfLine(at: source.caretPosition.lineIndex)
         scrollToVisible(f)
         setNeedsDisplay(bounds)
     }
@@ -250,7 +250,7 @@ public final class CodeView: NSView {
         }
         
         let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
-        let f  = layout.frameOfSelectionInLine(at: source.caretPosition.line)
+        let f  = layout.frameOfSelectionInLine(at: source.caretPosition.lineIndex)
         let f1 = convert(f, to: nil)
         let f2 = window?.convertToScreen(f1) ?? .zero
         typing.control.send(.setTypingFrame(f2))
