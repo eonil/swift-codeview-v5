@@ -9,6 +9,7 @@ import Foundation
 
 extension String.Index {
     /// Start index of empty string.
+    /// This will be used as a marker for some places.
     static let zero = utf8EmptyString.startIndex
 }
 private let utf8EmptyString = {

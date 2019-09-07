@@ -18,24 +18,9 @@ public struct CodeStorage {
 //    /// Line unique key manager.
 //    private var lineKeyManagement = CodeLineKeyManagement()
     
-    private var lineContentList = List<String>()
-    private var lineCharacterCountList = SBTL<Int>()
-    private var lineUTF16CodeUnitCountList = SBTL<Int>()
-    private var lineCharacterStyleList = List<[CodeStyle]>()
+    private var implLines = List<CodeLine>()
     
     public init() {}
-    /// Total character count in this storage.
-    public var characterCount: Int { lineCharacterCountList.sum }
-    /// Total code unit count in this storage.
-    public var utf16CodeUnitCount: Int { lineUTF16CodeUnitCountList.sum }
-    public func utf16CodeUnit(at i:Int) -> UTF16.CodeUnit {
-        let (i,x) = lineUTF16CodeUnitCountList.indexAndOffset(for: i)
-        let utf8s = lineContentList[i]
-        let utf16s = utf8s.utf16
-        let z = utf16s.index(utf16s.startIndex, offsetBy: x)
-        let ch = utf16s[z]
-        return ch
-    }
 //    /// All keys in this storage for each lines at same indices.
 //    public var keys: Keys {
 //        get { Keys(of: self) }
@@ -59,21 +44,10 @@ public struct CodeStorage {
         public init() { core = CodeStorage() }
         public init(of c: CodeStorage) { core = c }
         public var startIndex: Int { 0 }
-        public var endIndex: Int { core.lineCharacterCountList.count }
+        public var endIndex: Int { core.implLines.count }
         public subscript(_ i:Int) -> CodeLine {
-            get {
-                return CodeLine(
-                    content: core.lineContentList[i],
-                    precomputedCharacterCount: core.lineCharacterCountList[i],
-                    precomputedUTF16CodeUnitCount: core.lineUTF16CodeUnitCountList[i],
-                    characterStyles: core.lineCharacterStyleList[i])
-            }
-            set(x) {
-                core.lineContentList[i] = x.content
-                core.lineCharacterCountList[i] = x.precomputedCharacterCount
-                core.lineUTF16CodeUnitCountList[i] = x.precomputedUTF16CodeUnitCount
-                core.lineCharacterStyleList[i] = x.characterStyles
-            }
+            get { core.implLines[i] }
+            set(x) { core.implLines[i] = x }
         }
         public mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
 //            /// Update keys.
@@ -84,10 +58,7 @@ public struct CodeStorage {
 //            core.lineKeyList.insert(contentsOf: newKeys, at: q.lowerBound)
             
             /// Update contents.
-            core.lineContentList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.content }))
-            core.lineCharacterCountList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.precomputedCharacterCount }))
-            core.lineUTF16CodeUnitCountList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.precomputedUTF16CodeUnitCount }))
-            core.lineCharacterStyleList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.characterStyles }))
+            core.implLines.replaceSubrange(subrange, with: newElements)
         }
     }
 }
@@ -172,28 +143,28 @@ extension Int: SBTLValueProtocol {
     public var sum: Int { self }
 }
 
-// MARK: Conversion to Legacy
-extension CodeStorage {
-    func makeCV5String() -> CV5String {
-        /// A wrapper of text data source that acts as an `NSString`.
-        ///
-        /// This exists to support `NSTextInputClient` that requires
-        /// access to underlying `NSString`.
-        ///
-        /// Underlying text data source fully UTF-8 based with
-        /// cached UTF-16 indices at some points.
-        ///
-        @objc
-        final class IMPL: NSObject, CV5StringImpl {
-            let storage: CodeStorage
-            init(_ s: CodeStorage) {
-                storage = s
-                super.init()
-            }
-            @objc var length: UInt { UInt(storage.utf16CodeUnitCount) }
-            @objc func character(at index: UInt) -> unichar { storage.utf16CodeUnit(at: Int(index)) }
-        }
-        let impl = IMPL(self)
-        return CV5String(impl: impl)
-    }
-}
+//// MARK: Conversion to Legacy
+//extension CodeStorage {
+//    func makeCV5String() -> CV5String {
+//        /// A wrapper of text data source that acts as an `NSString`.
+//        ///
+//        /// This exists to support `NSTextInputClient` that requires
+//        /// access to underlying `NSString`.
+//        ///
+//        /// Underlying text data source fully UTF-8 based with
+//        /// cached UTF-16 indices at some points.
+//        ///
+//        @objc
+//        final class IMPL: NSObject, CV5StringImpl {
+//            let storage: CodeStorage
+//            init(_ s: CodeStorage) {
+//                storage = s
+//                super.init()
+//            }
+//            @objc var length: UInt { UInt(storage.utf16CodeUnitCount) }
+//            @objc func character(at index: UInt) -> unichar { storage.utf16CodeUnit(at: Int(index)) }
+//        }
+//        let impl = IMPL(self)
+//        return CV5String(impl: impl)
+//    }
+//}
