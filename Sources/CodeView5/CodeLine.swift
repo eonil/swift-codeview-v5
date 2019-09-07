@@ -43,7 +43,7 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
         precomputedUTF16CodeUnitCount = s.utf16.count
         characterStyles = Array(repeatElement(.plain, count: c))
     }
-    init(utf8Characters s: String, precomputedCharacterCount cc: Int, precomputedUTF16CodeUnitCount utf16uc: Int, characterStyles ss: [CodeStyle]) {
+    init(content s: String, precomputedCharacterCount cc: Int, precomputedUTF16CodeUnitCount utf16uc: Int, characterStyles ss: [CodeStyle]) {
         content = s
         content.makeContiguousUTF8()
         assert(content.isContiguousUTF8)

@@ -37,6 +37,8 @@ Non-Goal Features
 Non-Goals
 -----------------
 - Word wrap.
+- Right-to-left text rendering. (such as Arabic)
+- Vertical text rendering.
 
 Designed Limits
 -------------------
@@ -103,3 +105,22 @@ them as much as you want.
 
 `CodeView` keeps one timline and does not expose it to
 public.
+
+
+
+Performance
+----------------
+Current implementation shows about 10x or more slower than Xcode
+text editor. Pasting 50,000 line of code took 20 seconds on my laptop
+where Xcode took about 2 second. I think 10x slowness seems to be
+quite good enough for quick bootstrapping implementation.
+
+To prevent undesired long waiting, I strongly recommend you to warn
+end-user if they are trying to load over 2MiB text files.
+
+
+
+License & Credit
+--------------------
+Copyright(C) Eonil & Henry, 2019. All rights reserved.
+This code is licensed under "MIT LIcense".

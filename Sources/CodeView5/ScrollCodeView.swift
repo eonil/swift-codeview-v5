@@ -45,8 +45,10 @@ public final class ScrollCodeView: NSView {
         scrollView.documentView = codeView
         codeView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
+            codeView.topAnchor.constraint(equalTo: scrollView.topAnchor),
             codeView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
             codeView.widthAnchor.constraint(greaterThanOrEqualTo: scrollView.widthAnchor),
+            codeView.bottomAnchor.constraint(greaterThanOrEqualTo: scrollView.bottomAnchor),
         ])
     }
 }

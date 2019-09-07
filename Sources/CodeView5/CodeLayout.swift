@@ -16,7 +16,7 @@ struct CodeLayout {
         var lineNumberFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
         
         var lineHeight: CGFloat { -font.descender + font.ascender }
-        var breakpointWidth: CGFloat { lineHeight * 2 }
+        var breakpointWidth: CGFloat { lineHeight * 3 }
         var gapBetweenBreakpointAndBody = CGFloat(5)
         var bodyX: CGFloat { breakpointWidth + gapBetweenBreakpointAndBody }
     }

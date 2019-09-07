@@ -12,11 +12,11 @@ import SBTL
 import CodeView5CustomNSString
 
 public struct CodeStorage {
-    /// Unique keys for each lines.
-    /// This is unique only in current storage scope.
-    private var lineKeyList = List<CodeLineKey>()
-    /// Line unique key manager.
-    private var lineKeyManagement = CodeLineKeyManagement()
+//    /// Unique keys for each lines.
+//    /// This is unique only in current storage scope.
+//    private var lineKeyList = List<CodeLineKey>()
+//    /// Line unique key manager.
+//    private var lineKeyManagement = CodeLineKeyManagement()
     
     private var lineContentList = List<String>()
     private var lineCharacterCountList = SBTL<Int>()
@@ -36,19 +36,19 @@ public struct CodeStorage {
         let ch = utf16s[z]
         return ch
     }
-    /// All keys in this storage for each lines at same indices.
-    public var keys: Keys {
-        get { Keys(of: self) }
-        set(x) { self = x.core }
-    }
-    public struct Keys: RandomAccessCollection {
-        fileprivate private(set) var core: CodeStorage
-        public init() { core = CodeStorage() }
-        public init(of c: CodeStorage) { core = c }
-        public var startIndex: Int { 0 }
-        public var endIndex: Int { core.lineCharacterCountList.count }
-        public subscript(_ i:Int) -> CodeLineKey { core.lineKeyList[i] }
-    }
+//    /// All keys in this storage for each lines at same indices.
+//    public var keys: Keys {
+//        get { Keys(of: self) }
+//        set(x) { self = x.core }
+//    }
+//    public struct Keys: RandomAccessCollection {
+//        fileprivate private(set) var core: CodeStorage
+//        public init() { core = CodeStorage() }
+//        public init(of c: CodeStorage) { core = c }
+//        public var startIndex: Int { 0 }
+//        public var endIndex: Int { core.lineCharacterCountList.count }
+//        public subscript(_ i:Int) -> CodeLineKey { core.lineKeyList[i] }
+//    }
     /// All lines in this storage.
     public var lines: Lines {
         get { Lines(of: self) }
@@ -63,7 +63,7 @@ public struct CodeStorage {
         public subscript(_ i:Int) -> CodeLine {
             get {
                 return CodeLine(
-                    utf8Characters: core.lineContentList[i],
+                    content: core.lineContentList[i],
                     precomputedCharacterCount: core.lineCharacterCountList[i],
                     precomputedUTF16CodeUnitCount: core.lineUTF16CodeUnitCountList[i],
                     characterStyles: core.lineCharacterStyleList[i])
@@ -76,12 +76,12 @@ public struct CodeStorage {
             }
         }
         public mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
-            /// Update keys.
-            let q = subrange.relative(to: self)
-            for k in core.lineKeyList[q] { core.lineKeyManagement.deallocate(k) }
-            core.lineKeyList.removeSubrange(q)
-            let newKeys = core.lineKeyManagement.allocate(newElements.count)
-            core.lineKeyList.insert(contentsOf: newKeys, at: q.lowerBound)
+//            /// Update keys.
+//            let q = subrange.relative(to: self)
+//            for k in core.lineKeyList[q] { core.lineKeyManagement.deallocate(k) }
+//            core.lineKeyList.removeSubrange(q)
+//            let newKeys = core.lineKeyManagement.allocate(newElements.count)
+//            core.lineKeyList.insert(contentsOf: newKeys, at: q.lowerBound)
             
             /// Update contents.
             core.lineContentList.replaceSubrange(subrange, with: newElements.lazy.map({ $0.content }))
