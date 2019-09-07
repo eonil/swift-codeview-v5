@@ -115,9 +115,23 @@ text editor. Pasting 50,000 line of code took 20 seconds on my laptop
 where Xcode took about 2 second. I think 10x slowness seems to be
 quite good enough for quick bootstrapping implementation.
 
-To prevent undesired long waiting, I strongly recommend you to warn
-end-user if they are trying to load over 2MiB text files.
+Loading of 50,000 lines.
+- CodeView5: about 20 seconds.
+- Xcode: about 2 seconds.
+- Xi-Editor: less than 0.1 second.
 
+To prevent undesired long waiting, I strongly recommend you to warn
+end-user if they are trying to load over 1MiB text files.
+
+Major reason of slowness is unnecessarily duplicated multiple 
+Binary/B-Trees. (`CodeStorage`). Once I removed duplication
+it loaded 50,000 lines in 6-7 seconds, that is 3-4x faster than base.
+There're many room for improvement, but most of them requires
+painful algorithm implementations and testing, therefore I do not
+do that at this moment. Suggested optimizations would require
+these components.
+
+If Xi-Core gets ready, I'd move on to there.
 
 
 License & Credit
