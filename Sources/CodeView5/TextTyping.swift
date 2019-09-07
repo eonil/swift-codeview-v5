@@ -49,13 +49,28 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
         note.send(.issueEditingCommand(selector))
     }
     
+    private var cancellables = [AnyCancellable]()
     private(set) var isMarked = false
     /// Marked text.
     private(set) var markedTextBuffer = NSString()
     /// Selection position in marked text.
     /// This is separated from selection in document.
     private(set) var markedTextSelectedRange = NSRange(location: 0, length: 0)
+    private var typingFrame = CGRect.zero
     
+    private func process(_ c:TextTypingControl) {
+        switch c {
+        case .setContent(_):
+            break
+        case let .setTypingFrame(f):
+            typingFrame = f
+        }
+    }
+    
+    override init() {
+        super.init()
+        control.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &cancellables)
+    }
     func insertText(_ string: Any, replacementRange: NSRange) {
         /// Insert into target position.
         let newString = extractString(string)
@@ -104,7 +119,7 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
         return []
     }
     func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
-        return .zero
+        return typingFrame
     }
     func characterIndex(for point: NSPoint) -> Int {
         return NSNotFound

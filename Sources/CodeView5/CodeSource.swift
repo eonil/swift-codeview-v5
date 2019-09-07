@@ -39,12 +39,6 @@ public struct CodeSource {
     
     /// Assigning new storage invalidates any caret/selection and set them to default value.
     public private(set) var storage = CodeStorage()
-//    public mutating func setStorage(_ s:CodeStorage) {
-//        storage = s
-//        caretPosition = .zero
-//        selectionRange = Range<CodeStoragePosition>(uncheckedBounds: (.zero, .zero))
-//        selectionAnchorPosition = nil
-//    }
     
     /// Caret position.
     ///
@@ -77,11 +71,7 @@ public struct CodeSource {
             precondition(isValidPosition(x.upperBound))
         }
     }
-    /// Includes range.upperBound.line
-    public var selectionLineRange: Range<Int> { selectionRange.lowerBound.line..<selectionRange.upperBound.line+1 }
 
-//    var styles = [CodeLine]()
-    
     mutating func toggleBreakPoint(at line: Int) {
         storage.toggleBreakPoint(at: line)
     }
@@ -145,20 +135,6 @@ public extension CodeSource {
         selectionAnchorPosition = q
     }
 }
-
-//struct CodeLine {
-//    var spans = [CodeSpan]()
-//}
-//struct CodeSpan {
-//    var code = ""
-//    var style = CodeStyle.plain
-//}
-//enum CodeStyle {
-//    case plain
-//    case keyword
-//    case literal
-//    case identifier
-//}
 
 // MARK: Edit Command
 import AppKit

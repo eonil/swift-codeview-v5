@@ -2,6 +2,8 @@ CodeView5
 =========
 Eonil, 2019.
 
+An alternative option of Cocoa view to edit code-like text. 
+
 
 
 Design Choices

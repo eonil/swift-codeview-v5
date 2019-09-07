@@ -231,6 +231,13 @@ public final class CodeView: NSView {
                 break
             }
         }
+        
+        let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
+        let f  = layout.frameOfSelectionInLine(at: source.caretPosition.line)
+        let f1 = convert(f, to: nil)
+        let f2 = window?.convertToScreen(f1) ?? .zero
+        typing.control.send(.setTypingFrame(f2))
+
         render()
         // Dispatch note.
         note.send(.source(source))

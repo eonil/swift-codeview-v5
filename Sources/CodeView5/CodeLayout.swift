@@ -101,22 +101,41 @@ struct CodeLayout {
         return lineFrame.divided(atDistance: config.breakpointWidth, from: .minXEdge).slice
     }
     /// This does not consider IME state.
+    /// Take care that this frame considers breakpoint area and is clipped by line frame.
+    /// Therefore can be different with result of `frameOfTextSubrange` for same input.
     func frameOfTextSubrange(_ r:Range<String.Index>, inLineAt offset: Int) -> CGRect {
         let lineFrame = frameOfLine(at: offset)
-        let s = source.storage.lines[offset].content
-        let s1 = s[..<r.lowerBound]
-        let s2 = s[r.lowerBound..<r.upperBound]
-        let ctline1 = CTLine.make(with: String(s1), font: config.font)
-        let ctline2 = CTLine.make(with: String(s2), font: config.font)
-        let bounds1 = CTLineGetBoundsWithOptions(ctline1, [])
-        let bounds2 = CTLineGetBoundsWithOptions(ctline2, [])
-        let f = CGRect(
-            x: config.breakpointWidth + bounds1.maxX,
+        let lineContent = source.storage.lines[offset].content
+        let subframeInTextBounds = lineContent.frameOfCharactersInSubrange(r, withFont: config.font)
+        let subtextFrame = subframeInTextBounds.offsetBy(dx: config.breakpointWidth, dy: lineFrame.minY)
+        return CGRect(
+            x: subtextFrame.minX,
             y: lineFrame.minY,
-            width: bounds2.width,
+            width: subtextFrame.width,
             height: lineFrame.height)
-        return f
     }
+    /// This does not consider IME state.
+    /// - Parameter offset:
+    ///     Index to a line in code-storage.
+    ///     This must be a valid index. Otherwise program crashes.
+    func frameOfSelectionInLine(at offset: Int) -> CGRect {
+        precondition(source.storage.lines.indices.contains(offset))
+        let selRange = source.selectionRange
+        let selCharRange = selRange.characterRangeOfLine(at: offset, in: source.storage)
+        let selFrame = frameOfTextSubrange(selCharRange, inLineAt: offset)
+        return selFrame
+    }
+    func frameOfIMESelection() -> CGRect? {
+        guard let imes = imeState else { return nil }
+        let lineFrame = frameOfLine(at: source.caretPosition.line)
+        let caretOrSelFrame = frameOfCaret() ?? frameOfSelectionInLine(at: source.caretPosition.line)
+        let s = imes.incompleteText
+        let r = imes.selectionInIncompleteText
+        let x = caretOrSelFrame.maxX
+        let f = s.frameOfCharactersInSubrange(r, withFont: config.font)
+        return CGRect(x: x + f.minX, y: lineFrame.minY, width: f.width, height: lineFrame.height)
+    }
+    
     /// - Returns:
     ///     `nil` if caret cannot be displayed.
     ///     For example, if there's a selection, caret will not be rendered.

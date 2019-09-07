@@ -16,8 +16,8 @@ struct CodeRendering {
         let visibleLineIndices = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
         let visibleExistingLineIndices = source.storage.lines.indices.clamped(to: visibleLineIndices)
         let selectedRange = source.selectionRange
-        let selectedLineRange = source.selectionLineRange
-        let visibleSelectedLineRange = selectedLineRange.clamped(to: visibleLineIndices)
+        let selectionIncludedLineRange = source.selectionRange.includedLineRange
+        let visibleSelectedLineRange = selectionIncludedLineRange.clamped(to: visibleLineIndices)
         let sssn = session(source: source, ime: imeState)
         let layout = CodeLayout(config: config, source: source, imeState: imeState, boundingWidth: CGFloat(sssn.context.width))
         
@@ -35,27 +35,12 @@ struct CodeRendering {
         
         // Draw selection background.
         for lineIndex in visibleSelectedLineRange {
-            let r = source.selectionRange
-            let line = source.storage.lines[lineIndex]
-            let i0 = r.lowerBound.line == lineIndex ? r.lowerBound.characterIndex : line.startIndex
-            let i1 = r.upperBound.line == lineIndex ? r.upperBound.characterIndex : line.endIndex
-            let f = layout.frameOfTextSubrange(i0..<i1, inLineAt: lineIndex)
+            let f = layout.frameOfSelectionInLine(at: lineIndex)
             sssn.drawBox(f, color: .selectedTextBackgroundColor)
         }
         // Draw IME selection background.
-        if let imes = imeState {
-            let p = source.caretPosition
-            let line = source.storage.lines[p.line]
-            let ci = p.characterIndex
-            var s = line.content
-            let ss = s[..<p.characterIndex]
-            let ss1 = ss.appending(imes.incompleteText)
-            let utf8OffsetRange = imes.selectionInIncompleteTextAsUTF8CodeUnitOffset
-            let a = ss1.utf8.index(ss1.startIndex, offsetBy: ss.utf8.count + utf8OffsetRange.lowerBound)
-            let b = ss1.utf8.index(ss1.startIndex, offsetBy: ss.utf8.count + utf8OffsetRange.upperBound)
-            let r = a..<b
-            let xy = CGPoint(x: 0, y: config.lineHeight * CGFloat(p.line))
-            sssn.drawSelectionBackground(of: ss1, in: r, at: xy)
+        if let f = layout.frameOfIMESelection() {
+            sssn.drawBox(f, color: .selectedTextBackgroundColor)
         }
         // Draw characters.
         func charactersToDrawWithConsideringIME(of lineIndex: Int) -> String {
@@ -98,16 +83,6 @@ private struct CodeRenderingSession {
     let context: CGContext
     let source: CodeSource
     let imeState: IMEState?
-//    func drawText(_ s:String, color c: NSColor = .textColor, indentation x: CGFloat = 0, at lineOffset: Int) {
-//        let ctline = CTLine.make(with: s, font: config.font)
-//        // First line need to be moved down by line-height
-//        // as CG places it above zero point.
-//        context.textPosition = CGPoint(
-//            x: config.breakpointWidth + x,
-//            y: config.font.ascender + config.lineHeight * CGFloat(lineOffset))
-//        context.setFillColor(c.cgColor)
-//        CTLineDraw(ctline, context)
-//    }
     func drawText(_ s:String, color c: NSColor = .textColor, in f:CGRect) {
         let ctline = CTLine.make(with: s, font: config.font)
         // First line need to be moved down by line-height
@@ -117,21 +92,6 @@ private struct CodeRenderingSession {
             y: config.font.ascender + f.minY)
         context.setFillColor(c.cgColor)
         CTLineDraw(ctline, context)
-    }
-    /// - Parameter p: Offset to place bacground.
-    func drawSelectionBackground(of s:String, in r:Range<String.Index>, at p:CGPoint) {
-        let s1 = s[..<r.lowerBound]
-        let s2 = s[r.lowerBound..<r.upperBound]
-        let ctline1 = CTLine.make(with: String(s1), font: config.font)
-        let ctline2 = CTLine.make(with: String(s2), font: config.font)
-        let lineBounds1 = CTLineGetBoundsWithOptions(ctline1, [])
-        let lineBounds2 = CTLineGetBoundsWithOptions(ctline2, [])
-        let bgFrame = CGRect(
-            x: lineBounds1.maxX + p.x,
-            y: p.y,
-            width: lineBounds2.width,
-            height: lineBounds2.height)
-        drawBox(bgFrame, color: .selectedTextBackgroundColor)
     }
     func drawBreakpoint(in f:CGRect) {
         let w = f.width
@@ -157,14 +117,3 @@ private struct CodeRenderingSession {
         context.fill(f)
     }
 }
-
-
-//private extension Range {
-//    /// Returns a smallest range that can contain both of `self` and `otherRange`.
-//    func smallestContainer(with otherRange:Range) -> Range {
-//        let a = Swift.min(lowerBound, otherRange.lowerBound)
-//        let b = Swift.max(upperBound, otherRange.upperBound)
-//        return a..<b
-//    }
-//}
-
