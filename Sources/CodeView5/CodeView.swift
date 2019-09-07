@@ -244,7 +244,7 @@ public final class CodeView: NSView {
                 moveVerticalAxisX = nil
                 source.deleteToEndOfLine()
             default:
-//                assert(false,"Unhandled editing command: \(sel)")
+                assert(false,"Unhandled editing command: \(sel)")
                 break
             }
         }
@@ -319,6 +319,30 @@ public final class CodeView: NSView {
         typing.processEvent(event)
         source.selectionAnchorPosition = nil
         note.send(.source(source))
+    }
+    public override func selectAll(_ sender: Any?) {
+        source.selectAll()
+        render()
+    }
+    @IBAction
+    func copy(_:AnyObject) {
+        let s = source.charactersInCurrentSelection()
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(s, forType: .string)
+    }
+    @IBAction
+    func cut(_:AnyObject) {
+        let s = source.charactersInCurrentSelection()
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(s, forType: .string)
+        source.replaceCharactersInCurrentSelection(with: "")
+        render()
+    }
+    @IBAction
+    func paste(_:AnyObject) {
+        guard let s = NSPasteboard.general.string(forType: .string) else { return }
+        source.replaceCharactersInCurrentSelection(with: s)
+        render()
     }
     
     public override var intrinsicContentSize: NSSize {

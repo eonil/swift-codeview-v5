@@ -123,6 +123,9 @@ public extension CodeSource {
         return CodeStoragePosition(line: p.line, characterIndex: i)
     }
     
+    func charactersInCurrentSelection() -> String {
+        return storage.characters(in: selectionRange)
+    }
     /// Replaces characters in current selection.
     /// 
     /// - Parameter selection: What to select after replacement operation.
@@ -333,11 +336,11 @@ extension CodeSource {
 //        replaceCharactersInCurrentSelection(with: config.tabReplacement)
     }
     mutating func deleteForward() {
-        moveRightAndModifySelection()
+        if selectionRange.isEmpty { moveRightAndModifySelection() }
         replaceCharactersInCurrentSelection(with: "")
     }
     mutating func deleteBackward() {
-        moveLeftAndModifySelection()
+        if selectionRange.isEmpty { moveLeftAndModifySelection() }
         replaceCharactersInCurrentSelection(with: "")
     }
     mutating func deleteToBeginningOfLine() {

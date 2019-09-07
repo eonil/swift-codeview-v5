@@ -94,6 +94,24 @@ public struct CodeStorage {
 
 // MARK: Editing
 extension CodeStorage {
+    func characters(in range: Range<CodeStoragePosition>) -> String {
+        guard !range.isEmpty else { return "" }
+        switch range.includedLineRange.count {
+        case 0:
+            return ""
+        case 1:
+            let lineIndex = range.lowerBound.line
+            let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
+            return String(lines[lineIndex].content[charRange])
+        default:
+            var sss = [Substring]()
+            for lineIndex in range.includedLineRange {
+                let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
+                sss.append(lines[lineIndex].content[charRange])
+            }
+            return sss.joined(separator: "\n")
+        }
+    }
     mutating func removeCharacters(in range: Range<CodeStoragePosition>) {
         guard !range.isEmpty else { return }
         let firstLineIndex = range.lowerBound.line

@@ -26,9 +26,6 @@ Implemented Features
 - Jump to line. (scrolling)
 - Undo/redo.
 - Text snapshot import & export.
-
-Planned Features
-----------------------
 - Copy & paste.
   
 Non-Goal Features
