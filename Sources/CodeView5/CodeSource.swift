@@ -75,11 +75,11 @@ public struct CodeSource {
         }
     }
 
-    
     /// - TODO: Optimize this.
     /// Need to be optimized.
     /// This would be okay for a while as most people do not install
-    /// too many break-points.
+    /// too many break-points. But if there are more than 100 break-points,
+    /// this is very likely to make problems.
     public private(set) var breakpointLineIndices = Set<Int>()
 }
 public extension CodeSource {

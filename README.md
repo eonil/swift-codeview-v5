@@ -110,28 +110,43 @@ public.
 
 Performance
 ----------------
-Current implementation shows about 10x or more slower than Xcode
-text editor. Pasting 50,000 line of code took 20 seconds on my laptop
-where Xcode took about 2 second. I think 10x slowness seems to be
-quite good enough for quick bootstrapping implementation.
+At first, `CodeView5` was 10-20x slower than Xcode, 
+and 100-200x slower than Xi-Editor. 
 
-Loading of 50,000 lines.
+Loading of 50,000 lines. Measured manually by counting seconds.
 - CodeView5: about 20 seconds.
 - Xcode: about 2 seconds.
 - Xi-Editor: less than 0.1 second.
 
-To prevent undesired long waiting, I strongly recommend you to warn
-end-user if they are trying to load over 1MiB text files.
+Major causes of current slowness. was duplicated b-tree structures
+in `CodeStorage`. I removed them and now this is 2x faster.
 
-Major reason of slowness is unnecessarily duplicated multiple 
-Binary/B-Trees. (`CodeStorage`). Once I removed duplication
-it loaded 50,000 lines in 6-7 seconds, that is 3-4x faster than base.
-There're many room for improvement, but most of them requires
-painful algorithm implementations and testing, therefore I do not
-do that at this moment. Suggested optimizations would require
-these components.
+- CodeView5: about 10 seconds.
+- Xcode: about 2 seconds.
+- Xi-Editor: less than 0.1 second.
 
-If Xi-Core gets ready, I'd move on to there.
+It took 2 seconds to load 10,000 lines of code.
+I think this is enough for bootstrapping implementation.
+
+Now bottlenecks are coming from these places.
+- Inefficient function call to static linked b-tree libraries.
+- Strict instantiation of `String` for each lines. (about 25%)
+- Baked-in grapheme-cluster validation behavior in `String`. (about 25%)
+
+Possible solutions.
+- Use `Substring` to avoid `String` instantiation. But this doesn't solve validation cost.
+- Embed b-tree code directly in module instead of linking.
+- Make a new, sharable UTF-8 string container. 
+- Use byte offset instead of opaque `String.Index` as character index for O(1) access.
+
+Once I tried using first two solutions, loading of 50,000 line code took
+2-3 seconds. That is comparable to Xcode. But I need simpler and easier codebase
+for better maintainance, therefore such optimizations has been removed.
+
+The problem is it's very difficult to archive Xi-Editor level performance with Swift
+as Swift requires ref-type overhead and lacks low-level memory handling in safe way.
+It would be better to have an approach like Xi-Editor or using Xi-Editor when ready.
+
 
 
 License & Credit

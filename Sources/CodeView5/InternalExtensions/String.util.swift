@@ -10,6 +10,13 @@ import AppKit
 import CoreText
 
 extension String {
+    /// Calls `Substring.frameOfCharactersInSubrange`.
+    func frameOfCharactersInSubrange(_ r:Range<String.Index>, withFont f:NSFont) -> CGRect {
+        return self[startIndex...].frameOfCharactersInSubrange(r, withFont: f)
+    }
+}
+
+extension Substring {
     /// - Returns:
     ///     Frame coordinates in text's local bounding space.
     ///     This means where the text subrange is placed in the total text bounding.
