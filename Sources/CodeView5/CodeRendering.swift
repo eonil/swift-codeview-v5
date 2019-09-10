@@ -10,9 +10,9 @@ import AppKit
 
 /// Renders `CodeSource` in a flipped space.
 struct CodeRendering {
-    var config = CodeLayout.Config()
+    var config = CodeSourceConfig()
     func draw(source: CodeSource, imeState: IMEState?, in dirtyRect: CGRect, with cgctx: CGContext) {
-        let h = config.lineHeight
+        let h = config.rendering.lineHeight
         let visibleLineIndices = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
         let visibleExistingLineIndices = source.storage.lines.indices.clamped(to: visibleLineIndices)
         let selectedRange = source.selectionRange
@@ -29,18 +29,19 @@ struct CodeRendering {
         for lineIndex in visibleExistingLineIndices {
             if source.breakpointLineIndices.contains(lineIndex) {
                 let f = layout.frameOfBreakpointInLine(at: lineIndex)
-                sssn.drawBreakpoint(in: f)
+                let c = config.rendering.breakPointColor
+                sssn.drawBreakpoint(in: f, color: c)
             }
         }
         
         // Draw selection background.
         for lineIndex in visibleSelectedLineRange {
             let f = layout.frameOfSelectionInLine(at: lineIndex)
-            sssn.drawBox(f, color: .selectedTextBackgroundColor)
+            sssn.drawBox(f, color: config.rendering.selectedTextBackgroundColor)
         }
         // Draw IME selection background.
         if let f = layout.frameOfIMESelection() {
-            sssn.drawBox(f, color: .selectedTextBackgroundColor)
+            sssn.drawBox(f, color: config.rendering.selectedTextBackgroundColor)
         }
         // Draw characters.
         func charactersToDrawWithConsideringIME(of lineIndex: Int) -> String {
@@ -53,14 +54,14 @@ struct CodeRendering {
         for lineIndex in visibleExistingLineIndices {
             let s = charactersToDrawWithConsideringIME(of: lineIndex)
             let f = layout.frameOfTextInLine(at: lineIndex)
-            sssn.drawText(s, font: config.font, color: .textColor, in: f)
+            sssn.drawText(s, font: config.rendering.font, color: config.rendering.textColor, in: f)
         }
         // Draw line numbers.
         for lineIndex in visibleExistingLineIndices {
             let s = "\(lineIndex)"
             let f = layout.frameOfLineNumberArea(at: lineIndex)
-            let c = NSColor.textColor.blended(withFraction: 0.5, of: NSColor.textBackgroundColor)!
-            sssn.drawTextRightAligned(s, font: config.lineNumberFont, color: c, in: f)
+            let c = config.rendering.lineNumberColor
+            sssn.drawTextRightAligned(s, font: config.rendering.lineNumberFont, color: c, in: f)
         }
         
 //        // Draw debug info.
@@ -70,40 +71,39 @@ struct CodeRendering {
 //        }
         // Draw caret.
         if let f = layout.frameOfCaret() {
-            sssn.drawBox(f, color: .textColor)
+            sssn.drawBox(f, color: config.rendering.textColor)
         }
     }
     private func session(source s: CodeSource, ime: IMEState?) -> CodeRenderingSession {
         let cgctx = NSGraphicsContext.current!.cgContext
         cgctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
-        return CodeRenderingSession(config: config, context: cgctx, source: s, imeState: ime)
+        return CodeRenderingSession(context: cgctx, source: s, imeState: ime)
     }
 }
 private struct CodeRenderingSession {
-    let config: CodeLayout.Config
     let context: CGContext
     let source: CodeSource
     let imeState: IMEState?
-    func drawText(_ s:String, font: NSFont, color c: NSColor = .textColor, in f:CGRect) {
+    func drawText(_ s:String, font: NSFont, color c: NSColor, in f:CGRect) {
         let ctline = CTLine.make(with: s, font: font, color: c)
         // First line need to be moved down by line-height
         // as CG places it above zero point.
         context.textPosition = CGPoint(
             x: f.minX,
-            y: config.font.ascender + f.minY)
+            y: font.ascender + f.minY)
         CTLineDraw(ctline, context)
     }
-    func drawTextRightAligned(_ s:String, font: NSFont, color c: NSColor = .textColor, in f:CGRect) {
+    func drawTextRightAligned(_ s:String, font: NSFont, color c: NSColor, in f:CGRect) {
         let ctline = CTLine.make(with: s, font: font, color: c)
         let w = ctline.bounds.width
         // First line need to be moved down by line-height
         // as CG places it above zero point.
         context.textPosition = CGPoint(
             x: f.maxX - w,
-            y: config.font.ascender + f.minY)
+            y: font.ascender + f.minY)
         CTLineDraw(ctline, context)
     }
-    func drawBreakpoint(in f:CGRect) {
+    func drawBreakpoint(in f:CGRect, color c:NSColor) {
         let w = f.width
         let h = f.height
         let hh = h / 2
@@ -119,7 +119,7 @@ private struct CodeRenderingSession {
             CGPoint(x: x,           y: y + h),
         ])
         context.addPath(p)
-        context.setFillColor(NSColor.controlAccentColor.cgColor)
+        context.setFillColor(c.cgColor)
         context.fillPath()
     }
     func drawBox(_ f:CGRect, color c: NSColor) {

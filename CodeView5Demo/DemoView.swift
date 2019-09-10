@@ -52,6 +52,8 @@ final class DemoView: NSView {
     ///
 
     private func install() {
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.black.cgColor
         scrollCodeView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scrollCodeView)
         NSLayoutConstraint.activate([

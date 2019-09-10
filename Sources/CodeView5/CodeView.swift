@@ -58,7 +58,7 @@ public final class CodeView: NSView {
         let p = source.caretPosition
         let line = source.storage.lines[p.lineIndex]
         let s = line[..<p.characterIndex]
-        let ctline = CTLine.make(with: String(s), font: rendering.config.font)
+        let ctline = CTLine.make(with: String(s), font: source.config.rendering.font)
         let w = CTLineGetBoundsWithOptions(ctline, []).width
         return w
     }
@@ -82,9 +82,10 @@ public final class CodeView: NSView {
 // MARK: - Initialization
     private func install() {
         wantsLayer = true
+        layer?.backgroundColor = NSColor.clear.cgColor
         typing.note.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
-        rendering.config.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? rendering.config.font
-        rendering.config.lineNumberFont = NSFont(name: "SF Compact", size: NSFont.smallSystemFontSize) ?? rendering.config.lineNumberFont
+        source.config.rendering.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? source.config.rendering.font
+        source.config.rendering.lineNumberFont = NSFont(name: "SF Compact", size: NSFont.smallSystemFontSize) ?? source.config.rendering.lineNumberFont
         control.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
     }
     
@@ -196,16 +197,16 @@ public final class CodeView: NSView {
                 source.moveToRightEndOfLineAndModifySelection()
             case #selector(moveUp(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                source.moveUp(font: rendering.config.font, at: moveVerticalAxisX!)
+                source.moveUp(font: source.config.rendering.font, at: moveVerticalAxisX!)
             case #selector(moveDown(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                source.moveDown(font: rendering.config.font, at: moveVerticalAxisX!)
+                source.moveDown(font: source.config.rendering.font, at: moveVerticalAxisX!)
             case #selector(moveUpAndModifySelection(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                source.moveUpAndModifySelection(font: rendering.config.font, at: moveVerticalAxisX!)
+                source.moveUpAndModifySelection(font: source.config.rendering.font, at: moveVerticalAxisX!)
             case #selector(moveDownAndModifySelection(_:)):
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                source.moveDownAndModifySelection(font: rendering.config.font, at: moveVerticalAxisX!)
+                source.moveDownAndModifySelection(font: source.config.rendering.font, at: moveVerticalAxisX!)
             case #selector(moveToBeginningOfDocument(_:)):
                 source.moveToBeginningOfDocument()
             case #selector(moveToBeginningOfDocumentAndModifySelection(_:)):
@@ -286,7 +287,7 @@ public final class CodeView: NSView {
         let pw = event.locationInWindow
         let pv = convert(pw, from: nil)
         let layout = CodeLayout(config: rendering.config, source: source, imeState: imeState, boundingWidth: bounds.width)
-        if pv.x < layout.config.breakpointWidth {
+        if pv.x < layout.config.rendering.breakpointWidth {
             let i = layout.clampingLineIndex(at: pv.y) 
             // Toggle breakpoint.
             source.toggleBreakPoint(at: i)

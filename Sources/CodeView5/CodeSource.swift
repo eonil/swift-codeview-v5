@@ -38,7 +38,7 @@ public struct CodeSource {
     }
     
     /// Changes in config will be applied from next editing.
-    public var config = CodeSourceEditingConfig()
+    public var config = CodeSourceConfig()
     
     /// Assigning new storage invalidates any caret/selection and set them to default value.
     public private(set) var storage = CodeStorage()
@@ -314,9 +314,9 @@ extension CodeSource {
     /// Inserts a new line replacing current selection.
     mutating func insertNewLine() {
         replaceCharactersInCurrentSelection(with: "\n")
-        if config.autoIndent {
+        if config.editing.autoIndent {
             let upLine = storage.lines[caretPosition.lineIndex-1]
-            let tabReplacement = config.makeTabReplacement()
+            let tabReplacement = config.editing.makeTabReplacement()
             let n = upLine.countPrefix(tabReplacement)
             for _ in 0..<n {
                 replaceCharactersInCurrentSelection(with: tabReplacement)
@@ -324,15 +324,15 @@ extension CodeSource {
         }
     }
     mutating func insertTab() {
-        let tabReplacement = config.makeTabReplacement()
+        let tabReplacement = config.editing.makeTabReplacement()
         replaceCharactersInCurrentSelection(with: tabReplacement)
     }
     mutating func insertBacktab() {
         let line = storage.lines[caretPosition.lineIndex]
         let n = line.countPrefix(" ")
         guard n > 0 else { return }
-        let m = (n - 1) / config.tabSpaceCount
-        let k = n - m * config.tabSpaceCount
+        let m = (n - 1) / config.editing.tabSpaceCount
+        let k = n - m * config.editing.tabSpaceCount
         for _ in 0..<k {
             deleteBackward()
         }

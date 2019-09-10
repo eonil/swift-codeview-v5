@@ -34,6 +34,7 @@ public final class ScrollCodeView: NSView {
         return window?.makeFirstResponder(codeView) ?? false
     }
     private func install() {
+        scrollView.drawsBackground = false
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(scrollView)
         NSLayoutConstraint.activate([

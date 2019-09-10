@@ -9,27 +9,17 @@ import Foundation
 import AppKit
 
 struct CodeLayout {
-    let config: Config
-    struct Config {
-        /// Treats font object as a value.
-        var font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
-        var lineNumberFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
-        
-        var lineHeight: CGFloat { -font.descender + font.ascender }
-        var breakpointWidth: CGFloat { lineHeight * 3 }
-        var gapBetweenBreakpointAndBody = CGFloat(5)
-        var bodyX: CGFloat { breakpointWidth + gapBetweenBreakpointAndBody }
-    }
+    let config: CodeSourceConfig
     let source: CodeSource
     let imeState: IMEState?
     let boundingWidth: CGFloat
 
     func measureContentSize(source :CodeSource, imeState: IMEState?) -> CGSize {
-        return CGSize(width: 500, height: config.lineHeight * CGFloat(source.storage.lines.count))
+        return CGSize(width: 500, height: config.rendering.lineHeight * CGFloat(source.storage.lines.count))
     }
     /// Finds index to a line WITHOUT considering existence of target line.
     func potentialLineIndex(at y:CGFloat) -> Int {
-        let h = config.lineHeight
+        let h = config.rendering.lineHeight
         let n = (y / h).rounded(.down)
         let i = Int(exactly: n)!
         return i
@@ -42,8 +32,8 @@ struct CodeLayout {
     /// Finds position of a character in a line at a point.
     /// - Returns: `nil` if supplied point is not belong to any character in the line.
     func clampingCharacterIndex(at x:CGFloat, inLineAt offset:Int, with f:NSFont) -> String.Index {
-        let x1 = x - config.bodyX
-        let hh = config.lineHeight / 2
+        let x1 = x - config.rendering.bodyX
+        let hh = config.rendering.lineHeight / 2
         let line = source.storage.lines[offset]
         let ctline = CTLine.make(with: line.content, font: f)
         let f = ctline.bounds
@@ -67,7 +57,7 @@ struct CodeLayout {
         let lineIndex = potentialLineIndex(at: p.y)
         let storedlineIndices = source.storage.lines.indices
         if storedlineIndices.contains(lineIndex) {
-            let charIndex = clampingCharacterIndex(at: p.x, inLineAt: lineIndex, with: config.font)
+            let charIndex = clampingCharacterIndex(at: p.x, inLineAt: lineIndex, with: config.rendering.font)
             return CodeStoragePosition(lineIndex: lineIndex, characterIndex: charIndex)
         }
         else {
@@ -89,7 +79,7 @@ struct CodeLayout {
     
     func frameOfLine(at offset: Int) -> CGRect {
         let w = boundingWidth
-        let h = config.lineHeight
+        let h = config.rendering.lineHeight
         let y = CGFloat(offset) * h
         return CGRect(x: 0, y: y, width: w, height: h)
     }
@@ -101,7 +91,7 @@ struct CodeLayout {
     }
     func frameOfLineNumberArea(at offset: Int) -> CGRect {
         let lineFrame = frameOfLine(at: offset)
-        return lineFrame.divided(atDistance: config.breakpointWidth, from: .minXEdge).slice
+        return lineFrame.divided(atDistance: config.rendering.breakpointWidth, from: .minXEdge).slice
     }
     /// This does not consider IME state.
     /// Take care that this frame considers breakpoint area and is clipped by line frame.
@@ -109,8 +99,8 @@ struct CodeLayout {
     func frameOfTextSubrange(_ r:Range<String.Index>, inLineAt offset: Int) -> CGRect {
         let lineFrame = frameOfLine(at: offset)
         let lineContent = source.storage.lines[offset].content
-        let subframeInTextBounds = lineContent.frameOfCharactersInSubrange(r, withFont: config.font)
-        let subtextFrame = subframeInTextBounds.offsetBy(dx: config.bodyX, dy: lineFrame.minY)
+        let subframeInTextBounds = lineContent.frameOfCharactersInSubrange(r, withFont: config.rendering.font)
+        let subtextFrame = subframeInTextBounds.offsetBy(dx: config.rendering.bodyX, dy: lineFrame.minY)
         return CGRect(
             x: subtextFrame.minX,
             y: lineFrame.minY,
@@ -135,7 +125,7 @@ struct CodeLayout {
         let s = imes.incompleteText
         let r = imes.selectionInIncompleteText
         let x = caretOrSelFrame.maxX
-        let f = s.frameOfCharactersInSubrange(r, withFont: config.font)
+        let f = s.frameOfCharactersInSubrange(r, withFont: config.rendering.font)
         return CGRect(x: x + f.minX, y: lineFrame.minY, width: f.width, height: lineFrame.height)
     }
     
@@ -146,21 +136,21 @@ struct CodeLayout {
         guard source.selectionRange.isEmpty && (imeState?.selectionInIncompleteText.isEmpty ?? true) else { return nil }
         let p = source.caretPosition
         let line = source.storage.lines[p.lineIndex]
-        let x = CTLine.make(with: String(line[..<p.characterIndex]), font: config.font).bounds.width
-        let y = config.lineHeight * CGFloat(p.lineIndex)
+        let x = CTLine.make(with: String(line[..<p.characterIndex]), font: config.rendering.font).bounds.width
+        let y = config.rendering.lineHeight * CGFloat(p.lineIndex)
         let sIME = imeState?.incompleteText ?? ""
         let pIME = imeState?.selectionInIncompleteText.lowerBound ?? "".startIndex
-        let xIME = CTLine.make(with: String(sIME[..<pIME]), font: config.font).bounds.width
+        let xIME = CTLine.make(with: String(sIME[..<pIME]), font: config.rendering.font).bounds.width
         let caretFrame = CGRect(
-            x: config.bodyX + x + xIME,
+            x: config.rendering.bodyX + x + xIME,
             y: y,
             width: 1,
-            height: config.lineHeight)
+            height: config.rendering.lineHeight)
         return caretFrame
     }
     func frameOfBreakpointInLine(at offset: Int) -> CGRect {
-        let w = config.breakpointWidth
-        let h = config.lineHeight
+        let w = config.rendering.breakpointWidth
+        let h = config.rendering.lineHeight
         let y = h * CGFloat(offset)
         return CGRect(x: 0, y: y, width: w, height: h)
     }
