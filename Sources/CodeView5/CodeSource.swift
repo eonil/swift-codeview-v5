@@ -75,12 +75,19 @@ public struct CodeSource {
         }
     }
 
+    /// - Note:
+    ///     You have to use only valid line offsets.
     /// - TODO: Optimize this.
     /// Need to be optimized.
     /// This would be okay for a while as most people do not install
     /// too many break-points. But if there are more than 100 break-points,
     /// this is very likely to make problems.
-    public private(set) var breakpointLineIndices = Set<Int>()
+    public var breakpointLineOffsets = Set<Int>() {
+        willSet(x) {
+            let s = storage
+            precondition(x.lazy.map({ s.lines.indices.contains($0) }).reduce(true, { $0 && $1 }))
+        }
+    }
 }
 public extension CodeSource {
     var startPosition: CodeStoragePosition {
@@ -140,7 +147,7 @@ public extension CodeSource {
         // Update breakpoint positions.
         let removeLineCount = selectionRange.lineRange.count
         let newLineCharCount = s.filter({ $0 == "\n" }).count
-        breakpointLineIndices = Set(breakpointLineIndices.compactMap({ i in
+        breakpointLineOffsets = Set(breakpointLineOffsets.compactMap({ i in
             if i <= selectionRange.lowerBound.lineIndex {
                 return i
             }
@@ -388,17 +395,17 @@ private extension CodeSource {
 // MARK: BreakPoint Editing
 extension CodeSource {
     mutating func toggleBreakPoint(at lineIndex: Int) {
-        if breakpointLineIndices.contains(lineIndex) {
-            breakpointLineIndices.remove(lineIndex)
+        if breakpointLineOffsets.contains(lineIndex) {
+            breakpointLineOffsets.remove(lineIndex)
         }
         else {
-            breakpointLineIndices.insert(lineIndex)
+            breakpointLineOffsets.insert(lineIndex)
         }
     }
     mutating func insertBreakPoint(at lineIndex: Int)  {
-        breakpointLineIndices.insert(lineIndex)
+        breakpointLineOffsets.insert(lineIndex)
     }
     mutating func removeBreakPoint(for lineIndex: Int) {
-        breakpointLineIndices.remove(lineIndex)
+        breakpointLineOffsets.remove(lineIndex)
     }
 }

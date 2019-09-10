@@ -27,7 +27,7 @@ struct CodeRendering {
         
         // Draw breakpoints.
         for lineIndex in visibleExistingLineIndices {
-            if source.breakpointLineIndices.contains(lineIndex) {
+            if source.breakpointLineOffsets.contains(lineIndex) {
                 let f = layout.frameOfBreakpointInLine(at: lineIndex)
                 let c = config.rendering.breakPointColor
                 sssn.drawBreakpoint(in: f, color: c)
