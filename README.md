@@ -126,24 +126,29 @@ in `CodeStorage`. I removed them and now this is 2x faster.
 It took 2 seconds to load 10,000 lines of code.
 I think this is enough for bootstrapping implementation.
 
-Now bottlenecks are coming from these places.
+It seems bottleneck has been moved to another place.
 - Inefficient function call to static linked b-tree libraries.
-- Strict instantiation of `String` for each lines. (about 25%)
-- Baked-in grapheme-cluster validation behavior in `String`. (about 25%)
+  
+  > This has been proben as non-critical.
+  
+- Strict instantiation of `String` for each lines.
 
-Possible solutions.
-- Use `Substring` to avoid `String` instantiation. But this doesn't solve validation cost.
-- Embed b-tree code directly in module instead of linking.
-- Make a new, sharable UTF-8 string container. 
-- Use byte offset instead of opaque `String.Index` as character index for O(1) access.
+  > This was a big deal. 
 
-Once I tried using first two solutions, loading of 50,000 line code took
-2-3 seconds. That is comparable to Xcode. But I need simpler and easier codebase
-for better maintainance, therefore such optimizations has been removed.
+- Baked-in grapheme-cluster validation behavior in `String`.
 
-The problem is it's very difficult to archive Xi-Editor level performance with Swift
-as Swift requires ref-type overhead and lacks low-level memory handling in safe way.
-It would be better to have an approach like Xi-Editor or using Xi-Editor when ready.
+> This has been proven not a problem. It was my misunderstanding.
+
+
+I applied these solutions.
+
+- Use `Substring` instead of `String`. This provided huge performance gain.
+  But at same time, whole source base storage string will survive if any fragment is referenced.
+  It seems reinstantiation of base storage String regular basis is required.
+
+Now loading of 50,000 line of text take 1 second.
+Though still far slower than Xi-Editor, now it's comparable to Xcode 11 (GM). 
+It's very difficult to archive Xi-Editor level base performance. It's mysterious to me.
 
 
 

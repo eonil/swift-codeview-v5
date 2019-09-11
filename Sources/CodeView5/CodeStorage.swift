@@ -111,6 +111,7 @@ extension CodeStorage {
     /// - Returns: Range of newrly inserted characters.
     @discardableResult
     mutating func insertCharacters(_ chs: String, at p:CodeStoragePosition) -> Range<CodeStoragePosition> {
+        precondition(chs.isContiguousUTF8)
         guard !chs.isEmpty else { return p..<p }
         // Insert characters.
         let lineChars = chs.split(separator: "\n", maxSplits: .max, omittingEmptySubsequences: false)

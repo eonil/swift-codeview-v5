@@ -10,6 +10,11 @@ import AppKit
 import CoreText
 
 extension String {
+    func contiguized() -> String {
+        var s = self
+        s.makeContiguousUTF8()
+        return s
+    }
     /// Calls `Substring.frameOfCharactersInSubrange`.
     func frameOfCharactersInSubrange(_ r:Range<String.Index>, withFont f:NSFont) -> CGRect {
         return self[startIndex...].frameOfCharactersInSubrange(r, withFont: f)

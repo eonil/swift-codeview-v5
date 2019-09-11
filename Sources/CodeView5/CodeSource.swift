@@ -148,13 +148,14 @@ public extension CodeSource {
     /// 
     /// - Parameter selection: What to select after replacement operation.
     mutating func replaceCharactersInCurrentSelection(with s:String) {
+        let replacementString = s.contiguized()
         // Update storage.
         let removedPosition = storage.removeCharacters(in: selectionRange)
-        let r = storage.insertCharacters(s, at: removedPosition)
+        let r = storage.insertCharacters(replacementString, at: removedPosition)
         
         // Update breakpoint positions.
         let removeLineCount = selectionRange.lineRange.count
-        let newLineCharCount = s.filter({ $0 == "\n" }).count
+        let newLineCharCount = replacementString.filter({ $0 == "\n" }).count
         breakpointLineOffsets = Set(breakpointLineOffsets.compactMap({ i in
             if i <= selectionRange.lowerBound.lineIndex {
                 return i
