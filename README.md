@@ -13,8 +13,7 @@ Design Choices
 - No word-wrap. 
 - No "complete" level of IME support. I implemented IME support, but do not invest much time on it.
 - This is a quick bootstrapping implementation. Do not try to be perfect.
-
-- Unidirectional I/O. User input simply gets delivered to main loop
+- REPL based. In other words, *unidirectional I/O loop*. User input simply gets delivered to main loop
   and makes change in data source, and changed source will be delivered
   to renderer. macOS IME requires immediate
   
@@ -27,22 +26,19 @@ Implemented Features
 - Undo/redo.
 - Text snapshot import & export.
 - Copy & paste.
-  
-Non-Goal Features
-----------------------
-- Tracking nesting structures.
-- Asynchronous editing.
 - Line number rendering.
+- Change notifications.
+
+
 
 Non-Goals
------------------
+-------------
+- Tracking of nesting structures.
+- Asynchronous editing.
 - Word wrap.
-- Right-to-left text rendering. (such as Arabic)
+- Proper right-to-left text layout/rendering support. (such as Arabic/Hebrew)
 - Vertical text rendering.
 
-Designed Limits
--------------------
-- Maximum line count: `CodeLineKey.max`. (a.k.a. `Int32` at this point)
 
 
 Unidirectional I/O & IME
@@ -54,6 +50,8 @@ Unidirectional I/O & IME
 - `CodeView` emits modified source state.
 - External owner can modify the source and push to `CodeView` back.
 - `CodeView` can reject external push.
+
+
 
 Independent Actor
 ----------------------

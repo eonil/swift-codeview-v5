@@ -68,7 +68,7 @@ public final class CodeView: NSView {
 // MARK: - External I/O
     public let control = PassthroughSubject<Control,Never>()
     public enum Control {
-        /// Resets whole content at once with clearig all undo/redo stack.
+        /// Resets whole content at once with clearing all undo/redo stack.
         case reset(CodeSource)
         /// Pushes modified source.
         /// This command keeps undo/redo stack.
@@ -77,6 +77,17 @@ public final class CodeView: NSView {
     public let note = PassthroughSubject<Note,Never>()
     public enum Note {
         case source(CodeSource)
+//        case change(Change)
+//        struct Change {
+//            var action: Action
+//            enum Action {
+//                case replaceCharacters
+//            }
+//            var oldVersion: Int
+//            var oldSource: CodeSource
+//            var newVersion: Int
+//            var newSource: CodeSource
+//        }
     }
 
 // MARK: - Initialization
@@ -106,7 +117,7 @@ public final class CodeView: NSView {
     }
     /// Unrecords small changed made by typing or other actions.
     ///
-    /// Once end-user finished typing a line or large unit of text,
+    /// Once end-user finished typing a line,
     /// end-user would like to undo/redo that line at once instead of undo/redo
     /// them for each characters one by one.
     /// To provide such behavior, we need to "unrecord" existing small changes
@@ -124,7 +135,8 @@ public final class CodeView: NSView {
     }
     /// Records a new undo point.
     ///
-    /// You are supposed to call this function BEFORE making next changes.
+    /// You can treat this as a save-point. Calling undo rolls state back to latest save-point.
+    /// Therefore, you are supposed to call this before making new change.
     ///
     private func recordTimePoint(as kind: CodeOperationKind) {
         timeline.record(source, as: kind)

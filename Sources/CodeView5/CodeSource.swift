@@ -40,8 +40,16 @@ public struct CodeSource {
     /// Changes in config will be applied from next editing.
     public var config = CodeSourceConfig()
     
+    /// Unique identifier to distinguish different snapshot points.
+    /// This is monotonically incrementing number.
+    public private(set) var version = 1
+    
     /// Assigning new storage invalidates any caret/selection and set them to default value.
-    public private(set) var storage = CodeStorage()
+    public private(set) var storage = CodeStorage() {
+        didSet {
+            version += 1
+        }
+    }
     
     /// Caret position.
     ///
