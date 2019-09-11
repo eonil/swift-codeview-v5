@@ -63,7 +63,7 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
         let removingCharacters = content[subrange]
         let removingCharacterCount = removingCharacters.count
         let removingUTF16CodeUnitCount = removingCharacters.utf16.count
-        let insertingCharacters = String(makingContiguousUTF8: newElements)
+        let insertingCharacters = String(newElements).contiguized()
         let insertingCharacterCount = insertingCharacters.count
         let insertingUTF16CodeUnitCount = insertingCharacters.utf16.count
         content.replaceSubrange(subrange, with: insertingCharacters)
@@ -100,9 +100,9 @@ extension CodeLine {
 }
 
 private extension String {
-    init<C>(makingContiguousUTF8 s:C) where C:Collection, C.Element == Character {
-        self = String(s)
-        makeContiguousUTF8()
-        assert(isContiguousUTF8)
-    }
+//    init<C>(makingContiguousUTF8 s:C) where C:Collection, C.Element == Character {
+//        self = String(s)
+//        makeContiguousUTF8()
+//        assert(isContiguousUTF8)
+//    }
 }
