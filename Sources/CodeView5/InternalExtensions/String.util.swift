@@ -24,10 +24,8 @@ extension Substring {
     func frameOfCharactersInSubrange(_ r:Range<String.Index>, withFont f:NSFont) -> CGRect {
         let ss1 = self[..<r.lowerBound]
         let ss2 = self[r]
-        let s1 = String(ss1)
-        let s2 = String(ss2)
-        let line1 = CTLine.make(with: s1, font: f)
-        let line2 = CTLine.make(with: s2, font: f)
+        let line1 = CTLine.make(with: ss1, font: f)
+        let line2 = CTLine.make(with: ss2, font: f)
         let b1 = line1.bounds
         let b2 = line2.bounds
         return CGRect(

@@ -136,11 +136,11 @@ struct CodeLayout {
         guard source.selectionRange.isEmpty && (imeState?.selectionInIncompleteText.isEmpty ?? true) else { return nil }
         let p = source.caretPosition
         let line = source.storage.lines[p.lineIndex]
-        let x = CTLine.make(with: String(line[..<p.characterIndex]), font: config.rendering.font).bounds.width
+        let x = CTLine.make(with: line[..<p.characterIndex], font: config.rendering.font).bounds.width
         let y = config.rendering.lineHeight * CGFloat(p.lineIndex)
         let sIME = imeState?.incompleteText ?? ""
         let pIME = imeState?.selectionInIncompleteText.lowerBound ?? "".startIndex
-        let xIME = CTLine.make(with: String(sIME[..<pIME]), font: config.rendering.font).bounds.width
+        let xIME = CTLine.make(with: sIME[..<pIME], font: config.rendering.font).bounds.width
         let caretFrame = CGRect(
             x: config.rendering.bodyX + x + xIME,
             y: y,

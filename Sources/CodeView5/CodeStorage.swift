@@ -83,14 +83,29 @@ extension CodeStorage {
             return sss.joined(separator: "\n")
         }
     }
-    mutating func removeCharacters(in range: Range<CodeStoragePosition>) {
-        guard !range.isEmpty else { return }
+    /// - Returns:
+    ///     Position where the characters removed.
+    ///     Beware that character index is based on current line's content.
+    mutating func removeCharacters(in range: Range<CodeStoragePosition>) -> CodeStoragePosition {
+        guard !range.isEmpty else { return range.upperBound }
         let firstLineIndex = range.lowerBound.lineIndex
         let firstLineChars = lines[firstLineIndex][..<range.lowerBound.characterIndex]
         let lastLineIndex = range.upperBound.lineIndex
         let lastLineChars = lines[lastLineIndex][range.upperBound.characterIndex...]
         lines.removeSubrange(firstLineIndex...lastLineIndex)
-        lines.insert(CodeLine(firstLineChars + lastLineChars), at: firstLineIndex)
+        var newContent = firstLineChars
+        newContent.append(contentsOf: lastLineChars)
+        lines.insert(CodeLine(newContent), at: firstLineIndex)
+        
+        // Slow path.
+        let charCount = firstLineChars.count
+        let charIndex = newContent.index(newContent.startIndex, offsetBy: charCount)
+        return CodeStoragePosition(lineIndex: firstLineIndex, characterIndex: charIndex)
+        
+//        // Fast path.
+//        let utf8CodeUnitCount = firstLineChars.utf8.count
+//        let charIndex = newContent.utf8.index(newContent.startIndex, offsetBy: utf8CodeUnitCount)
+//        return CodeStoragePosition(lineIndex: firstLineIndex, characterIndex: charIndex)
     }
     /// This handles newlines automatically by split them into multiple lines.
     /// - Returns: Range of newrly inserted characters.

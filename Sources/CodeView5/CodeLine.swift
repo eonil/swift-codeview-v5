@@ -23,18 +23,18 @@ import Foundation
 ///
 public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
     public typealias Element = Character
-    public typealias Index = String.Index
-    public typealias SubSequence = String.SubSequence
+    public typealias Index = Substring.Index
+    public typealias SubSequence = Substring.SubSequence
     
     /// `CodeLine` ensures this to store all characters in UTF-8 encoded form in memory.
-    public private(set) var content = ""
+    public private(set) var content = Substring()
     private(set) var precomputedCharacterCount = 0
     private(set) var precomputedUTF16CodeUnitCount = 0
     /// Styles matches to each character at same offset.
     private(set) var characterStyles = [CodeStyle]()
     
     public init() {}
-    public init(_ s:String) {
+    public init(_ s:Substring) {
         let c = s.count
         content = s
         content.makeContiguousUTF8()
@@ -43,7 +43,7 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
         precomputedUTF16CodeUnitCount = s.utf16.count
         characterStyles = Array(repeatElement(.plain, count: c))
     }
-    init(content s: String, precomputedCharacterCount cc: Int, precomputedUTF16CodeUnitCount utf16uc: Int, characterStyles ss: [CodeStyle]) {
+    init(content s: Substring, precomputedCharacterCount cc: Int, precomputedUTF16CodeUnitCount utf16uc: Int, characterStyles ss: [CodeStyle]) {
         content = s
         content.makeContiguousUTF8()
         assert(content.isContiguousUTF8)
@@ -53,12 +53,12 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
     }
     
     public var count: Int { precomputedCharacterCount }
-    public var startIndex: String.Index { content.startIndex }
-    public var endIndex: String.Index { content.endIndex }
-    public func index(after i: String.Index) -> String.Index { content.index(after: i) }
-    public func index(before i: String.Index) -> String.Index { content.index(before: i) }
-    public subscript(_ i: String.Index) -> Character { content[i] }
-    public subscript(_ r: Range<String.Index>) -> Substring { content[r] }
+    public var startIndex: Index { content.startIndex }
+    public var endIndex: Index { content.endIndex }
+    public func index(after i: Index) -> Index { content.index(after: i) }
+    public func index(before i: Index) -> Index { content.index(before: i) }
+    public subscript(_ i: Index) -> Character { content[i] }
+    public subscript(_ r: Range<Index>) -> SubSequence { content[r] }
     public mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
         let removingCharacters = content[subrange]
         let removingCharacterCount = removingCharacters.count

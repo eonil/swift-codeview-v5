@@ -44,12 +44,13 @@ struct CodeRendering {
             sssn.drawBox(f, color: config.rendering.selectedTextBackgroundColor)
         }
         // Draw characters.
-        func charactersToDrawWithConsideringIME(of lineIndex: Int) -> String {
+        func charactersToDrawWithConsideringIME(of lineIndex: Int) -> Substring {
             let line = source.storage.lines[lineIndex]
             guard let imes = imeState else { return line.content }
             guard selectedRange.upperBound.lineIndex == lineIndex else { return line.content }
             let chidx = selectedRange.upperBound.characterIndex
-            return line.content.replacingCharacters(in: chidx..<chidx, with: imes.incompleteText)
+            let s = line.content.replacingCharacters(in: chidx..<chidx, with: imes.incompleteText)
+            return s[s.startIndex...]
         }
         for lineIndex in visibleExistingLineIndices {
             let s = charactersToDrawWithConsideringIME(of: lineIndex)
@@ -61,7 +62,7 @@ struct CodeRendering {
             let s = "\(lineIndex)"
             let f = layout.frameOfLineNumberArea(at: lineIndex)
             let c = config.rendering.lineNumberColor
-            sssn.drawTextRightAligned(s, font: config.rendering.lineNumberFont, color: c, in: f)
+            sssn.drawTextRightAligned(s[s.startIndex...], font: config.rendering.lineNumberFont, color: c, in: f)
         }
         
 //        // Draw debug info.
@@ -84,8 +85,8 @@ private struct CodeRenderingSession {
     let context: CGContext
     let source: CodeSource
     let imeState: IMEState?
-    func drawText(_ s:String, font: NSFont, color c: NSColor, in f:CGRect) {
-        let ctline = CTLine.make(with: s, font: font, color: c)
+    func drawText(_ ss:Substring, font: NSFont, color c: NSColor, in f:CGRect) {
+        let ctline = CTLine.make(with: ss, font: font, color: c)
         // First line need to be moved down by line-height
         // as CG places it above zero point.
         context.textPosition = CGPoint(
@@ -93,8 +94,8 @@ private struct CodeRenderingSession {
             y: font.ascender + f.minY)
         CTLineDraw(ctline, context)
     }
-    func drawTextRightAligned(_ s:String, font: NSFont, color c: NSColor, in f:CGRect) {
-        let ctline = CTLine.make(with: s, font: font, color: c)
+    func drawTextRightAligned(_ ss:Substring, font: NSFont, color c: NSColor, in f:CGRect) {
+        let ctline = CTLine.make(with: ss, font: font, color: c)
         let w = ctline.bounds.width
         // First line need to be moved down by line-height
         // as CG places it above zero point.

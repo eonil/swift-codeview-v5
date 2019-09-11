@@ -149,8 +149,8 @@ public extension CodeSource {
     /// - Parameter selection: What to select after replacement operation.
     mutating func replaceCharactersInCurrentSelection(with s:String) {
         // Update storage.
-        storage.removeCharacters(in: selectionRange)
-        let r = storage.insertCharacters(s, at: selectionRange.lowerBound)
+        let removedPosition = storage.removeCharacters(in: selectionRange)
+        let r = storage.insertCharacters(s, at: removedPosition)
         
         // Update breakpoint positions.
         let removeLineCount = selectionRange.lineRange.count
@@ -378,8 +378,7 @@ extension CodeSource {
 // MARK: Support Functions
 private extension CodeSource {
     func characterIndex(at x:CGFloat, in line:CodeLine, with f:NSFont) -> String.Index? {
-        let s = String(line.content)
-        let ctline = CTLine.make(with: s, font: f)
+        let ctline = CTLine.make(with: line.content, font: f)
         let utf16Offset = CTLineGetStringIndexForPosition(ctline, CGPoint(x: x, y: 0))
         guard utf16Offset != kCFNotFound else { return nil }
         return line.content.utf16.index(line.content.utf16.startIndex, offsetBy: utf16Offset)

@@ -9,7 +9,8 @@ import Foundation
 import AppKit
 
 extension CTLine {
-    static func make(with s:String, font f: NSFont, color c:NSColor = NSColor.textColor) -> CTLine {
+    static func make(with ss:Substring, font f: NSFont, color c:NSColor = NSColor.textColor) -> CTLine {
+        let s = String(ss)
         let x = NSAttributedString(string: s, attributes: [
             .font: f,
             .foregroundColor: c.cgColor,

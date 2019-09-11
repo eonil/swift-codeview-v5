@@ -58,7 +58,7 @@ public final class CodeView: NSView {
         let p = source.caretPosition
         let line = source.storage.lines[p.lineIndex]
         let s = line[..<p.characterIndex]
-        let ctline = CTLine.make(with: String(s), font: source.config.rendering.font)
+        let ctline = CTLine.make(with: s, font: source.config.rendering.font)
         let w = CTLineGetBoundsWithOptions(ctline, []).width
         return w
     }
