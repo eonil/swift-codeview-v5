@@ -99,10 +99,3 @@ extension CodeLine {
     }
 }
 
-private extension String {
-//    init<C>(makingContiguousUTF8 s:C) where C:Collection, C.Element == Character {
-//        self = String(s)
-//        makeContiguousUTF8()
-//        assert(isContiguousUTF8)
-//    }
-}

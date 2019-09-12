@@ -13,10 +13,6 @@ public struct CodeSourceConfig {
     public var rendering = Rendering()
     public struct Editing {
         public var tabSpaceCount = 4
-//        public func makeTabReplacement() -> Substring {
-//            let s = String(repeating: " ", count: tabSpaceCount)
-//            return s[s.startIndex...]
-//        }
         public func makeTabReplacement() -> String {
             return String(repeating: " ", count: tabSpaceCount)
         }

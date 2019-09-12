@@ -65,22 +65,42 @@ public struct CodeStorage {
 
 // MARK: Editing
 extension CodeStorage {
-    func characters(in range: Range<CodeStoragePosition>) -> String {
-        guard !range.isEmpty else { return "" }
+//    @available(*, deprecated: 0)
+//    func characters(in range: Range<CodeStoragePosition>) -> String {
+//        guard !range.isEmpty else { return "" }
+//        switch range.includedLineRange.count {
+//        case 0:
+//            return ""
+//        case 1:
+//            let lineIndex = range.lowerBound.lineIndex
+//            let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
+//            return String(lines[lineIndex].content[charRange])
+//        default:
+//            var sss = [Substring]()
+//            for lineIndex in range.includedLineRange {
+//                let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
+//                sss.append(lines[lineIndex].content[charRange])
+//            }
+//            return sss.joined(separator: "\n")
+//        }
+//    }
+    /// You can get single string by calling `join(separator: "\n")` on returning array.
+    func lineContents(in range: Range<CodeStoragePosition>) -> [Substring] {
+        guard !range.isEmpty else { return [Substring()] }
         switch range.includedLineRange.count {
         case 0:
-            return ""
+            return [Substring()]
         case 1:
             let lineIndex = range.lowerBound.lineIndex
             let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
-            return String(lines[lineIndex].content[charRange])
+            return [lines[lineIndex].content[charRange]]
         default:
             var sss = [Substring]()
             for lineIndex in range.includedLineRange {
                 let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
                 sss.append(lines[lineIndex].content[charRange])
             }
-            return sss.joined(separator: "\n")
+            return sss
         }
     }
     /// - Returns:

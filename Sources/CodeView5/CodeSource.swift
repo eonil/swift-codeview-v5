@@ -133,9 +133,9 @@ public extension CodeSource {
         let i = line.index(before: p.characterIndex)
         return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: i)
     }
-    
-    func charactersInCurrentSelection() -> String {
-        return storage.characters(in: selectionRange)
+    /// You can get single string by calling `join(separator: "\n")` on returning array.
+    func lineContentsInCurrentSelection() -> [Substring] {
+        return storage.lineContents(in: selectionRange)
     }
     /// Replaces characters in current selection.
     /// 
