@@ -8,7 +8,7 @@
 import Foundation
 import AppKit
 
-struct CodeLayout {
+public struct CodeLayout {
     let config: CodeSourceConfig
     let source: CodeSource
     let imeState: IMEState?
@@ -77,14 +77,14 @@ struct CodeLayout {
         }
     }
     
-    func frameOfLine(at offset: Int) -> CGRect {
+    public func frameOfLine(at offset: Int) -> CGRect {
         let w = boundingWidth
         let h = config.rendering.lineHeight
         let y = CGFloat(offset) * h
         return CGRect(x: 0, y: y, width: w, height: h)
     }
     /// This does not consider IME state.
-    func frameOfTextInLine(at offset: Int) -> CGRect {
+    public func frameOfTextInLine(at offset: Int) -> CGRect {
         let s = source.storage.lines[offset].content
         let r = s.startIndex..<s.endIndex
         return frameOfTextSubrange(r, inLineAt: offset)
@@ -96,7 +96,7 @@ struct CodeLayout {
     /// This does not consider IME state.
     /// Take care that this frame considers breakpoint area and is clipped by line frame.
     /// Therefore can be different with result of `frameOfTextSubrange` for same input.
-    func frameOfTextSubrange(_ r:Range<String.Index>, inLineAt offset: Int) -> CGRect {
+    public func frameOfTextSubrange(_ r:Range<String.Index>, inLineAt offset: Int) -> CGRect {
         let lineFrame = frameOfLine(at: offset)
         let lineContent = source.storage.lines[offset].content
         let subframeInTextBounds = lineContent.frameOfCharactersInSubrange(r, withFont: config.rendering.font)
@@ -132,7 +132,7 @@ struct CodeLayout {
     /// - Returns:
     ///     `nil` if caret cannot be displayed.
     ///     For example, if there's a selection, caret will not be rendered.
-    func frameOfCaret() -> CGRect? {
+    public func frameOfCaret() -> CGRect? {
         guard source.selectionRange.isEmpty && (imeState?.selectionInIncompleteText.isEmpty ?? true) else { return nil }
         let p = source.caretPosition
         let line = source.storage.lines[p.lineIndex]

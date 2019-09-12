@@ -184,3 +184,15 @@ extension CodeSource {
         breakpointLineOffsets.remove(lineIndex)
     }
 }
+
+// MARK: - Layout
+public extension CodeSource {
+    /// Makes a layout query.
+    /// - Returns:
+    ///     This is same layout query object used in `CodeView`,
+    ///     but except IME state. At this point, there's no way to get
+    ///     IME state outside of `CodeView` as IME state has many vague aspects.
+    func makeLayout(boundingWidth w: CGFloat) -> CodeLayout {
+        return CodeLayout(config: config, source: self, imeState: nil, boundingWidth: w)
+    }
+}
