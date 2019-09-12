@@ -95,6 +95,11 @@ public final class CodeView: NSView {
         /// - Note:
         ///     `CodeSource.version` can be rolled back to past one if undo has been performed.
         case replaceAllSilently(CodeSource)
+        /// Unhandled `cancelOperation` selector command.
+        /// This command is supposed to be handled by IME at first,
+        /// but when IME is inactive, this is no-op.
+        /// This is sent for any interested containers.
+        case cancelOperation
     }
 
 // MARK: - Initialization
@@ -263,6 +268,8 @@ public final class CodeView: NSView {
             case #selector(deleteToEndOfLine(_:)):
                 moveVerticalAxisX = nil
                 editor.deleteToEndOfLine()
+            case #selector(cancelOperation(_:)):
+                note.send(.cancelOperation)
             /// Mysterious message sent by AppKit.
             case #selector(noop(_:)):
                 break

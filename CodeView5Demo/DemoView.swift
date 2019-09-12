@@ -27,6 +27,8 @@ final class DemoView: NSView {
         case let .replaceAllSilently(s):
             print("ver: \(s.version), lines: \(s.storage.lines.count)")
             codeSource = s
+        case .cancelOperation:
+            print("cancel!")
         }
     }
 
