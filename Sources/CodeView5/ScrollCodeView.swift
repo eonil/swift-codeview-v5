@@ -9,18 +9,17 @@ import Foundation
 import Combine
 import AppKit
 
-/// A code-view embeded in a scroll-view.
+/// A view embedding a scroll-view and a code-view in it.
 /// This is convenient class to provide properly configured prebuilt scrolling.
 /// - Note:
 ///     This view yields first-responder state to internal code-view.
-///     You cannot access internal code-view directly.
-///     But you can I/O with internal code-view using its `Control` and `Note`.
+///     Though internal code-view is exposed to public, please do not control
+///     its layout yourself to keep it correct.
 public final class ScrollCodeView: NSView {
     private let scrollView = NSScrollView()
-    private let codeView = CodeView()
-    
-    public var control: PassthroughSubject<CodeView.Control,Never> { codeView.control }
-    public var note: PassthroughSubject<CodeView.Note,Never> { codeView.note }
+    /// Exposed to public for convenience.
+    /// Use this view to convert points/frames from/to other views.
+    public let codeView = CodeView()
     public override init(frame f: NSRect) {
         super.init(frame: f)
         install()

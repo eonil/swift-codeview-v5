@@ -49,12 +49,12 @@ final class DemoView: NSView {
     public func testTextReloading(_:AnyObject) {
         codeSource = CodeSource()
         codeSource.replaceCharactersInCurrentSelection(with: "Resets to a new document.")
-        scrollCodeView.control.send(.reset(codeSource))
+        scrollCodeView.codeView.control.send(.reset(codeSource))
     }
     @IBAction
     public func testTextEditing(_:AnyObject) {
         codeSource.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
-        scrollCodeView.control.send(.edit(codeSource, nameForMenu: "Test"))
+        scrollCodeView.codeView.control.send(.edit(codeSource, nameForMenu: "Test"))
     }
 
     ///
@@ -70,6 +70,6 @@ final class DemoView: NSView {
             scrollCodeView.topAnchor.constraint(equalTo: topAnchor),
             scrollCodeView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        scrollCodeView.note.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
+        scrollCodeView.codeView.note.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
     }
 }
