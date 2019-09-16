@@ -109,7 +109,7 @@ public final class CodeView: NSView {
     private func install() {
         wantsLayer = true
         layer?.backgroundColor = NSColor.clear.cgColor
-        typing.note = { m in
+        typing.note = { [weak self] m in
             DispatchQueue.main.async { [weak self] in
                 RunLoop.main.perform { [weak self] in
                     self?.process(m)

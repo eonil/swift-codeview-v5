@@ -67,7 +67,7 @@ final class DemoView: NSView {
             scrollCodeView.topAnchor.constraint(equalTo: topAnchor),
             scrollCodeView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        scrollCodeView.codeView.note = { n in
+        scrollCodeView.codeView.note = { [weak self] n in
             DispatchQueue.main.async { [weak self] in
                 RunLoop.main.perform { [weak self] in
                     self?.process(n)
