@@ -59,7 +59,6 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
         note?(.issueEditingCommand(selector))
     }
     
-    private var cancellables = [AnyCancellable]()
     private(set) var isMarked = false
     /// Marked text.
     private(set) var markedTextBuffer = NSString()
