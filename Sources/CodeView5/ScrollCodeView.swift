@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Combine
 import AppKit
 
 /// A view embedding a scroll-view and a code-view in it.

@@ -8,7 +8,6 @@
 
 import Foundation
 import AppKit
-import Combine
 
 final class TextTyping {
     private let client: TextTypingClient
@@ -21,8 +20,13 @@ final class TextTyping {
     deinit {
         deactivate()
     }
-    var control: PassthroughSubject<TextTypingControl,Never> { client.control }
-    var note: PassthroughSubject<TextTypingNote,Never> { client.note }
+    func control(_ c:TextTypingControl) {
+        client.control(c)
+    }
+    var note: ((TextTypingNote) -> Void)? {
+        get { client.note }
+        set(x) { client.note = x }
+    }
     func activate() {
         context.activate()
     }
@@ -42,11 +46,17 @@ final class TextTyping {
 }
 
 private final class TextTypingClient: NSObject, NSTextInputClient {
-    let control = PassthroughSubject<TextTypingControl,Never>()
-    let note = PassthroughSubject<TextTypingNote,Never>()
+    func control(_ c:TextTypingControl) {
+        DispatchQueue.main.async { [weak self] in
+            RunLoop.main.perform { [weak self] in
+                self?.process(c)
+            }
+        }
+    }
+    var note: ((TextTypingNote) -> Void)?
     
     func doCommand(by selector: Selector) {
-        note.send(.issueEditingCommand(selector))
+        note?(.issueEditingCommand(selector))
     }
     
     private var cancellables = [AnyCancellable]()
@@ -69,12 +79,11 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
     
     override init() {
         super.init()
-        control.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &cancellables)
     }
     func insertText(_ string: Any, replacementRange: NSRange) {
         /// Insert into target position.
         let newString = extractString(string)
-        note.send(.placeText(newString as String))
+        note?(.placeText(newString as String))
         
         /// Erase marked text.
         isMarked = false
@@ -89,14 +98,14 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
         
         let s = markedTextBuffer as String
         let r = Range(markedTextSelectedRange, in: s)!
-        note.send(.previewIncompleteText(content: markedTextBuffer as String, selection: r))
+        note?(.previewIncompleteText(content: markedTextBuffer as String, selection: r))
     }
     func unmarkText() {
         let newString = markedTextBuffer
         isMarked = false
         markedTextBuffer = NSString()
         markedTextSelectedRange = NSRange(location: 0, length: 0)
-        note.send(.placeText(newString as String))
+        note?(.placeText(newString as String))
     }
     func selectedRange() -> NSRange {
         return markedTextSelectedRange

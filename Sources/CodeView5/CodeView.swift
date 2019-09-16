@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import Combine
 import AppKit
 
 /// Rendering and interaction surface for code-text.
@@ -45,8 +44,6 @@ import AppKit
 ///
 public final class CodeView: NSView {
     private let typing = TextTyping()
-    private var pipes = [AnyCancellable]()
-    
     private var editor = CodeSourceEditor()
     private var imeState = IMEState?.none
     private var timeline = CodeTimeline()
@@ -66,7 +63,13 @@ public final class CodeView: NSView {
     private var rendering = CodeRendering()
 
 // MARK: - External I/O
-    public let control = PassthroughSubject<Control,Never>()
+    public func control(_ c:Control) {
+        DispatchQueue.main.async { [weak self] in
+            RunLoop.main.perform { [weak self] in
+                self?.process(c)
+            }
+        }
+    }
     public enum Control {
         /// Resets whole content at once with clearing all undo/redo stack.
         case reset(CodeSource)
@@ -74,7 +77,7 @@ public final class CodeView: NSView {
         /// This command keeps undo/redo stack.
         case edit(CodeSource, nameForMenu:String)
     }
-    public let note = PassthroughSubject<Note,Never>()
+    public var note: ((Note) -> Void)?
     public enum Note {
         /// Notifies view conetnt has been updated by editing action.
         /// These are actiona that create new history point in timeline.
@@ -106,11 +109,16 @@ public final class CodeView: NSView {
     private func install() {
         wantsLayer = true
         layer?.backgroundColor = NSColor.clear.cgColor
-        typing.note.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
+        typing.note = { m in
+            DispatchQueue.main.async { [weak self] in
+                RunLoop.main.perform { [weak self] in
+                    self?.process(m)
+                }
+            }
+        }
         editor.source.config.rendering.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? editor.source.config.rendering.font
         editor.source.config.rendering.lineNumberFont = NSFont(name: "SF Compact", size: NSFont.smallSystemFontSize) ?? editor.source.config.rendering.lineNumberFont
-        editor.note = { [weak self] in self?.note.send($0) }
-        control.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
+        editor.note = { [weak self] in self?.note?($0) }
     }
     
     // MARK: - Undo/Redo Support
@@ -269,7 +277,7 @@ public final class CodeView: NSView {
                 moveVerticalAxisX = nil
                 editor.deleteToEndOfLine()
             case #selector(cancelOperation(_:)):
-                note.send(.cancelOperation)
+                note?(.cancelOperation)
             /// Mysterious message sent by AppKit.
             case #selector(noop(_:)):
                 break
@@ -283,7 +291,7 @@ public final class CodeView: NSView {
         let f  = layout.frameOfSelectionInLine(at: editor.source.caretPosition.lineIndex)
         let f1 = convert(f, to: nil)
         let f2 = window?.convertToScreen(f1) ?? .zero
-        typing.control.send(.setTypingFrame(f2))
+        typing.control(.setTypingFrame(f2))
 
         render()
     }

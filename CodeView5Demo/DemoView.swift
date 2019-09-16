@@ -7,14 +7,11 @@
 //
 
 import Foundation
-import Combine
 import AppKit
 import CodeView5
 
 final class DemoView: NSView {
     private let scrollCodeView = ScrollCodeView()
-    private var pipes = [AnyCancellable]()
-//    private let codeView = CodeView()
     private var codeSource = CodeSource()
     
     private func process(_ n:CodeView.Note) {
@@ -49,12 +46,12 @@ final class DemoView: NSView {
     public func testTextReloading(_:AnyObject) {
         codeSource = CodeSource()
         codeSource.replaceCharactersInCurrentSelection(with: "Resets to a new document.")
-        scrollCodeView.codeView.control.send(.reset(codeSource))
+        scrollCodeView.codeView.control(.reset(codeSource))
     }
     @IBAction
     public func testTextEditing(_:AnyObject) {
         codeSource.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
-        scrollCodeView.codeView.control.send(.edit(codeSource, nameForMenu: "Test"))
+        scrollCodeView.codeView.control(.edit(codeSource, nameForMenu: "Test"))
     }
 
     ///
@@ -70,6 +67,12 @@ final class DemoView: NSView {
             scrollCodeView.topAnchor.constraint(equalTo: topAnchor),
             scrollCodeView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        scrollCodeView.codeView.note.sink(receiveValue: { [weak self] in self?.process($0) }).store(in: &pipes)
+        scrollCodeView.codeView.note = { n in
+            DispatchQueue.main.async { [weak self] in
+                RunLoop.main.perform { [weak self] in
+                    self?.process(n)
+                }
+            }
+        }
     }
 }
