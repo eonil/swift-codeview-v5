@@ -11,6 +11,8 @@ import AppKit
 
 /// Rendering and interaction surface for code-text.
 ///
+/// This is a client for `CodeManagement`.
+///
 /// `CodeView` is buildt in simple REPL.
 /// - Read: `typing` manages end-user's typing input with IME support.
 /// - Eval: `state` is a full value-semantic state and modifier around it.
@@ -66,14 +68,10 @@ import AppKit
 /// when unsynchronized.
 public final class CodeView: NSView, NSUserInterfaceValidations {
     private let typing = TextTyping()
-    private let management = CodeManagement()
+    private var management: CodeManagement?
     private var config = CodeConfig()
     private var state = CodeState()
-    
-    private var processKeySeed = 0
-    private var latestSentProcessKey = 0
-    private var latestReceivedProcessKey = 0
-    public var isSynchronized: Bool { latestSentProcessKey == latestReceivedProcessKey }
+    public var isSynchronized: Bool { true }
 
     // MARK: - External I/O
     /// Sends control message. **You can send control message only when `isSynchronized == true`.**
@@ -81,11 +79,18 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     public func control(_ c:Control) {
         precondition(isSynchronized)
         switch c {
-        case let .reset(s):     sendManagementControl(.reset(s))
-        case let .edit(s,n):    sendManagementControl(.edit(s, nameForMenu: n))
+        case let .setServerAddress(k):
+            management = CodeManagement.search(for: k)
+            management?.note = { [weak self] n in self?.process(n) }
+            sendManagementControl(.query)
+        case let .reset(s):
+            sendManagementEditingControl(.reset(s))
+        case let .edit(s,n):
+            sendManagementEditingControl(.edit(s, nameForMenu: n))
         }
     }
     public enum Control {
+        case setServerAddress(managementKey: CodeManagement.Key)
         /// Resets whole content at once with clearing all undo/redo stack.
         case reset(CodeSource)
         /// Pushes modified source.
@@ -132,28 +137,24 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
                 }
             }
         }
-        management.note = { [weak self] n in
-            DispatchQueue.main.async { [weak self] in
-                RunLoop.main.perform(inModes: [.common]) { [weak self] in
-                    self?.process(n)
-                }
-            }
-        }
     }
     private func process(_ n:CodeManagement.Note) {
-        config = n.config
-        state = n.state
-        /// Render after setting config/state
-        /// so they can calculate based on latest state correctly.
-        render(invalidatedRegion: n.invalidatedRegion)
-        note?(.editing(state.source))
-        latestReceivedProcessKey = n.key
+        switch n {
+        case let .snapshot(x):
+            config = x.config
+            state = x.state
+            /// Render after setting config/state
+            /// so they can calculate based on latest state correctly.
+            render(invalidatedRegion: x.invalidatedRegion)
+            note?(.editing(state.source))
+        }
     }
     /// Central procesure to perform an editing.
-    private func sendManagementControl(_ c:CodeEditing.Control) {
-        processKeySeed += 1
-        latestSentProcessKey = processKeySeed
-        management.control(c, with: latestSentProcessKey)
+    private func sendManagementControl(_ c:CodeManagement.Control) {
+        management?.process(c)
+    }
+    private func sendManagementEditingControl(_ c:CodeEditing.Control) {
+        sendManagementControl(.editing(c))
     }
     
     // MARK: - Rendering
@@ -185,7 +186,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     
     // MARK: - Message Processing
     private func process(_ n:TextTypingNote) {
-        sendManagementControl(.textTyping(n))
+        sendManagementEditingControl(.textTyping(n))
         let f = state.typingFrame(config: config, in: bounds)
         let f1 = convert(f, to: nil)
         let f2 = window?.convertToScreen(f1) ?? .zero
@@ -221,7 +222,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
             kind: .down,
             pointInBounds: pv,
             bounds: bounds)
-        sendManagementControl(.mouse(mc))
+        sendManagementEditingControl(.mouse(mc))
     }
     public override func mouseDragged(with event: NSEvent) {
         typing.processEvent(event)
@@ -233,7 +234,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
             kind: .dragged,
             pointInBounds: pv,
             bounds: bounds)
-        sendManagementControl(.mouse(mc))
+        sendManagementEditingControl(.mouse(mc))
     }
     public override func mouseUp(with event: NSEvent) {
         typing.processEvent(event)
@@ -243,10 +244,10 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
             kind: .up,
             pointInBounds: pv,
             bounds: bounds)
-        sendManagementControl(.mouse(mc))
+        sendManagementEditingControl(.mouse(mc))
     }
     public override func selectAll(_ sender: Any?) {
-        sendManagementControl(.selectAll)
+        sendManagementEditingControl(.selectAll)
     }
     @IBAction
     func copy(_:AnyObject) {
@@ -264,7 +265,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         let sss = state.source.lineContentsInCurrentSelection()
         let s = sss.joined(separator: "\n")
         state.source.replaceCharactersInCurrentSelection(with: "")
-        sendManagementControl(.edit(state.source, nameForMenu: "Cut"))
+        sendManagementEditingControl(.edit(state.source, nameForMenu: "Cut"))
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(s, forType: .string)
     }
@@ -274,19 +275,19 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         guard isSynchronized else { return }
         guard let s = NSPasteboard.general.string(forType: .string) else { return }
         state.source.replaceCharactersInCurrentSelection(with: s)
-        sendManagementControl(.edit(state.source, nameForMenu: "Paste"))
+        sendManagementEditingControl(.edit(state.source, nameForMenu: "Paste"))
     }
     @IBAction
     func undo(_:AnyObject) {
         assert(isSynchronized)
         guard isSynchronized else { return }
-        sendManagementControl(.tryUndo)
+        sendManagementEditingControl(.tryUndo)
     }
     @IBAction
     func redo(_:AnyObject) {
         assert(isSynchronized)
         guard isSynchronized else { return }
-        sendManagementControl(.tryRedo)
+        sendManagementEditingControl(.tryRedo)
     }
     /// Defined to make `noop(_:)` selector to cheat compiler.
     @objc

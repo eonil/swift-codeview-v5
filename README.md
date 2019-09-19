@@ -6,7 +6,6 @@ An alternative option of Cocoa view to edit code-like text.
 
 
 
-
 Design Choices
 -------------------
 - Aims for best maintainanceability. Simplicity over performance.
@@ -17,7 +16,8 @@ Design Choices
 - REPL based. In other words, *unidirectional I/O loop*. User input simply gets delivered to main loop
   and makes change in data source, and changed source will be delivered
   to renderer. macOS IME requires immediate
-  
+- **Server/client structure to be a part of bigger REPL structure.**
+
 Implemented Features
 --------------------------
 - Basic text editing.
@@ -107,49 +107,6 @@ public.
 
 
 
-Performance
-----------------
-At first, `CodeView5` was 10-20x slower than Xcode, 
-and 100-200x slower than Xi-Editor. 
-
-Loading of 50,000 lines. Measured manually by counting seconds.
-- CodeView5: about 20 seconds.
-- Xcode: about 2 seconds.
-- Xi-Editor: less than 0.1 second.
-
-Major causes of current slowness. was duplicated b-tree structures
-in `CodeStorage`. I removed them and now this is 2x faster.
-
-- CodeView5: about 10 seconds.
-- Xcode: about 2 seconds.
-- Xi-Editor: less than 0.1 second.
-
-It took 2 seconds to load 10,000 lines of code.
-I think this is enough for bootstrapping implementation.
-
-It seems bottleneck has been moved to another place.
-- Inefficient function call to static linked b-tree libraries.
-  
-  > This has been proben as non-critical.
-  
-- Strict instantiation of `String` for each lines.
-
-  > This was a big deal. 
-
-- Baked-in grapheme-cluster validation behavior in `String`.
-
-> This has been proven not a problem. It was my misunderstanding.
-
-
-I applied these solutions.
-
-- Use `Substring` instead of `String`. This provided huge performance gain.
-  But at same time, whole source base storage string will survive if any fragment is referenced.
-  It seems reinstantiation of base storage String regular basis is required.
-
-Now loading of 50,000 line of text take 1 second.
-Though still far slower than Xi-Editor, now it's comparable to Xcode 11 (GM). 
-It's very difficult to archive Xi-Editor level base performance. It's mysterious to me.
 
 
 

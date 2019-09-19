@@ -11,6 +11,7 @@ import AppKit
 import CodeView5
 
 final class DemoView: NSView, NSUserInterfaceValidations {
+    private let codeManagement = CodeManagement()
     private let scrollCodeView = ScrollCodeView()
     private var codeSource = CodeSource()
     
@@ -80,5 +81,6 @@ final class DemoView: NSView, NSUserInterfaceValidations {
                 }
             }
         }
+        scrollCodeView.codeView.control(.setServerAddress(managementKey: codeManagement.key))
     }
 }
