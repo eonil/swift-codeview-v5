@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct IMEState {
+public struct IMEState {
     var incompleteText = ""
     var selectionInIncompleteText = "".startIndex..<"".endIndex
     var selectionInIncompleteTextAsUTF8CodeUnitOffset: Range<Int> {

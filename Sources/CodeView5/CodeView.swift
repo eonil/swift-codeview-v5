@@ -101,14 +101,15 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         /// This can happen by content reloading or undo/redo operation.
         /// In that case, you must abandon any existing content
         /// and should replace all from the source.
-        case editing(CodeSource)
-        /// Notifies silent replacement of source.
-        /// These are all non-editing action based replacement.
-        /// As there's no editing action, we cannot notify as editing
-        /// but they still should be notified.
-        /// - Note:
-        ///     `CodeSource.version` can be rolled back to past one if undo has been performed.
-        case replaceAllSilently(CodeSource)
+        case editing(CodeConfig,CodeSource,IMEState?)
+//        /// Notifies silent replacement of source.
+//        /// These are all non-editing action based replacement.
+//        /// As there's no editing action, we cannot notify as editing
+//        /// but they still should be notified.
+//        /// - Note:
+//        ///     `CodeSource.version` can be rolled back to past one if undo has been performed.
+//        /// Config and IME state are provided for layout calculation.
+//        case replaceAllSilently(CodeConfig, CodeSource, IMEState)
         /// Unhandled `cancelOperation` selector command.
         /// This command is supposed to be handled by IME at first,
         /// but when IME is inactive, this is no-op.
@@ -131,7 +132,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         /// Render after setting config/state
         /// so they can calculate based on latest state correctly.
         render(invalidatedRegion: editing.invalidatedRegion)
-        note?(.editing(sourceToNote))
+        note?(.editing(config, sourceToNote, state.imeState))
     }
     
     // MARK: - Rendering

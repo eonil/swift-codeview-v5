@@ -16,7 +16,7 @@ final class DemoView: NSView {
     
     private func process(_ n:CodeView.Note) {
         switch n {
-        case let .editing(src):
+        case let .editing(_,src,_):
             print("ver: \(src.version)")
             for p in src.timeline.points {
                 let oldContent = p.baseSnapshot.lineContents(in: p.replacementRange).joined(separator: "\n")
@@ -24,9 +24,9 @@ final class DemoView: NSView {
                 print("#\(p.key): `\(oldContent)` -> `\(newContent)`")
             }
             codeSource = src
-        case let .replaceAllSilently(s):
-            print("ver: \(s.version), lines: \(s.storage.lines.count)")
-            codeSource = s
+//        case let .replaceAllSilently(s):
+//            print("ver: \(s.version), lines: \(s.storage.lines.count)")
+//            codeSource = s
         case .cancelOperation:
             print("cancel!")
         }
