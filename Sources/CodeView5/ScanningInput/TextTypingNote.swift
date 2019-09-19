@@ -17,8 +17,6 @@ enum TextTypingNote {
     case previewIncompleteText(content: String, selection: Range<String.Index>)
     /// Inserts new characters at current selection.
     case placeText(String)
-    /// Notes command issued by end-user.
-    /// Passed selector is unknown. There's no definition in Apple documentation.
-    /// But I think you can assume it as one method of `NSStandardKeyBindingResponding`.
-    case issueEditingCommand(Selector)
+    /// Processs command issued by end-user.
+    case processEditingCommand(TextTypingCommand)
 }

@@ -201,89 +201,83 @@ public final class CodeView: NSView {
             imeState = nil
             editor.replaceCharactersInCurrentSelection(with: s)
             recordTimePoint(as: .typingCharacter)
-        case let .issueEditingCommand(sel):
-            switch sel {
-            case #selector(moveLeft(_:)):
+        case let .processEditingCommand(cmd):
+            switch cmd {
+            case .moveLeft:
                 moveVerticalAxisX = nil
                 editor.moveLeft()
-            case #selector(moveRight(_:)):
+            case .moveRight:
                 moveVerticalAxisX = nil
                 editor.moveRight()
-            case #selector(moveLeftAndModifySelection(_:)):
+            case .moveLeftAndModifySelection:
                 moveVerticalAxisX = nil
                 editor.moveLeftAndModifySelection()
-            case #selector(moveRightAndModifySelection(_:)):
+            case .moveRightAndModifySelection:
                 moveVerticalAxisX = nil
                 editor.moveRightAndModifySelection()
-            case #selector(moveToLeftEndOfLine(_:)):
+            case .moveToLeftEndOfLine:
                 moveVerticalAxisX = nil
                 editor.moveToLeftEndOfLine()
-            case #selector(moveToRightEndOfLine(_:)):
+            case .moveToRightEndOfLine:
                 moveVerticalAxisX = nil
                 editor.moveToRightEndOfLine()
-            case #selector(moveToLeftEndOfLineAndModifySelection(_:)):
+            case .moveToLeftEndOfLineAndModifySelection:
                 moveVerticalAxisX = nil
                 editor.moveToLeftEndOfLineAndModifySelection()
-            case #selector(moveToRightEndOfLineAndModifySelection(_:)):
+            case .moveToRightEndOfLineAndModifySelection:
                 moveVerticalAxisX = nil
                 editor.moveToRightEndOfLineAndModifySelection()
-            case #selector(moveUp(_:)):
+            case .moveUp:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 editor.moveUp(font: editor.config.rendering.font, at: moveVerticalAxisX!)
-            case #selector(moveDown(_:)):
+            case .moveDown:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 editor.moveDown(font: editor.config.rendering.font, at: moveVerticalAxisX!)
-            case #selector(moveUpAndModifySelection(_:)):
+            case .moveUpAndModifySelection:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 editor.moveUpAndModifySelection(font: editor.config.rendering.font, at: moveVerticalAxisX!)
-            case #selector(moveDownAndModifySelection(_:)):
+            case .moveDownAndModifySelection:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 editor.moveDownAndModifySelection(font: editor.config.rendering.font, at: moveVerticalAxisX!)
-            case #selector(moveToBeginningOfDocument(_:)):
+            case .moveToBeginningOfDocument:
                 editor.moveToBeginningOfDocument()
-            case #selector(moveToBeginningOfDocumentAndModifySelection(_:)):
+            case .moveToBeginningOfDocumentAndModifySelection:
                 moveVerticalAxisX = nil
                 editor.moveToBeginningOfDocumentAndModifySelection()
-            case #selector(moveToEndOfDocument(_:)):
+            case .moveToEndOfDocument:
                 moveVerticalAxisX = nil
                 editor.moveToEndOfDocument()
-            case #selector(moveToEndOfDocumentAndModifySelection(_:)):
+            case .moveToEndOfDocumentAndModifySelection:
                 moveVerticalAxisX = nil
                 editor.moveToEndOfDocumentAndModifySelection()
-            case #selector(selectAll(_:)):
+            case .selectAll:
                 moveVerticalAxisX = nil
                 editor.selectAll()
-            case #selector(insertNewline(_:)):
+            case .insertNewline:
                 unrecordAllInsignificantTimelinePoints()
                 recordTimePoint(as: .typingNewLine)
                 moveVerticalAxisX = nil
                 editor.insertNewLine()
-            case #selector(insertTab(_:)):
+            case .insertTab:
                 moveVerticalAxisX = nil
                 editor.insertTab()
-            case #selector(insertBacktab(_:)):
+            case .insertBacktab:
                 moveVerticalAxisX = nil
                 editor.insertBacktab()
-            case #selector(deleteForward(_:)):
+            case .deleteForward:
                 moveVerticalAxisX = nil
                 editor.deleteForward()
-            case #selector(deleteBackward(_:)):
+            case .deleteBackward:
                 moveVerticalAxisX = nil
                 editor.deleteBackward()
-            case #selector(deleteToBeginningOfLine(_:)):
+            case .deleteToBeginningOfLine:
                 moveVerticalAxisX = nil
                 editor.deleteToBeginningOfLine()
-            case #selector(deleteToEndOfLine(_:)):
+            case .deleteToEndOfLine:
                 moveVerticalAxisX = nil
                 editor.deleteToEndOfLine()
-            case #selector(cancelOperation(_:)):
+            case .cancelOperation:
                 note?(.cancelOperation)
-            /// Mysterious message sent by AppKit.
-            case #selector(noop(_:)):
-                break
-            default:
-                assert(false,"Unhandled editing command: \(sel)")
-                break
             }
         }
         

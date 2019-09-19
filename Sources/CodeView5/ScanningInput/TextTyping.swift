@@ -56,7 +56,8 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
     var note: ((TextTypingNote) -> Void)?
     
     func doCommand(by selector: Selector) {
-        note?(.issueEditingCommand(selector))
+        guard let cmd = TextTypingCommand(selector) else { return }
+        note?(.processEditingCommand(cmd))
     }
     
     private(set) var isMarked = false

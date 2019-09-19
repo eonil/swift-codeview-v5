@@ -28,7 +28,7 @@ enum TextTypingCommand {
     case moveToBeginningOfDocumentAndModifySelection
     case moveToEndOfDocumentAndModifySelection
     case selectAll
-    case insertNewLine
+    case insertNewline
     case insertTab
     case insertBacktab
     case deleteForward
@@ -40,10 +40,8 @@ enum TextTypingCommand {
 
 extension TextTypingCommand {
     init?(_ sel:Selector) {
-        if let x = make(sel) {
-            self = x
-        }
-        return nil
+        guard let x = make(sel) else { return nil }
+        self = x
     }
 }
 
@@ -58,9 +56,9 @@ private func make(_ sel:Selector) -> TextTypingCommand? {
     case #selector(K.moveRightAndModifySelection(_:)):                  return .moveRightAndModifySelection
     case #selector(K.moveToLeftEndOfLine(_:)):                          return .moveToLeftEndOfLine
     case #selector(K.moveToRightEndOfLine(_:)):                         return .moveToRightEndOfLine
-    case #selector(K.moveToLeftEndOfLineAndModifySelection(_:)):          return .moveToLeftEndOfLineAndModifySelection
-    case #selector(K.moveToRightEndOfLineAndModifySelection(_:)):         return .moveToRightEndOfLineAndModifySelection
-    case #selector(K.moveUp(_:)):                                         return .moveUp
+    case #selector(K.moveToLeftEndOfLineAndModifySelection(_:)):        return .moveToLeftEndOfLineAndModifySelection
+    case #selector(K.moveToRightEndOfLineAndModifySelection(_:)):       return .moveToRightEndOfLineAndModifySelection
+    case #selector(K.moveUp(_:)):                                       return .moveUp
     case #selector(K.moveDown(_:)):                                     return .moveDown
     case #selector(K.moveUpAndModifySelection(_:)):                     return .moveUpAndModifySelection
     case #selector(K.moveDownAndModifySelection(_:)):                   return .moveDownAndModifySelection
@@ -69,7 +67,7 @@ private func make(_ sel:Selector) -> TextTypingCommand? {
     case #selector(K.moveToEndOfDocument(_:)):                          return .moveToEndOfDocument
     case #selector(K.moveToEndOfDocumentAndModifySelection(_:)):        return .moveToEndOfDocumentAndModifySelection
     case #selector(K.selectAll(_:)):                                    return .selectAll
-    case #selector(K.insertNewline(_:)):                                return .insertNewLine
+    case #selector(K.insertNewline(_:)):                                return .insertNewline
     case #selector(K.insertTab(_:)):                                    return .insertTab
     case #selector(K.insertBacktab(_:)):                                return .insertBacktab
     case #selector(K.deleteForward(_:)):                                return .deleteForward
@@ -78,7 +76,8 @@ private func make(_ sel:Selector) -> TextTypingCommand? {
     case #selector(K.deleteToEndOfLine(_:)):                            return .deleteToEndOfLine
     case #selector(K.cancelOperation(_:)):                              return .cancelOperation
     /// Mysterious message sent by AppKit.
-    case #selector(Dummy.noop(_:)):                                     return nil
+    case #selector(Dummy.noop(_:)):
+        return nil
     default:
         assert(false,"Unhandled editing command: \(sel)")
         return nil
