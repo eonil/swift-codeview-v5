@@ -9,7 +9,7 @@ import Foundation
 import AppKit
 
 public struct CodeLayout {
-    let config: CodeSourceConfig
+    let config: CodeConfig
     let source: CodeSource
     let imeState: IMEState?
     let boundingWidth: CGFloat

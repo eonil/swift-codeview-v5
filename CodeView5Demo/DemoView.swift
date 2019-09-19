@@ -16,11 +16,17 @@ final class DemoView: NSView {
     
     private func process(_ n:CodeView.Note) {
         switch n {
-        case let .editing(ed):
-            codeSource = ed.sourceAfterReplacement
-            print("ver: \(codeSource.version), lines: \(codeSource.storage.lines.count)")
-            print(ed.sourceBeforeReplacement.lineContentsInCurrentSelection())
-            print(ed.replacementContent)
+        case let .editing(src):
+            print("ver: \(src.version)")
+            for p in src.timeline.points {
+                let oldContent = p.baseSnapshot.lineContents(in: p.replacementRange).joined(separator: "\n")
+                let newContent = p.replacementContent
+                print("#\(p.key): `\(oldContent)` -> `\(newContent)`")
+            }
+//            codeSource = ed.sourceAfterReplacement
+//            print("ver: \(codeSource.version), lines: \(codeSource.storage.lines.count)")
+//            print(ed.sourceBeforeReplacement.lineContentsInCurrentSelection())
+//            print(ed.replacementContent)
         case let .replaceAllSilently(s):
             print("ver: \(s.version), lines: \(s.storage.lines.count)")
             codeSource = s

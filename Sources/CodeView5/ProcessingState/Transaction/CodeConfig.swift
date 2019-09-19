@@ -8,7 +8,14 @@
 import Foundation
 import AppKit
 
-public struct CodeSourceConfig {
+/// Defines how editor work.
+///
+/// This provides common parameters for editor operations.
+/// That means, this is not really a part of code editing state.
+/// This is **parameters** to be spplied to each operations.
+/// Therefore, modifying config won't be regarded as state update.
+///
+public struct CodeConfig {
     public var editing = Editing()
     public var rendering = Rendering()
     public struct Editing {

@@ -85,7 +85,7 @@ extension CodeStorage {
 //        }
 //    }
     /// You can get single string by calling `join(separator: "\n")` on returning array.
-    func lineContents(in range: Range<CodeStoragePosition>) -> [Substring] {
+    public func lineContents(in range: Range<CodeStoragePosition>) -> [Substring] {
         guard !range.isEmpty else { return [Substring()] }
         switch range.includedLineRange.count {
         case 0:

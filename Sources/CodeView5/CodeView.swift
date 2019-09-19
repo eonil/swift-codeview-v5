@@ -11,30 +11,33 @@ import AppKit
 
 /// Rendering and interaction surface for code-text.
 ///
-/// `CodeView` is builds simple REPL.
+/// `CodeView` is buildt in simple REPL.
 /// - Read: `typing` manages end-user's typing input with IME support.
-/// - Eval: `source` is a full value-semantic state and modifier around it.
-/// - Print: `rendering` manages code-text rendering. Also provides layout calculation.
+/// - Eval: `state` is a full value-semantic state and modifier around it.
+/// - Print: Drawing method renders current `state`.
 ///
 /// Typing
 /// ------
 /// - This is pure input.
 /// - Scans end-user intentions.
-/// - Scanned result will be sent to `source` as messages.
-/// - Typing is an independent actor. Messages are passed using `Combine` bidirectionally.
+/// - Scanned result will be sent to `state` as messages.
+/// - Typing is an independent actor.
 ///
-/// Source
-/// ------
+/// State
+/// -----
 /// - This is fully value semantic. No shared mutable reference.
 /// - This is referentially transparent. Same input produces same output. No global state.
-/// - Source is not an independent actor. Processing is done by simple function call.
-/// - Source is pure value & functions. There's no concept of event.
+/// - State is not an independent actor. Processing is done by simple function call.
+/// - State is pure value & functions. There's no concept of event.
 ///
 /// Rendering
 /// ---------
-/// - This is pure output. Renders `source` to screen.
-/// - In this case, `source` itself becomes message to render.
-/// - Renderer is not an independent actor. Rendering is done by simple function call.
+/// - This is a pure output. Renders `source` to screen.
+/// - You can consider rendering as a transformation of `state` to an opaque result value.
+/// - That result you cannot access.
+/// - In this case, `state` itself is the value to render.
+/// - Renderering does not involve any an independent actor.
+/// - Rendering is done by simple function call.
 ///
 /// Design Choicese
 /// ---------------
@@ -44,23 +47,8 @@ import AppKit
 ///
 public final class CodeView: NSView, NSUserInterfaceValidations {
     private let typing = TextTyping()
-    private var editor = CodeSourceEditor()
-    private var imeState = IMEState?.none
-    private var timeline = CodeTimeline()
-    
-    /// Vertical caret movement between lines needs base X coordinate to align them on single line.
-    /// Here the basis X cooridnate will be stored to provide aligned vertical movement.
-    private var moveVerticalAxisX = CGFloat?.none
-    private func findAxisXForVerticalMovement() -> CGFloat {
-        let p = editor.caretPosition
-        let line = editor.storage.lines[p.lineIndex]
-        let s = line[..<p.characterIndex]
-        let ctline = CTLine.make(with: s, font: editor.config.rendering.font)
-        let w = CTLineGetBoundsWithOptions(ctline, []).width
-        return w
-    }
-    
-    private var rendering = CodeRendering()
+    private var config = CodeConfig()
+    private var state = CodeState()
 
     // MARK: - External I/O
     public func control(_ c:Control) {
@@ -79,18 +67,19 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     }
     public var note: ((Note) -> Void)?
     public enum Note {
-        /// Notifies view conetnt has been updated by editing action.
-        /// These are actiona that create new history point in timeline.
-        /// Editing of replacing characters in selected range.
-        /// `storageBeforeReplacement.selectedRange` is the range gets replaced.
-        /// - Note:
-        ///     `CodeSource.version` can be rolled back to past one if undo has been performed.
-        case editing(Editing)
-        public struct Editing {
-            public var replacementContent: String
-            public var sourceBeforeReplacement: CodeSource
-            public var sourceAfterReplacement: CodeSource
-        }
+        /// Notifies view content has been updated by any editing action.
+        /// These are actions that creates new history point in timeline.
+        ///
+        /// Tracking Content Changes
+        /// ------------------------
+        /// To track contet (text) changes, see `CodeSource.timeline`.
+        /// It contains changes happen in `CodeSource.storage` since last emission.
+        /// The timeline will be emptied each time after note emission.
+        /// **If `CodeSource.timeline` is empty, it means whole snapshot replacement**.
+        /// This can happen by content reloading or undo/redo operation.
+        /// In that case, you must abandon any existing content
+        /// and should replace all from the source.
+        case editing(CodeSource)
         /// Notifies silent replacement of source.
         /// These are all non-editing action based replacement.
         /// As there's no editing action, we cannot notify as editing
@@ -116,47 +105,40 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
                 }
             }
         }
-        editor.source.config.rendering.font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? editor.source.config.rendering.font
-        editor.source.config.rendering.lineNumberFont = NSFont(name: "SF Compact", size: NSFont.smallSystemFontSize) ?? editor.source.config.rendering.lineNumberFont
-        editor.note = { [weak self] in self?.note?($0) }
     }
-    
-    /// Unrecords small changed made by typing or other actions.
-    ///
-    /// Once end-user finished typing a line,
-    /// end-user would like to undo/redo that line at once instead of undo/redo
-    /// them for each characters one by one.
-    /// To provide such behavior, we need to "unrecord" existing small changes
-    /// made by typing small units. This method does that unrecording.
-    /// You are supposed to record a new snapshot point to make
-    /// large unit change.
-    private func unrecordAllInsignificantTimelinePoints() {
-        // Replace any existing small typing (character-level) actions
-        // with single large typing action on new-line.
-        let s = editor
-        editor.note = nil
-        while !timeline.undoablePoints.isEmpty && !timeline.currentPoint.kind.isSignificant {
-            timeline.undo()
-        }
-        editor = s
-    }
-    /// Records a new undo point.
-    ///
-    /// You can treat this as a save-point. Calling undo rolls state back to latest save-point.
-    /// Therefore, you are supposed to call this before making new change.
-    ///
-    private func recordTimePoint(as kind: CodeOperationKind) {
-        timeline.record(editor.source, as: kind)
+    /// Central procesure to perform an editing.
+    private func performEditingRenderingAndNote(_ c:CodeEditing.Control) {
+        var editing = CodeEditing(config: config, state: state)
+        editing.process(c)
+        state = editing.state
+        render(invalidatedRegion: editing.invalidatedRegion)
+        note?(.editing(state.source))
+        state.source.cleanTimeline()
     }
     
     // MARK: - Rendering
-    private func render() {
+    private func render(invalidatedRegion: CodeEditing.InvalidatedRegion) {
         // Force to resize for new source state.
         invalidateIntrinsicContentSize()
         layoutSubtreeIfNeeded()
         // Scroll current line to be visible.
-        let layout = CodeLayout(config: rendering.config, source: editor.source, imeState: imeState, boundingWidth: bounds.width)
-        let f = layout.frameOfLine(at: editor.source.caretPosition.lineIndex)
+        let layout = CodeLayout(
+            config: config,
+            source: state.source,
+            imeState: state.imeState,
+            boundingWidth: bounds.width)
+        let f = layout.frameOfLine(
+            at: state.source.caretPosition.lineIndex)
+        
+        switch invalidatedRegion {
+        case .none:
+            break
+        case let .some(invalidatedBounds):
+            setNeedsDisplay(invalidatedBounds)
+        case .all:
+            setNeedsDisplay(bounds)
+        }
+        
         scrollToVisible(f)
         setNeedsDisplay(bounds)
     }
@@ -164,112 +146,16 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     // MARK: - Message Processing
     private func process(_ c:CodeView.Control) {
         switch c {
-        case let .reset(s):
-            editor.source = s
-            timeline = CodeTimeline(current: s)
-        case let .edit(s,n):
-            editor.source = s
-            unrecordAllInsignificantTimelinePoints()
-            recordTimePoint(as: .alienEditing(nameForMenu: n))
+        case let .reset(s):     performEditingRenderingAndNote(.reset(s))
+        case let .edit(s,n):    performEditingRenderingAndNote(.edit(s, nameForMenu: n))
         }
-        render()
     }
     private func process(_ n:TextTypingNote) {
-        switch n {
-        case let .previewIncompleteText(content, selection):
-            editor.replaceCharactersInCurrentSelection(with: "")
-            imeState = IMEState(incompleteText: content, selectionInIncompleteText: selection)
-        case let .placeText(s):
-            imeState = nil
-            editor.replaceCharactersInCurrentSelection(with: s)
-            recordTimePoint(as: .typingCharacter)
-        case let .processEditingCommand(cmd):
-            switch cmd {
-            case .moveLeft:
-                moveVerticalAxisX = nil
-                editor.moveLeft()
-            case .moveRight:
-                moveVerticalAxisX = nil
-                editor.moveRight()
-            case .moveLeftAndModifySelection:
-                moveVerticalAxisX = nil
-                editor.moveLeftAndModifySelection()
-            case .moveRightAndModifySelection:
-                moveVerticalAxisX = nil
-                editor.moveRightAndModifySelection()
-            case .moveToLeftEndOfLine:
-                moveVerticalAxisX = nil
-                editor.moveToLeftEndOfLine()
-            case .moveToRightEndOfLine:
-                moveVerticalAxisX = nil
-                editor.moveToRightEndOfLine()
-            case .moveToLeftEndOfLineAndModifySelection:
-                moveVerticalAxisX = nil
-                editor.moveToLeftEndOfLineAndModifySelection()
-            case .moveToRightEndOfLineAndModifySelection:
-                moveVerticalAxisX = nil
-                editor.moveToRightEndOfLineAndModifySelection()
-            case .moveUp:
-                moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                editor.moveUp(font: editor.config.rendering.font, at: moveVerticalAxisX!)
-            case .moveDown:
-                moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                editor.moveDown(font: editor.config.rendering.font, at: moveVerticalAxisX!)
-            case .moveUpAndModifySelection:
-                moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                editor.moveUpAndModifySelection(font: editor.config.rendering.font, at: moveVerticalAxisX!)
-            case .moveDownAndModifySelection:
-                moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                editor.moveDownAndModifySelection(font: editor.config.rendering.font, at: moveVerticalAxisX!)
-            case .moveToBeginningOfDocument:
-                editor.moveToBeginningOfDocument()
-            case .moveToBeginningOfDocumentAndModifySelection:
-                moveVerticalAxisX = nil
-                editor.moveToBeginningOfDocumentAndModifySelection()
-            case .moveToEndOfDocument:
-                moveVerticalAxisX = nil
-                editor.moveToEndOfDocument()
-            case .moveToEndOfDocumentAndModifySelection:
-                moveVerticalAxisX = nil
-                editor.moveToEndOfDocumentAndModifySelection()
-            case .selectAll:
-                moveVerticalAxisX = nil
-                editor.selectAll()
-            case .insertNewline:
-                unrecordAllInsignificantTimelinePoints()
-                recordTimePoint(as: .typingNewLine)
-                moveVerticalAxisX = nil
-                editor.insertNewLine()
-            case .insertTab:
-                moveVerticalAxisX = nil
-                editor.insertTab()
-            case .insertBacktab:
-                moveVerticalAxisX = nil
-                editor.insertBacktab()
-            case .deleteForward:
-                moveVerticalAxisX = nil
-                editor.deleteForward()
-            case .deleteBackward:
-                moveVerticalAxisX = nil
-                editor.deleteBackward()
-            case .deleteToBeginningOfLine:
-                moveVerticalAxisX = nil
-                editor.deleteToBeginningOfLine()
-            case .deleteToEndOfLine:
-                moveVerticalAxisX = nil
-                editor.deleteToEndOfLine()
-            case .cancelOperation:
-                note?(.cancelOperation)
-            }
-        }
-        
-        let layout = CodeLayout(config: rendering.config, source: editor.source, imeState: imeState, boundingWidth: bounds.width)
-        let f  = layout.frameOfSelectionInLine(at: editor.source.caretPosition.lineIndex)
+        performEditingRenderingAndNote(.textTyping(n))
+        let f = state.typingFrame(config: config, in: bounds)
         let f1 = convert(f, to: nil)
         let f2 = window?.convertToScreen(f1) ?? .zero
         typing.control(.setTypingFrame(f2))
-
-        render()
     }
     
     // MARK: - Event Hooks
@@ -297,19 +183,11 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         typing.processEvent(event)
         let pw = event.locationInWindow
         let pv = convert(pw, from: nil)
-        let layout = CodeLayout(config: rendering.config, source: editor.source, imeState: imeState, boundingWidth: bounds.width)
-        if pv.x < layout.config.rendering.breakpointWidth {
-            let i = layout.clampingLineIndex(at: pv.y) 
-            // Toggle breakpoint.
-            editor.source.toggleBreakPoint(at: i)
-        }
-        else {
-            let p = layout.clampingPosition(at: pv)
-            editor.source.caretPosition = p
-            editor.source.selectionRange = p..<p
-            editor.source.selectionAnchorPosition = p
-        }
-        setNeedsDisplay(bounds)
+        let mc = CodeEditing.Control.MouseNote(
+            kind: .down,
+            pointInBounds: pv,
+            bounds: bounds)
+        performEditingRenderingAndNote(.mouse(mc))
     }
     public override func mouseDragged(with event: NSEvent) {
         typing.processEvent(event)
@@ -317,56 +195,56 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         // Update caret and selection by mouse dragging.
         let pw = event.locationInWindow
         let pv = convert(pw, from: nil)
-        let layout = CodeLayout(config: rendering.config, source: editor.source, imeState: imeState, boundingWidth: bounds.width)
-        let p = layout.clampingPosition(at: pv)
-        let oldSource = editor
-        editor.source.modifySelectionWithAnchor(to: p)
-        // Render only if caret or selection has been changed.
-        let isRenderingInvalidated = editor.caretPosition != oldSource.caretPosition || editor.selectionRange != oldSource.selectionRange
-        if isRenderingInvalidated { setNeedsDisplay(bounds) }
+        let mc = CodeEditing.Control.MouseNote(
+            kind: .dragged,
+            pointInBounds: pv,
+            bounds: bounds)
+        performEditingRenderingAndNote(.mouse(mc))
     }
     public override func mouseUp(with event: NSEvent) {
         typing.processEvent(event)
-        editor.selectionAnchorPosition = nil
+        let pw = event.locationInWindow
+        let pv = convert(pw, from: nil)
+        let mc = CodeEditing.Control.MouseNote(
+            kind: .up,
+            pointInBounds: pv,
+            bounds: bounds)
+        performEditingRenderingAndNote(.mouse(mc))
     }
     public override func selectAll(_ sender: Any?) {
-        editor.selectAll()
-        render()
+        performEditingRenderingAndNote(.selectAll)
     }
     @IBAction
     func copy(_:AnyObject) {
-        let sss = editor.source.lineContentsInCurrentSelection()
+        let sss = state.source.lineContentsInCurrentSelection()
         let s = sss.joined(separator: "\n")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(s, forType: .string)
     }
     @IBAction
     func cut(_:AnyObject) {
-        let sss = editor.source.lineContentsInCurrentSelection()
+        let sss = state.source.lineContentsInCurrentSelection()
         let s = sss.joined(separator: "\n")
+        var source = state.source
+        source.replaceCharactersInCurrentSelection(with: "")
+        performEditingRenderingAndNote(.edit(source, nameForMenu: "Cut"))
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(s, forType: .string)
-        editor.replaceCharactersInCurrentSelection(with: "")
-        render()
     }
     @IBAction
     func paste(_:AnyObject) {
         guard let s = NSPasteboard.general.string(forType: .string) else { return }
-        editor.replaceCharactersInCurrentSelection(with: s)
-        recordTimePoint(as: .alienEditing(nameForMenu: "Paste"))
-        render()
+        var source = state.source
+        source.replaceCharactersInCurrentSelection(with: s)
+        performEditingRenderingAndNote(.edit(source, nameForMenu: "Paste"))
     }
     @IBAction
     func undo(_:AnyObject) {
-        timeline.undo()
-        editor.source = timeline.currentPoint.snapshot
-        render()
+        performEditingRenderingAndNote(.undo)
     }
     @IBAction
     func redo(_:AnyObject) {
-        timeline.redo()
-        editor.source = timeline.currentPoint.snapshot
-        render()
+        performEditingRenderingAndNote(.redo)
     }
     /// Defined to make `noop(_:)` selector to cheat compiler.
     @objc
@@ -375,21 +253,27 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     public func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         switch item.action {
         case #selector(undo(_:)):
-            return timeline.canUndo
+            return state.timeline.canUndo
         case #selector(redo(_:)):
-            return timeline.canRedo
+            return state.timeline.canRedo
         default:
             return true
         }
     }
     public override var intrinsicContentSize: NSSize {
-        let layout = CodeLayout(config: rendering.config, source: editor.source, imeState: imeState, boundingWidth: bounds.width)
-        let z = layout.measureContentSize(source: editor.source, imeState: imeState)
+        let layout = CodeLayout(
+            config: config,
+            source: state.source,
+            imeState: state.imeState,
+            boundingWidth: bounds.width)
+        let z = layout.measureContentSize(source: state.source, imeState: state.imeState)
         return CGSize(width: 300, height: z.height)
     }
     public override var isFlipped: Bool { true }
     public override func draw(_ dirtyRect: NSRect) {
         let cgctx = NSGraphicsContext.current!.cgContext
-        rendering.draw(source: editor.source, imeState: imeState, in: dirtyRect, with: cgctx)
+        var rendering = CodeRendering()
+        rendering.config = config
+        rendering.draw(source: state.source, imeState: state.imeState, in: dirtyRect, with: cgctx)
     }
 }

@@ -10,7 +10,7 @@ import AppKit
 
 /// Renders `CodeSource` in a flipped space.
 struct CodeRendering {
-    var config = CodeSourceConfig()
+    var config = CodeConfig()
     func draw(source: CodeSource, imeState: IMEState?, in dirtyRect: CGRect, with cgctx: CGContext) {
         let h = config.rendering.lineHeight
         let visibleLineIndices = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))

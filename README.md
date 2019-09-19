@@ -6,20 +6,6 @@ An alternative option of Cocoa view to edit code-like text.
 
 
 
-Design Overhaul
----------------------
-- Separate text processing engine from I/O.
-- Refit things for REPL structure.
-- All text processing of `CodeView5` is done in `CodeSource`.
-- No more work is needed.
-- How about undo/redo?
-    - That is done at timeline level.
-- How about IME?
-    - That state is currently hidden to public.
-    - IME is part of input state. Not really a part of text processing.
-    - More specifically, IME is part of `TextTyping` class.
-    - Renderer is responsible to composite `CodeSource` and IME state.
-    
 
 Design Choices
 -------------------

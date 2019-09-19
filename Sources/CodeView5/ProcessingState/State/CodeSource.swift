@@ -37,19 +37,16 @@ public struct CodeSource: CodeSourceEditing {
         selectionRange = p..<p
     }
     
-    /// Changes in config will be applied from next editing.
-    public var config = CodeSourceConfig()
-    
     /// Unique identifier to distinguish different snapshot points.
-    /// This is monotonically incrementing number.
+    /// This is a monotonically incrementing number.
     public private(set) var version = 1
-    
     /// Assigning new storage invalidates any caret/selection and set them to default value.
-    public private(set) var storage = CodeStorage() {
-        didSet {
-            version += 1
-        }
-    }
+    public private(set) var storage = CodeStorage()
+    /// Recorded changes performed on this `CodeSource`.
+    /// Owner of `CodeSource` instance can delete some recordings time-to-time.
+    /// Do not assume empty timeline as "no-change".
+    /// It only means there's "no **tracked** change".
+    public private(set) var timeline = CodeStorageTimeline()
     
     /// Caret position.
     ///
@@ -105,22 +102,22 @@ public extension CodeSource {
         return storage.lines.indices.contains(p.lineIndex)
             && (line.indices.contains(p.characterIndex) || p.characterIndex == line.endIndex)
     }
-    /// Gets a new valid position that is nearest to supplied position.
-    func nearestValidPosition(_ p:CodeStoragePosition) -> CodeStoragePosition {
-        guard !isValidPosition(p) else { return p }
-        if p.lineIndex < storage.lines.count {
-            let line = storage.lines[p.lineIndex]
-            return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: line.endIndex)
-        }
-        else {
-            return endPosition
-        }
-    }
-    func nearestValidRange(_ r:Range<CodeStoragePosition>) -> Range<CodeStoragePosition> {
-        let a = nearestValidPosition(r.lowerBound)
-        let b = nearestValidPosition(r.upperBound)
-        return a..<b
-    }
+//    /// Gets a new valid position that is nearest to supplied position.
+//    func nearestValidPosition(_ p:CodeStoragePosition) -> CodeStoragePosition {
+//        guard !isValidPosition(p) else { return p }
+//        if p.lineIndex < storage.lines.count {
+//            let line = storage.lines[p.lineIndex]
+//            return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: line.endIndex)
+//        }
+//        else {
+//            return endPosition
+//        }
+//    }
+//    func nearestValidRange(_ r:Range<CodeStoragePosition>) -> Range<CodeStoragePosition> {
+//        let a = nearestValidPosition(r.lowerBound)
+//        let b = nearestValidPosition(r.upperBound)
+//        return a..<b
+//    }
 }
 public extension CodeSource {
     private func position(after p: CodeStoragePosition) -> CodeStoragePosition {
@@ -138,32 +135,55 @@ public extension CodeSource {
         return storage.lineContents(in: selectionRange)
     }
     /// Replaces characters in current selection.
-    /// 
+    ///
+    /// This is **the only mutator** to modify underlying `CodeStorage`.
+    ///
     /// - Parameter selection: What to select after replacement operation.
     mutating func replaceCharactersInCurrentSelection(with s:String) {
+        // Prepare.
+        let baseSnapshot = storage
+        let rangeToReplace = selectionRange
         let replacementString = s.contiguized()
+        
         // Update storage.
-        let removedPosition = storage.removeCharacters(in: selectionRange)
+        let removedPosition = storage.removeCharacters(in: rangeToReplace)
         let r = storage.insertCharacters(replacementString, at: removedPosition)
         
         // Update breakpoint positions.
-        let removeLineCount = selectionRange.lineRange.count
+        let removeLineCount = rangeToReplace.lineRange.count
         let newLineCharCount = replacementString.filter({ $0 == "\n" }).count
         breakpointLineOffsets = Set(breakpointLineOffsets.compactMap({ i in
-            if i <= selectionRange.lowerBound.lineIndex {
+            if i <= rangeToReplace.lowerBound.lineIndex {
                 return i
             }
             else {
                 let k = i + -removeLineCount + newLineCharCount
-                return k <= selectionRange.lowerBound.lineIndex ? nil : k
+                return k <= rangeToReplace.lowerBound.lineIndex ? nil : k
             }
         }))
+        
+        // Record changes.
+        timeline.recordReplacement(
+            base: baseSnapshot,
+            in: rangeToReplace,
+            with: replacementString)
+        
+        // Increment version.
+        version += 1
         
         // Move carets and selection.
         let q = r.upperBound
         caretPosition = q
         selectionRange = q..<q
         selectionAnchorPosition = q
+    }
+}
+
+extension CodeSource {
+    /// Remove all points in timeline.
+    /// You must call this method at some point to reduce memory consumption of recorded points.
+    mutating func cleanTimeline() {
+        timeline.removeAll()
     }
 }
 
@@ -182,17 +202,5 @@ extension CodeSource {
     }
     mutating func removeBreakPoint(for lineIndex: Int) {
         breakpointLineOffsets.remove(lineIndex)
-    }
-}
-
-// MARK: - Layout
-public extension CodeSource {
-    /// Makes a layout query.
-    /// - Returns:
-    ///     This is same layout query object used in `CodeView`,
-    ///     but except IME state. At this point, there's no way to get
-    ///     IME state outside of `CodeView` as IME state has many vague aspects.
-    func makeLayout(boundingWidth w: CGFloat) -> CodeLayout {
-        return CodeLayout(config: config, source: self, imeState: nil, boundingWidth: w)
     }
 }
