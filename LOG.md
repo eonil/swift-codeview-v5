@@ -7,6 +7,37 @@ Work Log
 
 
 
+
+Abandon Server/Client Structure
+----------------------------------------
+I just realized that I don't have to implement server/client structure here.
+It could be implemented in a wrapper view of `CodeView`.
+Though the server would be nothing more than just a message routing channel...
+
+
+
+Conflict, Priority & Synchronization
+------------------------------------
+I didn't expect this situation. I realized that I need serious synchronization
+after I converted this into asynchronous server/client structure.
+
+The best known way to solve this is CRDT, but I don't want it now.
+Just I don't want to put too much energy on bootstraping implementation.
+Therefore, I choose the simplest solution.
+
+- Run whole server soley in main thread.
+- User-interaction client `CodeView` runs in main thread only.
+- Therefore, synchronization issue won't happen.
+- Messages from other client (e.g. RLS) will be transferred to main thread.
+- Changes made by RLS will be sent to `CodeView` client synchronosuly.
+- Therefore, no issue.
+
+I know this is suboptimal, or inferior solution.
+But this is the most time-saving solution IMO.
+
+
+
+
 Lessons
 ------------
 - It's okay to have many readers, but there must be only one mutator method.

@@ -10,8 +10,7 @@ import Foundation
 import AppKit
 import CodeView5
 
-final class DemoView: NSView, NSUserInterfaceValidations {
-    private let codeManagement = CodeManagement()
+final class DemoView: NSView {
     private let scrollCodeView = ScrollCodeView()
     private var codeSource = CodeSource()
     
@@ -57,12 +56,8 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeSource.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
         scrollCodeView.codeView.control(.edit(codeSource, nameForMenu: "Test"))
     }
-    func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
-        return scrollCodeView.codeView.isSynchronized
-    }
 
-    ///
-
+    // MARK: -
     private func install() {
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
@@ -81,6 +76,5 @@ final class DemoView: NSView, NSUserInterfaceValidations {
                 }
             }
         }
-        scrollCodeView.codeView.control(.setServerAddress(managementKey: codeManagement.key))
     }
 }
