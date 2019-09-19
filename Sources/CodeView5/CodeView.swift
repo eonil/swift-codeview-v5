@@ -42,7 +42,7 @@ import AppKit
 /// - Prefer function call over message passing.
 /// - Prefer forward message passing over backward message passing (event emission).
 ///
-public final class CodeView: NSView {
+public final class CodeView: NSView, NSUserInterfaceValidations {
     private let typing = TextTyping()
     private var editor = CodeSourceEditor()
     private var imeState = IMEState?.none
@@ -62,7 +62,7 @@ public final class CodeView: NSView {
     
     private var rendering = CodeRendering()
 
-// MARK: - External I/O
+    // MARK: - External I/O
     public func control(_ c:Control) {
         DispatchQueue.main.async { [weak self] in
             RunLoop.main.perform { [weak self] in
@@ -105,7 +105,7 @@ public final class CodeView: NSView {
         case cancelOperation
     }
 
-// MARK: - Initialization
+    // MARK: - Initialization
     private func install() {
         wantsLayer = true
         layer?.backgroundColor = NSColor.clear.cgColor
@@ -121,21 +121,6 @@ public final class CodeView: NSView {
         editor.note = { [weak self] in self?.note?($0) }
     }
     
-    // MARK: - Undo/Redo Support
-    private func undoInTimeline() {
-        timeline.undo()
-        editor.source = timeline.currentPoint.snapshot
-        undoManager?.registerUndo(withTarget: self, handler: { ss in ss.redoInTimeline() })
-        undoManager?.setActionName(timeline.redoablePoints.first!.kind.nameForMenu)
-        render()
-    }
-    private func redoInTimeline() {
-        timeline.redo()
-        editor.source = timeline.currentPoint.snapshot
-        undoManager?.registerUndo(withTarget: self, handler: { ss in ss.undoInTimeline() })
-        undoManager?.setActionName(timeline.undoablePoints.last!.kind.nameForMenu)
-        render()
-    }
     /// Unrecords small changed made by typing or other actions.
     ///
     /// Once end-user finished typing a line,
@@ -151,7 +136,7 @@ public final class CodeView: NSView {
         let s = editor
         editor.note = nil
         while !timeline.undoablePoints.isEmpty && !timeline.currentPoint.kind.isSignificant {
-            undoManager?.undo()
+            timeline.undo()
         }
         editor = s
     }
@@ -162,11 +147,9 @@ public final class CodeView: NSView {
     ///
     private func recordTimePoint(as kind: CodeOperationKind) {
         timeline.record(editor.source, as: kind)
-        undoManager?.registerUndo(withTarget: self, handler: { ss in ss.undoInTimeline() })
-        undoManager?.setActionName(kind.nameForMenu)
     }
     
-// MARK: - Rendering
+    // MARK: - Rendering
     private func render() {
         // Force to resize for new source state.
         invalidateIntrinsicContentSize()
@@ -178,11 +161,10 @@ public final class CodeView: NSView {
         setNeedsDisplay(bounds)
     }
     
-// MARK: - Message Processing
+    // MARK: - Message Processing
     private func process(_ c:CodeView.Control) {
         switch c {
         case let .reset(s):
-            undoManager?.removeAllActions()
             editor.source = s
             timeline = CodeTimeline(current: s)
         case let .edit(s,n):
@@ -290,7 +272,7 @@ public final class CodeView: NSView {
         render()
     }
     
-// MARK: - Event Hooks
+    // MARK: - Event Hooks
     public override init(frame f: NSRect) {
         super.init(frame: f)
         install()
@@ -374,10 +356,32 @@ public final class CodeView: NSView {
         recordTimePoint(as: .alienEditing(nameForMenu: "Paste"))
         render()
     }
+    @IBAction
+    func undo(_:AnyObject) {
+        timeline.undo()
+        editor.source = timeline.currentPoint.snapshot
+        render()
+    }
+    @IBAction
+    func redo(_:AnyObject) {
+        timeline.redo()
+        editor.source = timeline.currentPoint.snapshot
+        render()
+    }
     /// Defined to make `noop(_:)` selector to cheat compiler.
     @objc
     func noop(_:AnyObject) {}
     
+    public func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+        switch item.action {
+        case #selector(undo(_:)):
+            return timeline.canUndo
+        case #selector(redo(_:)):
+            return timeline.canRedo
+        default:
+            return true
+        }
+    }
     public override var intrinsicContentSize: NSSize {
         let layout = CodeLayout(config: rendering.config, source: editor.source, imeState: imeState, boundingWidth: bounds.width)
         let z = layout.measureContentSize(source: editor.source, imeState: imeState)
