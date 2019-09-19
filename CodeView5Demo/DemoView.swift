@@ -10,7 +10,7 @@ import Foundation
 import AppKit
 import CodeView5
 
-final class DemoView: NSView {
+final class DemoView: NSView, NSUserInterfaceValidations {
     private let scrollCodeView = ScrollCodeView()
     private var codeSource = CodeSource()
     
@@ -23,10 +23,7 @@ final class DemoView: NSView {
                 let newContent = p.replacementContent
                 print("#\(p.key): `\(oldContent)` -> `\(newContent)`")
             }
-//            codeSource = ed.sourceAfterReplacement
-//            print("ver: \(codeSource.version), lines: \(codeSource.storage.lines.count)")
-//            print(ed.sourceBeforeReplacement.lineContentsInCurrentSelection())
-//            print(ed.replacementContent)
+            codeSource = src
         case let .replaceAllSilently(s):
             print("ver: \(s.version), lines: \(s.storage.lines.count)")
             codeSource = s
@@ -58,6 +55,9 @@ final class DemoView: NSView {
     public func testTextEditing(_:AnyObject) {
         codeSource.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
         scrollCodeView.codeView.control(.edit(codeSource, nameForMenu: "Test"))
+    }
+    func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+        return scrollCodeView.codeView.isSynchronized
     }
 
     ///

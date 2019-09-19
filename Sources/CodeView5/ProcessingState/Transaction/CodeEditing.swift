@@ -131,8 +131,11 @@ struct CodeEditing {
             }
         }
         case selectAll
-        case undo
-        case redo
+        /// Replaces current selection.
+        /// This is required to perform asynchronous cut/paste.
+        case replace(withContent: String, nameForMenu: String)
+        case tryUndo
+        case tryRedo
     }
     mutating func process(_ c:Control) {
         invalidatedRegion = .none
@@ -149,8 +152,9 @@ struct CodeEditing {
             case .up:               processMouseUp(at: n.pointInBounds, in: n.bounds)
             }
         case .selectAll:            selectAll()
-        case .undo:                 undo()
-        case .redo:                 redo()
+        case let .replace(s,n):     replace(s, nameForMenu: n)
+        case .tryUndo:              tryUndo()
+        case .tryRedo:              tryRedo()
         }
     }
         
@@ -359,32 +363,26 @@ struct CodeEditing {
         source.selectAll()
         render()
     }
-    private mutating func undo() {
+    private mutating func tryUndo() {
+        guard timeline.canUndo else { return }
         undoInTimeline()
         render()
     }
-    private mutating func redo() {
+    private mutating func tryRedo() {
+        guard timeline.canRedo else { return }
         redoInTimeline()
         render()
     }
     
-    mutating func copy() -> String {
-        invalidatedRegion = .none
-        let sss = source.lineContentsInCurrentSelection()
-        let s = sss.joined(separator: "\n")
-        return s
-    }
-    mutating func cut() -> String {
-        let sss = source.lineContentsInCurrentSelection()
-        let s = sss.joined(separator: "\n")
-        source.replaceCharactersInCurrentSelection(with: "")
-        recordTimePoint(as: .alienEditing(nameForMenu: "Cut"))
-        render()
-        return s
-    }
-    mutating func paste(_ s:String) {
+//    mutating func copy() -> String {
+//        invalidatedRegion = .none
+//        let sss = source.lineContentsInCurrentSelection()
+//        let s = sss.joined(separator: "\n")
+//        return s
+//    }
+    mutating func replace(_ s:String, nameForMenu n:String) {
         source.replaceCharactersInCurrentSelection(with: s)
-        recordTimePoint(as: .alienEditing(nameForMenu: "Paste"))
+        recordTimePoint(as: .alienEditing(nameForMenu: n))
         render()
     }
 }
