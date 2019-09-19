@@ -45,5 +45,6 @@ public struct CodeConfig {
         var gapBetweenBreakpointAndBody = CGFloat(5)
         var bodyX: CGFloat { breakpointWidth + gapBetweenBreakpointAndBody }
     }
+    public init() {}
 }
  
