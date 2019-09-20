@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension StringProtocol {
+public extension StringProtocol {
     /// Though it's not been documented, it is actually O(1).
     func indexFromUTF8Offset(_ utf8Offset:Int) -> Index {
         return index(startIndex, offsetBy: utf8Offset)

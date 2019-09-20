@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension RandomAccessCollection {
+public extension RandomAccessCollection {
     func atOffset(_ offset:Int) -> Element {
         let idx = index(startIndex, offsetBy: offset)
         return self[idx]
