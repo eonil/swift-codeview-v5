@@ -8,21 +8,22 @@
 import Foundation
 
 extension Range where Bound == CodeStoragePosition {
-    var lineRange: Range<Int> {
-        return lowerBound.lineIndex..<upperBound.lineIndex
+    var lineOffsetRange: Range<Int> {
+        return lowerBound.lineOffset..<upperBound.lineOffset
     }
     /// This always include ending line index.
-    var includedLineRange: Range<Int> {
-        return lowerBound.lineIndex..<upperBound.lineIndex+1
+    var includedLineOffsetRange: Range<Int> {
+        return lowerBound.lineOffset..<upperBound.lineOffset+1
     }
-    /// - Parameter lineIndexInStorage:
-    ///     Index to a line in `CodeStorage.lines`.
+    /// - Parameter lineOffsetInStorage:
+    ///     Offset to a line in `CodeStorage.lines`.
     ///     This must be a valid index in `storage`. Otherwise, program crashes.
-    func characterRangeOfLine(at lineIndexInStorage: Int, in storage:CodeStorage) -> Range<String.Index> {
-        precondition(storage.lines.indices.contains(lineIndexInStorage))
-        let content = storage.lines[lineIndexInStorage].content
-        let a = lowerBound.lineIndex == lineIndexInStorage ? lowerBound.characterIndex : content.startIndex
-        let b = upperBound.lineIndex == lineIndexInStorage ? upperBound.characterIndex : content.endIndex
+    func characterUTF8OffsetRangeOfLine(at lineOffsetInStorage: Int, in storage:CodeStorage) -> Range<Int> {
+        let lineIndex = storage.lines.startIndex + lineOffsetInStorage
+        precondition(storage.lines.indices.contains(lineIndex))
+        let content = storage.lines[lineIndex].content
+        let a = lowerBound.lineOffset == lineOffsetInStorage ? lowerBound.characterUTF8Offset : 0
+        let b = upperBound.lineOffset == lineOffsetInStorage ? upperBound.characterUTF8Offset : content.utf8.count
         return a..<b
     }
 }

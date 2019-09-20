@@ -14,6 +14,7 @@ struct PositionInfo {
     var storage: CodeStorage
     var lineOffset: Int
     var characterOffset: Int
+    var characterUTF8Offset: Int
     var characterIndex: String.Index
     var characterCountBeforePosition: Int
     var characterCountAfterPosition: Int
@@ -21,13 +22,24 @@ struct PositionInfo {
         storage = s
         lineOffset = lx
         characterOffset = cx
-        let line = storage.lines[storage.lines.startIndex.advanced(by: lineOffset)]
+        let line = storage.lines.atOffset(lx)
         characterIndex = line.content.index(line.content.startIndex, offsetBy: characterOffset)
+        characterUTF8Offset = line.content.utf8OffsetFromIndex(characterIndex)
+        characterCountBeforePosition = characterOffset
+        characterCountAfterPosition = line.content[characterIndex...].count
+    }
+    init(storage s: CodeStorage, position p:CodeStoragePosition) {
+        storage = s
+        lineOffset = p.lineOffset
+        let line = s.lines.atOffset(lineOffset)
+        characterUTF8Offset = p.characterUTF8Offset
+        characterIndex = line.content.indexFromUTF8Offset(characterUTF8Offset)
+        characterOffset = line.content.distance(from: line.content.startIndex, to: characterIndex)
         characterCountBeforePosition = characterOffset
         characterCountAfterPosition = line.content[characterIndex...].count
     }
     var csp: CodeStoragePosition {
-        return CodeStoragePosition(lineIndex: lineOffset, characterIndex: characterIndex)
+        return CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: characterUTF8Offset)
     }
 }
 
@@ -55,9 +67,6 @@ extension CodeState {
 
 extension CodeStoragePosition {
     func info(in s:CodeStorage) -> PositionInfo {
-        let lineOffset = s.lines.distance(from: s.lines.startIndex, to: lineIndex)
-        let line = s.lines[lineIndex]
-        let charOffset = line.content.distance(from: line.content.startIndex, to: characterIndex)
-        return PositionInfo(storage: s, lineOffset: lineOffset, characterOffset: charOffset)
+        return PositionInfo(storage: s, position: self)
     }
 }

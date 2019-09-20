@@ -128,6 +128,22 @@ final class CodeSourceEditingTests: XCTestCase {
         XCTAssertEqual(ed.state.source.selectionRangeInfo().start.characterOffset, 4+1)
         XCTAssertEqual(ed.state.source.selectionRange.upperBound, ed.state.testPosition(line: 4, column: 4+1).csp)
     }
+    func testSelectAllAndDeleteBackward() {
+        let conf = CodeConfig()
+        let state = CodeState()
+        var ed = CodeEditing(config: conf, state: state)
+        ed.process(.textTyping(.placeText("aaa")))
+        ed.process(.textTyping(.processEditingCommand(.insertNewline)))
+        ed.process(.textTyping(.placeText("bbb")))
+        ed.process(.textTyping(.processEditingCommand(.insertNewline)))
+        ed.process(.textTyping(.placeText("ccc")))
+        let x1 = ed.state.source.storage.lines.map({ $0.content }).joined(separator: "\n")
+        XCTAssertEqual(x1, "aaa\nbbb\nccc")
+        ed.process(.textTyping(.processEditingCommand(.moveToBeginningOfDocumentAndModifySelection)))
+        ed.process(.textTyping(.processEditingCommand(.deleteBackward)))
+        let x2 = ed.state.source.storage.lines.map({ $0.content }).joined(separator: "\n")
+        XCTAssertEqual(x2, "")
+    }
     
 //    static var allTests = [
 //        ("testInsertNewLine", testInsertNewLine),

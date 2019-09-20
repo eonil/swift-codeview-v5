@@ -147,7 +147,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
             imeState: state.imeState,
             boundingWidth: bounds.width)
         let f = layout.frameOfLine(
-            at: state.source.caretPosition.lineIndex)
+            at: state.source.caretPosition.lineOffset)
         
         switch invalidatedRegion {
         case .none:

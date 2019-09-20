@@ -65,40 +65,25 @@ public struct CodeStorage {
 
 // MARK: Editing
 extension CodeStorage {
-//    @available(*, deprecated: 0)
-//    func characters(in range: Range<CodeStoragePosition>) -> String {
-//        guard !range.isEmpty else { return "" }
-//        switch range.includedLineRange.count {
-//        case 0:
-//            return ""
-//        case 1:
-//            let lineIndex = range.lowerBound.lineIndex
-//            let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
-//            return String(lines[lineIndex].content[charRange])
-//        default:
-//            var sss = [Substring]()
-//            for lineIndex in range.includedLineRange {
-//                let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
-//                sss.append(lines[lineIndex].content[charRange])
-//            }
-//            return sss.joined(separator: "\n")
-//        }
-//    }
     /// You can get single string by calling `join(separator: "\n")` on returning array.
     public func lineContents(in range: Range<CodeStoragePosition>) -> [Substring] {
         guard !range.isEmpty else { return [Substring()] }
-        switch range.includedLineRange.count {
+        switch range.includedLineOffsetRange.count {
         case 0:
             return [Substring()]
         case 1:
-            let lineIndex = range.lowerBound.lineIndex
-            let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
-            return [lines[lineIndex].content[charRange]]
+            let lineOffset = range.lowerBound.lineOffset
+            let lineIndex = lines.startIndex + lineOffset
+            let charUTF8OffsetRange = range.characterUTF8OffsetRangeOfLine(at: lineOffset, in: self)
+            let ss = lines[lineIndex].content.subcontentInUTF8OffsetRange(charUTF8OffsetRange)
+            return [ss]
         default:
             var sss = [Substring]()
-            for lineIndex in range.includedLineRange {
-                let charRange = range.characterRangeOfLine(at: lineIndex, in: self)
-                sss.append(lines[lineIndex].content[charRange])
+            for lineOffset in range.includedLineOffsetRange {
+                let lineIndex = lines.startIndex + lineOffset
+                let charUTF8OffsetRange = range.characterUTF8OffsetRangeOfLine(at: lineOffset, in: self)
+                let charContent = lines[lineIndex].content.subcontentInUTF8OffsetRange(charUTF8OffsetRange)
+                sss.append(charContent)
             }
             return sss
         }
@@ -108,24 +93,19 @@ extension CodeStorage {
     ///     Beware that character index is based on current line's content.
     mutating func removeCharacters(in range: Range<CodeStoragePosition>) -> CodeStoragePosition {
         guard !range.isEmpty else { return range.upperBound }
-        let firstLineIndex = range.lowerBound.lineIndex
-        let firstLineChars = lines[firstLineIndex][..<range.lowerBound.characterIndex]
-        let lastLineIndex = range.upperBound.lineIndex
-        let lastLineChars = lines[lastLineIndex][range.upperBound.characterIndex...]
+        let firstLineOffset = range.lowerBound.lineOffset
+        let firstLineIndex = lines.startIndex + firstLineOffset
+        let firstLineCharUTF8OffsetRange = 0..<range.lowerBound.characterUTF8Offset
+        let firstLineChars = lines[firstLineOffset].content.subcontentInUTF8OffsetRange(firstLineCharUTF8OffsetRange)
+        let lastLineOffset = range.upperBound.lineOffset
+        let lastLineIndex = lines.startIndex + lastLineOffset
+        let lastLineCharUTF8OffsetRange = range.upperBound.characterUTF8Offset...
+        let lastLineChars = lines[lastLineIndex].content.subcontentInUTF8OffsetRange(lastLineCharUTF8OffsetRange)
         lines.removeSubrange(firstLineIndex...lastLineIndex)
         var newContent = firstLineChars
         newContent.append(contentsOf: lastLineChars)
         lines.insert(CodeLine(newContent), at: firstLineIndex)
-        
-        // Slow path.
-        let charCount = firstLineChars.count
-        let charIndex = newContent.index(newContent.startIndex, offsetBy: charCount)
-        return CodeStoragePosition(lineIndex: firstLineIndex, characterIndex: charIndex)
-        
-//        // Fast path.
-//        let utf8CodeUnitCount = firstLineChars.utf8.count
-//        let charIndex = newContent.utf8.index(newContent.startIndex, offsetBy: utf8CodeUnitCount)
-//        return CodeStoragePosition(lineIndex: firstLineIndex, characterIndex: charIndex)
+        return CodeStoragePosition(lineOffset: firstLineOffset, characterUTF8Offset: firstLineChars.utf8.count)
     }
     /// This handles newlines automatically by split them into multiple lines.
     /// - Returns: Range of newrly inserted characters.
@@ -140,40 +120,45 @@ extension CodeStorage {
         case 1:
             // Insert into existing line.
             let chs = lineChars.first!
-            var line = lines[p.lineIndex]
-            line.insert(contentsOf: chs, at: p.characterIndex)
-            lines[p.lineIndex] = line
-            let chidx = line.content.utf8.index(p.characterIndex, offsetBy: chs.utf8.count)
-            return p..<CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: chidx)
+            let lineIndex = lines.startIndex + p.lineOffset
+            var line = lines[lineIndex]
+            let charIndex = line.content.index(line.content.startIndex, offsetBy: p.characterUTF8Offset)
+            line.insert(contentsOf: chs, at: charIndex)
+            lines[lineIndex] = line
+            return p..<CodeStoragePosition(
+                lineOffset: p.lineOffset,
+                characterUTF8Offset: p.characterUTF8Offset + chs.utf8.count)
         default:
             // Pop target line.
-            let line = lines.remove(at: p.lineIndex)
+            let lineIndex = lines.startIndex + p.lineOffset
+            let line = lines.remove(at: lineIndex)
             // Split it into two parts.
-            var firstLine = CodeLine(line[..<p.characterIndex])
-            var lastLine = CodeLine(line[p.characterIndex...])
+            var firstLine = CodeLine(line.content.subcontentInUTF8OffsetRange(..<p.characterUTF8Offset))
+            var lastLine = CodeLine(line.content.subcontentInUTF8OffsetRange(p.characterUTF8Offset...))
             
             // Prepare for offset-based operation.
-            let offsetRange = 0..<lineChars.count
+            let lineOffsetRange = 0..<lineChars.count
             // Insert line.
             var insertingLines = [CodeLine]()
-            insertingLines.reserveCapacity(offsetRange.count)
-            let firstOffset = offsetRange.first!
-            firstLine.append(contentsOf: lineChars[firstOffset])
+            insertingLines.reserveCapacity(lineOffsetRange.count)
+            let firstLineOffset = lineOffsetRange.first!
+            firstLine.append(contentsOf: lineChars[firstLineOffset])
             insertingLines.append(firstLine)
             // Insert new middle lines.
-            for offset in offsetRange.dropFirst().dropLast() {
+            for offset in lineOffsetRange.dropFirst().dropLast() {
                 let line = CodeLine(lineChars[offset])
                 insertingLines.append(line)
             }
             // Insert last line.
-            let lastOffset = offsetRange.last!
-            let lastChars = lineChars[lastOffset]
-            lastLine.insert(contentsOf: lineChars[lastOffset], at: lastLine.startIndex)
+            let lastLineOffset = lineOffsetRange.last!
+            let lastLineChars = lineChars[lastLineOffset]
+            lastLine.insert(contentsOf: lineChars[lastLineOffset], at: lastLine.startIndex)
             insertingLines.append(lastLine)
-            lines.insert(contentsOf: insertingLines, at: p.lineIndex + offsetRange.lowerBound)
+            lines.insert(contentsOf: insertingLines, at: lineIndex + lineOffsetRange.lowerBound)
             
-            let chidx = lastLine.content.utf8.index(lastLine.content.startIndex, offsetBy: lastChars.utf8.count)
-            return p..<CodeStoragePosition(lineIndex: p.lineIndex + lastOffset, characterIndex: chidx)
+            return p..<CodeStoragePosition(
+                lineOffset: lineIndex + lastLineOffset,
+                characterUTF8Offset: lastLineChars.utf8.count)
         }
     }
 }

@@ -13,30 +13,31 @@ struct CodeRendering {
     var config = CodeConfig()
     func draw(source: CodeSource, imeState: IMEState?, in dirtyRect: CGRect, with cgctx: CGContext) {
         let h = config.rendering.lineHeight
-        let visibleLineIndices = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
-        let visibleExistingLineIndices = source.storage.lines.indices.clamped(to: visibleLineIndices)
+        let visibleLineOffsets = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
+        let _visibleLineIndices = (source.storage.lines.startIndex+visibleLineOffsets.lowerBound)..<(source.storage.lines.startIndex+visibleLineOffsets.upperBound)
+        let visibleExistingLineOffsets = source.storage.lines.indices.clamped(to: _visibleLineIndices)
         let selectedRange = source.selectionRange
-        let selectionIncludedLineRange = source.selectionRange.includedLineRange
-        let visibleSelectedLineRange = selectionIncludedLineRange.clamped(to: visibleLineIndices)
+        let selectionIncludedLineOffsetRange = source.selectionRange.includedLineOffsetRange
+        let visibleSelectedLineOffsetRange = selectionIncludedLineOffsetRange.clamped(to: visibleLineOffsets)
         let sssn = session(source: source, ime: imeState)
         let layout = CodeLayout(config: config, source: source, imeState: imeState, boundingWidth: CGFloat(sssn.context.width))
         
         // Draw current line background.
-        let f = layout.frameOfLine(at: source.caretPosition.lineIndex)
+        let f = layout.frameOfLine(at: source.caretPosition.lineOffset)
         sssn.drawBox(f, color: .unemphasizedSelectedTextBackgroundColor)
         
         // Draw breakpoints.
-        for lineIndex in visibleExistingLineIndices {
-            if source.breakpointLineOffsets.contains(lineIndex) {
-                let f = layout.frameOfBreakpointInLine(at: lineIndex)
+        for lineOffset in visibleExistingLineOffsets {
+            if source.breakpointLineOffsets.contains(lineOffset) {
+                let f = layout.frameOfBreakpointInLine(at: lineOffset)
                 let c = config.rendering.breakPointColor
                 sssn.drawBreakpoint(in: f, color: c)
             }
         }
         
         // Draw selection background.
-        for lineIndex in visibleSelectedLineRange {
-            let f = layout.frameOfSelectionInLine(at: lineIndex)
+        for lineOffset in visibleSelectedLineOffsetRange {
+            let f = layout.frameOfSelectionInLine(at: lineOffset)
             sssn.drawBox(f, color: config.rendering.selectedTextBackgroundColor)
         }
         // Draw IME selection background.
@@ -44,23 +45,25 @@ struct CodeRendering {
             sssn.drawBox(f, color: config.rendering.selectedTextBackgroundColor)
         }
         // Draw characters.
-        func charactersToDrawWithConsideringIME(of lineIndex: Int) -> Substring {
-            let line = source.storage.lines[lineIndex]
+        func charactersToDrawWithConsideringIME(of lineOffset: Int) -> Substring {
+//            let lineIndex = source.storage.lines.startIndex + lineOffset
+            let line = source.storage.lines.atOffset(lineOffset)
             guard let imes = imeState else { return line.content }
-            guard selectedRange.upperBound.lineIndex == lineIndex else { return line.content }
-            let chidx = selectedRange.upperBound.characterIndex
-            let s = line.content.replacingCharacters(in: chidx..<chidx, with: imes.incompleteText)
+            guard selectedRange.upperBound.lineOffset == lineOffset else { return line.content }
+            let charUTF8Offet = selectedRange.upperBound.characterUTF8Offset
+            let charIndex = line.content.indexFromUTF8Offset(charUTF8Offet)
+            let s = line.content.replacingCharacters(in: charIndex..<charIndex, with: imes.incompleteText)
             return s[s.startIndex...]
         }
-        for lineIndex in visibleExistingLineIndices {
-            let s = charactersToDrawWithConsideringIME(of: lineIndex)
-            let f = layout.frameOfTextInLine(at: lineIndex)
+        for lineOffset in visibleExistingLineOffsets {
+            let s = charactersToDrawWithConsideringIME(of: lineOffset)
+            let f = layout.frameOfTextInLine(at: lineOffset)
             sssn.drawText(s, font: config.rendering.font, color: config.rendering.textColor, in: f)
         }
         // Draw line numbers.
-        for lineIndex in visibleExistingLineIndices {
-            let s = "\(lineIndex)"
-            let f = layout.frameOfLineNumberArea(at: lineIndex)
+        for lineOffset in visibleExistingLineOffsets {
+            let s = "\(lineOffset)"
+            let f = layout.frameOfLineNumberArea(at: lineOffset)
             let c = config.rendering.lineNumberColor
             sssn.drawTextRightAligned(s[s.startIndex...], font: config.rendering.lineNumberFont, color: c, in: f)
         }

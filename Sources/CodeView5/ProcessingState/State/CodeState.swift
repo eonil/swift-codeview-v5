@@ -24,9 +24,10 @@ struct CodeState {
     var moveVerticalAxisX = CGFloat?.none
     func findAxisXForVerticalMovement(config: CodeConfig) -> CGFloat {
         let p = source.caretPosition
-        let line = source.storage.lines[p.lineIndex]
-        let s = line[..<p.characterIndex]
-        let ctline = CTLine.make(with: s, font: config.rendering.font)
+        let line = source.storage.lines[source.storage.lines.startIndex + p.lineOffset]
+        let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
+        let ss = line.content[..<charIndex]
+        let ctline = CTLine.make(with: ss, font: config.rendering.font)
         let w = CTLineGetBoundsWithOptions(ctline, []).width
         return w
     }
@@ -40,7 +41,7 @@ struct CodeState {
             imeState: imeState,
             boundingWidth: bounds.width)
         let f  = layout.frameOfSelectionInLine(
-            at: source.caretPosition.lineIndex)
+            at: source.caretPosition.lineOffset)
         return f
     }
 }

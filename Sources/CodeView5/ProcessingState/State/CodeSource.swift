@@ -32,7 +32,7 @@ import BTree
 public struct CodeSource: CodeSourceEditing {
     public init() {
         storage.lines.append(CodeLine())
-        let p = CodeStoragePosition(lineIndex: 0, characterIndex: storage.lines.first!.startIndex)
+        let p = CodeStoragePosition.zero
         caretPosition = p
         selectionRange = p..<p
     }
@@ -98,9 +98,10 @@ public extension CodeSource {
     /// Lines cannot be `lines.endIndex` becuase character-index cannot be defined
     /// for non-existing lines.
     func isValidPosition(_ p:CodeStoragePosition) -> Bool {
-        let line = storage.lines[p.lineIndex]
-        return storage.lines.indices.contains(p.lineIndex)
-            && (line.indices.contains(p.characterIndex) || p.characterIndex == line.endIndex)
+        let lineIndex = storage.lines.startIndex + p.lineOffset
+        let line = storage.lines[lineIndex]
+        return (0..<storage.lines.count).contains(p.lineOffset)
+            && (0...line.content.utf8.count).contains(p.characterUTF8Offset)
     }
 //    /// Gets a new valid position that is nearest to supplied position.
 //    func nearestValidPosition(_ p:CodeStoragePosition) -> CodeStoragePosition {
@@ -121,14 +122,20 @@ public extension CodeSource {
 }
 public extension CodeSource {
     private func position(after p: CodeStoragePosition) -> CodeStoragePosition {
-        let line = storage.lines[p.lineIndex]
-        let i = line.index(after: p.characterIndex)
-        return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: i)
+        let lineIndex = storage.lines.startIndex + p.lineOffset
+        let line = storage.lines[lineIndex]
+        let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
+        let newCharIndex = line.content.index(after: charIndex)
+        let newCharUTF8Offset = line.content.utf8.distance(from: line.content.utf8.startIndex, to: newCharIndex)
+        return CodeStoragePosition(lineOffset: p.lineOffset, characterUTF8Offset: newCharUTF8Offset)
     }
     private func position(before p: CodeStoragePosition) -> CodeStoragePosition {
-        let line = storage.lines[p.lineIndex]
-        let i = line.index(before: p.characterIndex)
-        return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: i)
+        let lineIndex = storage.lines.startIndex + p.lineOffset
+        let line = storage.lines[lineIndex]
+        let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
+        let newCharIndex = line.content.index(before: charIndex)
+        let newCharUTF8Offset = line.content.utf8.distance(from: line.content.utf8.startIndex, to: newCharIndex)
+        return CodeStoragePosition(lineOffset: p.lineOffset, characterUTF8Offset: newCharUTF8Offset)
     }
     /// You can get single string by calling `join(separator: "\n")` on returning array.
     func lineContentsInCurrentSelection() -> [Substring] {
@@ -150,15 +157,15 @@ public extension CodeSource {
         let r = storage.insertCharacters(replacementString, at: removedPosition)
         
         // Update breakpoint positions.
-        let removeLineCount = rangeToReplace.lineRange.count
+        let removeLineCount = rangeToReplace.lineOffsetRange.count
         let newLineCharCount = replacementString.filter({ $0 == "\n" }).count
         breakpointLineOffsets = Set(breakpointLineOffsets.compactMap({ i in
-            if i <= rangeToReplace.lowerBound.lineIndex {
+            if i <= rangeToReplace.lowerBound.lineOffset {
                 return i
             }
             else {
                 let k = i + -removeLineCount + newLineCharCount
-                return k <= rangeToReplace.lowerBound.lineIndex ? nil : k
+                return k <= rangeToReplace.lowerBound.lineOffset ? nil : k
             }
         }))
         

@@ -114,7 +114,7 @@ struct CodeEditing {
             imeState: imeState,
             boundingWidth: bounds.width)
         let f  = layout.frameOfSelectionInLine(
-            at: source.caretPosition.lineIndex)
+            at: source.caretPosition.lineOffset)
         return f
     }
     enum Control {
@@ -202,25 +202,25 @@ struct CodeEditing {
             case .moveToLeftEndOfLine:
                 moveVerticalAxisX = nil
                 let oldPosition = source.caretPosition
-                let newPosition = source.leftEndPositionOfLine(at: oldPosition.lineIndex)
+                let newPosition = source.leftEndPositionOfLine1(at: oldPosition.lineOffset)
                 source.moveCaret(to: newPosition)
                 
             case .moveToRightEndOfLine:
                 moveVerticalAxisX = nil
                 let oldPosition = source.caretPosition
-                let newPosition = source.rightEndPositionOfLine(at: oldPosition.lineIndex)
+                let newPosition = source.rightEndPositionOfLine1(at: oldPosition.lineOffset)
                 source.moveCaret(to: newPosition)
                 
             case .moveToLeftEndOfLineAndModifySelection:
                 moveVerticalAxisX = nil
                 let oldPosition = source.caretPosition
-                let newPosition = source.leftEndPositionOfLine(at: oldPosition.lineIndex)
+                let newPosition = source.leftEndPositionOfLine1(at: oldPosition.lineOffset)
                 source.moveCaretAndModifySelection(to: newPosition)
                 
             case .moveToRightEndOfLineAndModifySelection:
                 moveVerticalAxisX = nil
                 let oldPosition = source.caretPosition
-                let newPosition = source.rightEndPositionOfLine(at: oldPosition.lineIndex)
+                let newPosition = source.rightEndPositionOfLine1(at: oldPosition.lineOffset)
                 source.moveCaretAndModifySelection(to: newPosition)
                 
             case .moveUp:
@@ -281,22 +281,26 @@ struct CodeEditing {
                 
             case .deleteForward:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.rightCharacterCaretPosition())
+                if source.selectionRange.isEmpty {
+                    source.moveCaretAndModifySelection(to: source.rightCharacterCaretPosition())
+                }
                 source.replaceCharactersInCurrentSelection(with: "")
                 
             case .deleteBackward:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.leftCharacterCaretPosition())
+                if source.selectionRange.isEmpty {
+                    source.moveCaretAndModifySelection(to: source.leftCharacterCaretPosition())
+                }
                 source.replaceCharactersInCurrentSelection(with: "")
                 
             case .deleteToBeginningOfLine:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.leftEndPositionOfLine(at: source.caretPosition.lineIndex))
+                source.moveCaretAndModifySelection(to: source.leftEndPositionOfLine1(at: source.caretPosition.lineOffset))
                 source.replaceCharactersInCurrentSelection(with: "")
                 
             case .deleteToEndOfLine:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.rightEndPositionOfLine(at: source.caretPosition.lineIndex))
+                source.moveCaretAndModifySelection(to: source.rightEndPositionOfLine1(at: source.caretPosition.lineOffset))
                 source.replaceCharactersInCurrentSelection(with: "")
             case .cancelOperation:
                 break
@@ -306,33 +310,33 @@ struct CodeEditing {
     }
     private func upLinePosition() -> CodeStoragePosition? {
         let p = source.caretPosition
-        guard 0 < p.lineIndex else { return nil }
-        let li = p.lineIndex - 1
-        let line = source.storage.lines[li]
+        guard 0 < p.lineOffset else { return nil }
+        let upLineOffset = p.lineOffset - 1
+        let upLine = source.storage.lines.atOffset(upLineOffset)
         let x = moveVerticalAxisX!
         let f = config.rendering.font
-        let ci = source.characterIndex(at: x, in: line, with: f) ?? line.endIndex
-        let q = CodeStoragePosition(lineIndex: li, characterIndex: ci)
-        return q
+        let charUTF8Offset = source.characterUTF8Offset(at: x, in: upLine, with: f) ?? upLine.content.utf8.count
+        let newPosition = CodeStoragePosition(lineOffset: upLineOffset, characterUTF8Offset: charUTF8Offset)
+        return newPosition
     }
     private func downLinePosition() -> CodeStoragePosition? {
         let p = source.caretPosition
-        guard p.lineIndex < source.storage.lines.count-1 else { return nil }
-        let li = p.lineIndex + 1
-        let line = source.storage.lines[li]
+        guard p.lineOffset < source.storage.lines.count-1 else { return nil }
+        let downLineOffset = p.lineOffset + 1
+        let downLine = source.storage.lines.atOffset(downLineOffset)
         let x = moveVerticalAxisX!
         let f = config.rendering.font
-        let ci = source.characterIndex(at: x, in: line, with: f) ?? line.endIndex
-        let q = CodeStoragePosition(lineIndex: li, characterIndex: ci)
-        return q
+        let charUTF8Offset = source.characterUTF8Offset(at: x, in: downLine, with: f) ?? downLine.content.utf8.count
+        let newPosition = CodeStoragePosition(lineOffset: downLineOffset, characterUTF8Offset: charUTF8Offset)
+        return newPosition
     }
     
     private mutating func processMouseDown(at point:CGPoint, in bounds:CGRect) {
         let layout = CodeLayout(config: config, source: source, imeState: imeState, boundingWidth: bounds.width)
         if point.x < layout.config.rendering.breakpointWidth {
-            let i = layout.clampingLineIndex(at: point.y)
+            let lineOffset = layout.clampingLineOffset(at: point.y)
             // Toggle breakpoint.
-            source.toggleBreakPoint(at: i)
+            source.toggleBreakPoint(at: lineOffset)
         }
         else {
             let p = layout.clampingPosition(at: point)

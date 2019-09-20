@@ -9,6 +9,7 @@ import Foundation
 
 public struct IMEState {
     var incompleteText = ""
+    /// - Note: Consider using of UTF-8 code-unit offset.
     var selectionInIncompleteText = "".startIndex..<"".endIndex
     var selectionInIncompleteTextAsUTF8CodeUnitOffset: Range<Int> {
         let r = selectionInIncompleteText
