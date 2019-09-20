@@ -70,6 +70,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     private let typing = TextTyping()
     private var config = CodeConfig()
     private var state = CodeState()
+    private var preventedTypingCommands = Set<TextTypingCommand>()
 
     // MARK: - External I/O
     
@@ -80,6 +81,8 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
             performEditRenderAndNote(.reset(s))
         case let .edit(s,n):
             performEditRenderAndNote(.edit(s, nameForMenu: n))
+        case let .setPreventedTextTypingCommands(cmds):
+            preventedTypingCommands = cmds
         }
     }
     public enum Control {
@@ -87,6 +90,9 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         /// Pushes modified source.
         /// This command keeps undo/redo stack.
         case edit(CodeSource, nameForMenu:String)
+        /// Prevents some typing commands.
+        /// Use this when you want to let user to move up/down in completion window.
+        case setPreventedTextTypingCommands(Set<TextTypingCommand>)
     }
     public var note: ((Note) -> Void)?
     public enum Note {
@@ -111,13 +117,11 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
 //        ///     `CodeSource.version` can be rolled back to past one if undo has been performed.
 //        /// Config and IME state are provided for layout calculation.
 //        case replaceAllSilently(CodeConfig, CodeSource, IMEState)
-        /// Unhandled `cancelOperation` selector command.
-        /// This command is supposed to be handled by IME at first,
-        /// but when IME is inactive, this is no-op.
-        /// This is sent for any interested containers.
-        case cancelOperation
+        
         case becomeFirstResponder
         case resignFirstResponder
+        /// Typing command used to update latest state.
+        case typingCommand(TextTypingCommand)
     }
 
     // MARK: - Initialization
@@ -168,11 +172,27 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     
     // MARK: - Message Processing
     private func process(_ n:TextTypingNote) {
-        performEditRenderAndNote(.textTyping(n))
-        let f = state.typingFrame(config: config, in: bounds)
-        let f1 = convert(f, to: nil)
-        let f2 = window?.convertToScreen(f1) ?? .zero
-        typing.control(.setTypingFrame(f2))
+        func shouldProcessMessage() -> Bool {
+            switch n {
+            case let .processEditingCommand(cmd): return !preventedTypingCommands.contains(cmd)
+            default: return true
+            }
+        }
+        
+        // Process if allowed.
+        if shouldProcessMessage() {
+            performEditRenderAndNote(.textTyping(n))
+            let f = state.typingFrame(config: config, in: bounds)
+            let f1 = convert(f, to: nil)
+            let f2 = window?.convertToScreen(f1) ?? .zero
+            typing.control(.setTypingFrame(f2))
+        }
+        
+        // Fire extra events.
+        switch n {
+        case let .processEditingCommand(cmd): note?(.typingCommand(cmd))
+        default: break
+        }
     }
     
     // MARK: - Event Hooks
@@ -268,10 +288,6 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     func redo(_:AnyObject) {
         performEditRenderAndNote(.tryRedo)
     }
-//    @IBAction
-//    public override func cancelOperation(_ sender: Any?) {
-//        
-//    }
     /// Defined to make `noop(_:)` selector to cheat compiler.
     @objc
     func noop(_:AnyObject) {}

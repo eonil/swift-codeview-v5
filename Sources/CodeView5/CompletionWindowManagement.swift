@@ -71,7 +71,7 @@ private extension CompletionWindowManagement {
         completionWindow.orderFront(self)
         completionWindow.setIsVisible(isVisible)
         completionWindow.setFrame(f ?? .zero, display: isVisible)
-        completionWindow.styleMask.formUnion([.unifiedTitleAndToolbar, .nonactivatingPanel, .fullSizeContentView])
+        completionWindow.styleMask.formUnion([.unifiedTitleAndToolbar, .fullSizeContentView])
         completionWindow.titleVisibility = .hidden
         completionWindow.titlebarAppearsTransparent = true
     }

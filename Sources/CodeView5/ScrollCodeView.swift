@@ -8,17 +8,23 @@
 import Foundation
 import AppKit
 
-/// A view embedding a scroll-view and a code-view in it.
-/// This is convenient class to provide properly configured prebuilt scrolling.
+/// Conveniently constructed code editing view.
+///
+/// This view embeds a scroll-view, a code-view in it and completion window managemnet.
+/// This is convenient class to provide properly configured prebuilt scrolling and completion window management.
+///
 /// - Note:
 ///     This view yields first-responder state to internal code-view.
 ///     Though internal code-view is exposed to public, please do not control
 ///     its layout yourself to keep it correct.
+///
 public final class ScrollCodeView: NSView {
     private let scrollView = NSScrollView()
     /// Exposed to public for convenience.
     /// Use this view to convert points/frames from/to other views.
     public let codeView = CodeView()
+    private let completionWidnowManagement = CompletionWindowManagement()
+    
     public override init(frame f: NSRect) {
         super.init(frame: f)
         install()

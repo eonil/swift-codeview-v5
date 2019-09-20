@@ -12,7 +12,7 @@ import CodeView5
 
 final class DemoView: NSView {
     private let scrollCodeView = ScrollCodeView()
-    private let completionWidnowManagement = CompletionWindowManagement()
+    private let completionWindowManagement = CompletionWindowManagement()
     private var codeSource = CodeSource()
     
     private func process(_ n:CodeView.Note) {
@@ -27,7 +27,8 @@ final class DemoView: NSView {
             codeSource = src
             let caret = src.caretPosition
             let line = src.storage.lines.atOffset(caret.lineOffset)
-            if let i = line.content.lastIndex(of: ".") {
+            func makeCompletionState() -> CompletionWindowManagement.State? {
+                guard let i = line.content.lastIndex(of: ".") else { return nil }
                 let charOffset = line.content.utf8OffsetFromIndex(i)
                 let p = CodeStoragePosition(lineOffset: caret.lineOffset, characterUTF8Offset: charOffset)
                 let s = CompletionWindowManagement.State(
@@ -35,19 +36,29 @@ final class DemoView: NSView {
                     source: src,
                     imeState: ime,
                     completionRange: p..<p)
-                completionWidnowManagement.setState(s)
+                return s
             }
-            else {
-                completionWidnowManagement.setState(nil)
-            }
-            completionWidnowManagement.codeView = scrollCodeView.codeView
+            let s = makeCompletionState()
+            completionWindowManagement.setState(s)
+            scrollCodeView.codeView.control(.setPreventedTextTypingCommands(s == nil ? [] : [.moveUp, .moveDown]))
             
-        case .cancelOperation:
-            print("cancel!")
         case .becomeFirstResponder:
-            completionWidnowManagement.invalidate()
+            completionWindowManagement.invalidate()
         case .resignFirstResponder:
-            completionWidnowManagement.invalidate()
+            completionWindowManagement.invalidate()
+            
+        case let .typingCommand(cmd):
+            switch cmd {
+            case .cancelOperation:
+                completionWindowManagement.setState(nil)
+                scrollCodeView.codeView.control(.setPreventedTextTypingCommands([]))
+            case .moveUp:
+                print("MOVE UP")
+            case .moveDown:
+                print("MOVE DOWN")
+            default:
+                break
+            }
         }
     }
 
@@ -96,7 +107,7 @@ final class DemoView: NSView {
                 }
             }
         }
-        completionWidnowManagement.codeView = scrollCodeView.codeView
-        completionWidnowManagement.completionView = NSButton()
+        completionWindowManagement.codeView = scrollCodeView.codeView
+        completionWindowManagement.completionView = NSButton()
     }
 }

@@ -10,7 +10,7 @@ import AppKit
 
 /// List of editing command.
 /// I am not very sure on this yet.
-enum TextTypingCommand {
+public enum TextTypingCommand {
     case moveLeft
     case moveRight
     case moveLeftAndModifySelection
