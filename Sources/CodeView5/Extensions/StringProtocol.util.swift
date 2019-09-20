@@ -10,11 +10,11 @@ import Foundation
 public extension StringProtocol {
     /// Though it's not been documented, it is actually O(1).
     func indexFromUTF8Offset(_ utf8Offset:Int) -> Index {
-        return index(startIndex, offsetBy: utf8Offset)
+        return utf8.index(utf8.startIndex, offsetBy: utf8Offset)
     }
     /// Though it's not been documented, it is actually O(1).
     func utf8OffsetFromIndex(_ index:Index) -> Int {
-        return utf8.distance(from: startIndex, to: index)
+        return utf8.distance(from: utf8.startIndex, to: index)
     }
     /// Though it's not been documented, it is actually O(1).
     func indexRangeFromUTF8OffsetRange(_ utf8OffsetRange:Range<Int>) -> Range<String.Index> {

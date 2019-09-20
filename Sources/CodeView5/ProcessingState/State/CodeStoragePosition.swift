@@ -16,8 +16,12 @@ import Foundation
 /// - `UTF8View` performs index + distance operations in O(1).
 ///     - This is not yet been documented, but dev team pointed out in Swift Forum.
 public struct CodeStoragePosition: Comparable {
-    public var lineOffset = 0
-    public var characterUTF8Offset = 0
+    public var lineOffset: Int
+    public var characterUTF8Offset: Int
+    public init(lineOffset x: Int = 0, characterUTF8Offset z: Int = 0) {
+        lineOffset = x
+        characterUTF8Offset = z
+    }
     public static var zero: CodeStoragePosition { CodeStoragePosition(lineOffset: 0, characterUTF8Offset: 0) }
     public static func < (_ a:CodeStoragePosition, _ b:CodeStoragePosition) -> Bool {
         if a.lineOffset == b.lineOffset { return a.characterUTF8Offset < b.characterUTF8Offset }

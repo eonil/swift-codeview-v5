@@ -72,6 +72,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     private var state = CodeState()
 
     // MARK: - External I/O
+    
     /// Sends control message.
     public func control(_ c:Control) {
         switch c {
@@ -115,6 +116,8 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         /// but when IME is inactive, this is no-op.
         /// This is sent for any interested containers.
         case cancelOperation
+        case becomeFirstResponder
+        case resignFirstResponder
     }
 
     // MARK: - Initialization
@@ -122,6 +125,7 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         wantsLayer = true
         layer?.backgroundColor = NSColor.clear.cgColor
         typing.note = { [weak self] n in self?.process(n) }
+        render(invalidatedRegion: .all)
     }
     private func performEditRenderAndNote(_ c:CodeEditing.Control) {
         var editing = CodeEditing(config: config, state: state)
@@ -182,13 +186,20 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     }
     public override var acceptsFirstResponder: Bool { true }
     public override func becomeFirstResponder() -> Bool {
-        defer { typing.activate() }
+        defer {
+            typing.activate()
+            note?(.becomeFirstResponder)
+        }
         return super.becomeFirstResponder()
     }
     public override func resignFirstResponder() -> Bool {
         typing.deactivate()
+        defer {
+            note?(.resignFirstResponder)
+        }
         return super.resignFirstResponder()
     }
+    public override var canBecomeKeyView: Bool { true }
     public override func keyDown(with event: NSEvent) {
         typing.processEvent(event)
     }
@@ -257,6 +268,10 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
     func redo(_:AnyObject) {
         performEditRenderAndNote(.tryRedo)
     }
+//    @IBAction
+//    public override func cancelOperation(_ sender: Any?) {
+//        
+//    }
     /// Defined to make `noop(_:)` selector to cheat compiler.
     @objc
     func noop(_:AnyObject) {}
@@ -298,3 +313,4 @@ public final class CodeView: NSView, NSUserInterfaceValidations {
         rendering.draw(source: state.source, imeState: state.imeState, in: dirtyRect, with: cgctx)
     }
 }
+

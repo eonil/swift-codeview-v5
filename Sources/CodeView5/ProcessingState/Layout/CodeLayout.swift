@@ -103,6 +103,13 @@ public struct CodeLayout {
             width: subtextFrame.width,
             height: lineFrame.height)
     }
+    public func frameOfTextUTF8OffsetSubrange(_ charUTF8OffsetRange:PartialRangeFrom<Int>, inLineAt lineOffset: Int) -> CGRect {
+        let lineContent = source.storage.lines.atOffset(lineOffset).content
+        return frameOfTextUTF8OffsetSubrange(charUTF8OffsetRange.lowerBound..<lineContent.utf8.count, inLineAt: lineOffset)
+    }
+    public func frameOfTextUTF8OffsetSubrange(_ charUTF8OffsetRange:PartialRangeUpTo<Int>, inLineAt lineOffset: Int) -> CGRect {
+        return frameOfTextUTF8OffsetSubrange(0..<charUTF8OffsetRange.upperBound, inLineAt: lineOffset)
+    }
     /// This does not consider IME state.
     /// - Parameter offset:
     ///     Index to a line in code-storage.

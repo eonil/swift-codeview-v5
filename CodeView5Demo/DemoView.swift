@@ -12,11 +12,12 @@ import CodeView5
 
 final class DemoView: NSView {
     private let scrollCodeView = ScrollCodeView()
+    private let completionWidnowManagement = CompletionWindowManagement()
     private var codeSource = CodeSource()
     
     private func process(_ n:CodeView.Note) {
         switch n {
-        case let .editing(_,src,_):
+        case let .editing(conf,src,ime):
             print("ver: \(src.version)")
             for p in src.timeline.points {
                 let oldContent = p.baseSnapshot.lineContents(in: p.replacementRange).joined(separator: "\n")
@@ -24,11 +25,29 @@ final class DemoView: NSView {
                 print("#\(p.key): `\(oldContent)` -> `\(newContent)`")
             }
             codeSource = src
-//        case let .replaceAllSilently(s):
-//            print("ver: \(s.version), lines: \(s.storage.lines.count)")
-//            codeSource = s
+            let caret = src.caretPosition
+            let line = src.storage.lines.atOffset(caret.lineOffset)
+            if let i = line.content.lastIndex(of: ".") {
+                let charOffset = line.content.utf8OffsetFromIndex(i)
+                let p = CodeStoragePosition(lineOffset: caret.lineOffset, characterUTF8Offset: charOffset)
+                let s = CompletionWindowManagement.State(
+                    config: conf,
+                    source: src,
+                    imeState: ime,
+                    completionRange: p..<p)
+                completionWidnowManagement.setState(s)
+            }
+            else {
+                completionWidnowManagement.setState(nil)
+            }
+            completionWidnowManagement.codeView = scrollCodeView.codeView
+            
         case .cancelOperation:
             print("cancel!")
+        case .becomeFirstResponder:
+            completionWidnowManagement.invalidate()
+        case .resignFirstResponder:
+            completionWidnowManagement.invalidate()
         }
     }
 
@@ -69,6 +88,7 @@ final class DemoView: NSView {
             scrollCodeView.topAnchor.constraint(equalTo: topAnchor),
             scrollCodeView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
+//        scrollCodeView.codeView.completionWindow = demoCompletionWindow
         scrollCodeView.codeView.note = { [weak self] n in
             DispatchQueue.main.async { [weak self] in
                 RunLoop.main.perform { [weak self] in
@@ -76,5 +96,7 @@ final class DemoView: NSView {
                 }
             }
         }
+        completionWidnowManagement.codeView = scrollCodeView.codeView
+        completionWidnowManagement.completionView = NSButton()
     }
 }
