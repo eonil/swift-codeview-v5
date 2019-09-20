@@ -22,7 +22,7 @@ public final class ScrollCodeView: NSView {
     private let scrollView = NSScrollView()
     /// Exposed to public for convenience.
     /// Use this view to convert points/frames from/to other views.
-    public let codeView = CodeView()
+    public let codeView = CodeView2()
     private let completionWidnowManagement = CompletionWindowManagement()
     
     public override init(frame f: NSRect) {

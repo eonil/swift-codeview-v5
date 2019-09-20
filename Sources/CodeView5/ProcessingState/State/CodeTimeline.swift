@@ -27,6 +27,7 @@ struct CodeTimeline {
     var canUndo: Bool { !undoablePoints.isEmpty }
     var canRedo: Bool { !redoablePoints.isEmpty }
     mutating func record(_ s:CodeSource, as kind: CodeOperationKind) {
+        precondition(s.timeline.points.isEmpty)
         undoablePoints.append(currentPoint)
         currentPoint = Point(version: currentPoint.version + 1, kind: kind, snapshot: s)
         redoablePoints.removeAll()

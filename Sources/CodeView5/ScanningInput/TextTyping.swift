@@ -23,7 +23,7 @@ final class TextTyping {
     func control(_ c:TextTypingControl) {
         client.control(c)
     }
-    var note: ((TextTypingNote) -> Void)? {
+    var note: ((TextTypingMessage) -> Void)? {
         get { client.note }
         set(x) { client.note = x }
     }
@@ -53,7 +53,7 @@ private final class TextTypingClient: NSObject, NSTextInputClient {
             }
         }
     }
-    var note: ((TextTypingNote) -> Void)?
+    var note: ((TextTypingMessage) -> Void)?
     
     func doCommand(by selector: Selector) {
         guard let cmd = TextTypingCommand(selector) else { return }

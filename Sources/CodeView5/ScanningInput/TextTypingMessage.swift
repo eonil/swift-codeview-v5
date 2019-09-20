@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum TextTypingNote {
+public enum TextTypingMessage {
     /// Sets "marked text" that is text-in-completion by IME.
     /// You are supposed to delete current selection
     /// and render this text at selection position until you receive `placeText`.

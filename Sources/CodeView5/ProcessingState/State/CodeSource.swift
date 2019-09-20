@@ -9,9 +9,9 @@
 import Foundation
 import BTree
 
-/// Stores and manages semantic information of code text.
+/// Stores and manages textual information of code text.
 ///
-/// This does not store or manage any of "appearance" or "rendering" information.
+/// This does not store or manage any of "rendering" information.
 /// Those stuffs should be processed by separated rendering component.
 ///
 /// - This always keeps one line at the end.

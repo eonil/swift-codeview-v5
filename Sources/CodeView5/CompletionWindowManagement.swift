@@ -13,7 +13,7 @@ import AppKit
 /// - Call `setState(...)`.
 /// - Call `invalidate()` when `codeView`'s first responder state changes.
 public final class CompletionWindowManagement {
-    public weak var codeView: CodeView? { didSet { render() } }
+    public weak var codeView: NSView? { didSet { render() } }
     private let completionWindow = CompletionWindow()
     public private(set) var state = State?.none
     public var windowSize = CGSize(width: 300, height: 200)
