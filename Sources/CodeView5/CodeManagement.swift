@@ -47,6 +47,7 @@ public struct CodeManagement {
     public mutating func process(_ m:Message) {
         /// Clean up prior output.
         effects.removeAll()
+        editing.source.cleanTimeline()
         /// Check and continue.
         guard shouldProcessMessage(m) else { return }
         switch m {
@@ -94,7 +95,6 @@ public struct CodeManagement {
     private mutating func processEdit(_ mm:CodeEditingMessage) {
         editing.apply(mm)
         let changes = editing.source.timeline.points
-        editing.source.cleanTimeline()
         
         // Adjust breakpoint positions.
         do {
