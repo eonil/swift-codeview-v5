@@ -34,11 +34,6 @@
                                                 <action selector="testTextEditing:" target="Ady-hI-5gd" id="iAh-iH-9c7"/>
                                             </connections>
                                         </menuItem>
-                                        <menuItem title="Test Closing Window" keyEquivalent="3" id="VQd-6L-VdD">
-                                            <connections>
-                                                <action selector="testClosingWindow:" target="Ady-hI-5gd" id="p7g-Xv-wMH"/>
-                                            </connections>
-                                        </menuItem>
                                         <menuItem isSeparatorItem="YES" id="Qfd-PG-u0X"/>
                                         <menuItem title="Services" id="NMo-om-nkz">
                                             <modifierMask key="keyEquivalentModifierMask"/>

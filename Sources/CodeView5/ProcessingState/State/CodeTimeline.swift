@@ -9,7 +9,7 @@ import Foundation
 import BTree
 
 /// Manages undo/redo support.
-struct CodeTimeline {
+public struct CodeTimeline {
     private(set) var undoablePoints = List<Point>()
     private(set) var currentPoint = Point()
     private(set) var redoablePoints = List<Point>()
@@ -24,8 +24,8 @@ struct CodeTimeline {
     init(current s:CodeSource) {
         currentPoint = Point(version: 1, kind: .reloadAll, snapshot: s)
     }
-    var canUndo: Bool { !undoablePoints.isEmpty }
-    var canRedo: Bool { !redoablePoints.isEmpty }
+    public var canUndo: Bool { !undoablePoints.isEmpty }
+    public var canRedo: Bool { !redoablePoints.isEmpty }
     mutating func record(_ s:CodeSource, as kind: CodeOperationKind) {
         precondition(s.timeline.points.isEmpty)
         undoablePoints.append(currentPoint)

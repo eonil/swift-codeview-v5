@@ -28,6 +28,13 @@ import AppKit
 /// This view expects external manager performs actual code-editing and calling
 /// `control` method with result.
 ///
+/// Undo/Redo
+/// ---------
+/// This does not use AppKit default menu handling of undo/redo.
+/// You need to manage undo/redo menu yourself.
+/// I recommend the one of container view to implement custom undo/redo handling.
+/// See `DemoView` for how you can implement it.
+///
 /// Asynchronicity
 /// --------------
 /// Input scanning and output rendering doesn't have to be synchronous.
@@ -176,6 +183,7 @@ public final class CodeView: NSView {
         super.init(coder: c)
         install()
     }
+    public override var undoManager: UndoManager? { nil }
     public override var acceptsFirstResponder: Bool { true }
     public override func becomeFirstResponder() -> Bool {
         defer {
@@ -259,14 +267,6 @@ public final class CodeView: NSView {
         guard let s = NSPasteboard.general.string(forType: .string) else { return }
         note?(.menu(.paste(s)))
     }
-    @IBAction
-    func undo(_:AnyObject) {
-        note?(.menu(.undo))
-    }
-    @IBAction
-    func redo(_:AnyObject) {
-        note?(.menu(.redo))
-    }
     /// Defined to make `noop(_:)` selector to cheat compiler.
     @objc
     func noop(_:AnyObject) {}
@@ -283,10 +283,6 @@ public final class CodeView: NSView {
             return true
         case #selector(paste(_:)):
             return true
-        case #selector(undo(_:)):
-            return editing.timeline.canUndo
-        case #selector(redo(_:)):
-            return editing.timeline.canRedo
         default:
             return true
         }

@@ -40,9 +40,14 @@ public final class CompletionWindowManagement {
     }
     
     // MARK: -
-    public init() {}
+    public init() {
+        // Workaround to avoid potential exception of close.
+        // https://stackoverflow.com/a/58038216/246776
+        completionWindow.orderFront(nil)
+        completionWindow.orderOut(nil)
+    }
     deinit {
-        completionWindow.close()
+        completionWindow.setIsVisible(false)
     }
     /// View to be displayed in completion window.
     /// You can set a view here to provide your own completion UI.

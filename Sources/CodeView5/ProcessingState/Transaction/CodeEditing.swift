@@ -20,7 +20,7 @@ import AppKit
 public struct CodeEditing {
     /// Stored **parameters** to be supplied to each editing operations.
     public var config = CodeConfig()
-    var timeline = CodeTimeline()
+    public private(set) var timeline = CodeTimeline()
     public internal(set) var source = CodeSource()
     public internal(set) var imeState = IMEState?.none
     

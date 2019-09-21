@@ -10,7 +10,7 @@ import Foundation
 import AppKit
 import CodeView5
 
-final class DemoView: NSView {
+final class DemoView: NSView, NSUserInterfaceValidations {
     private let scrollCodeView = ScrollCodeView()
     private var codeManagement = CodeManagement()
 //    private let completionWindowManagement = CompletionWindowManagement()
@@ -37,9 +37,6 @@ final class DemoView: NSView {
         super.init(coder: c)
         install()
     }
-    deinit {
-        
-    }
 
     public override var acceptsFirstResponder: Bool { return true }
     public override func becomeFirstResponder() -> Bool {
@@ -60,26 +57,27 @@ final class DemoView: NSView {
         codeManagement.send(to: scrollCodeView.codeView)
     }
     
-    private var wc = CompletionWindowManagement()
-    private var swww = 1
-    @IBAction
-    public func testClosingWindow(_:AnyObject?) {
-        switch swww {
-        case 1:
-            wc.codeView = scrollCodeView.codeView
-            let s = CompletionWindowManagement.State(
-                config: codeManagement.editing.config,
-                source: codeManagement.editing.source,
-                imeState: codeManagement.editing.imeState,
-                completionRange: codeManagement.editing.source.caretPosition..<codeManagement.editing.source.caretPosition)
-            wc.setState(s)
-            swww += 1
-        default :
-//            wc.setState(nil)
-            wc = CompletionWindowManagement()
-            swww = 1
-        }
-    }
+//    private var wc = ScrollCodeView()
+//    private var swww = 1
+//    @IBAction
+//    public func testClosingWindow(_:AnyObject?) {
+//        switch swww {
+//        case 1:
+//            wc.removeFromSuperview()
+//            wc = ScrollCodeView()
+//            wc.frame = CGRect(x: 0, y: 0, width: 100, height: 100)
+//            addSubview(wc)
+//            var s = codeManagement.completionWindowState!
+//            s.aroundRange = CodeStoragePosition.zero..<CodeStoragePosition.zero
+//            wc.codeView.control(.renderCompletionWindow(s))
+//            swww += 1
+//        default :
+////            wc.setState(nil)
+//            wc.removeFromSuperview()
+//            wc = ScrollCodeView()
+//            swww = 1
+//        }
+//    }
 
     // MARK: -
     private func install() {
@@ -93,15 +91,25 @@ final class DemoView: NSView {
             scrollCodeView.topAnchor.constraint(equalTo: topAnchor),
             scrollCodeView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-//        scrollCodeView.codeView.completionWindow = demoCompletionWindow
-//        scrollCodeView.codeView.note = { [weak self] n in
-//            DispatchQueue.main.async { [weak self] in
-//                RunLoop.main.perform { [weak self] in
-//                    self?.process(n)
-//                }
-//            }
-//        }
         scrollCodeView.codeView.note = { [weak self] n in self?.process(n) }
         scrollCodeView.codeView.completionView = NSButton()
+    }
+    
+    @IBAction
+    func undo(_:AnyObject?) {
+        codeManagement.process(.userInteraction(.menu(.undo)))
+        codeManagement.send(to: scrollCodeView.codeView)
+    }
+    @IBAction
+    func redo(_:AnyObject?) {
+        codeManagement.process(.userInteraction(.menu(.redo)))
+        codeManagement.send(to: scrollCodeView.codeView)
+    }
+    func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
+        switch item.action {
+        case #selector(undo(_:)):   return codeManagement.editing.timeline.canUndo
+        case #selector(redo(_:)):   return codeManagement.editing.timeline.canRedo
+        default:                    return true
+        }
     }
 }
