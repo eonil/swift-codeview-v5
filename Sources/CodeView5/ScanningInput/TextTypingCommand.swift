@@ -12,20 +12,32 @@ import AppKit
 /// I am not very sure on this yet.
 public enum TextTypingCommand {
     case moveLeft
-    case moveRight
     case moveLeftAndModifySelection
+    case moveRight
     case moveRightAndModifySelection
+    case moveWordLeft
+    case moveWordLeftAndModifySelection
+    case moveWordRight
+    case moveWordRightAndModifySelection
+    case moveBackward
+    case moveBackwardAndModifySelection
+    case moveForward
+    case moveForwardAndModifySelection
     case moveToLeftEndOfLine
-    case moveToRightEndOfLine
     case moveToLeftEndOfLineAndModifySelection
+    case moveToRightEndOfLine
     case moveToRightEndOfLineAndModifySelection
     case moveUp
-    case moveDown
     case moveUpAndModifySelection
+    case moveDown
     case moveDownAndModifySelection
+    case moveToBeginningOfParagraph
+    case moveToBeginningOfParagraphAndModifySelection
+    case moveToEndOfParagraph
+    case moveToEndOfParagraphAndModifySelection
     case moveToBeginningOfDocument
-    case moveToEndOfDocument
     case moveToBeginningOfDocumentAndModifySelection
+    case moveToEndOfDocument
     case moveToEndOfDocumentAndModifySelection
     case selectAll
     case insertNewline
@@ -33,6 +45,8 @@ public enum TextTypingCommand {
     case insertBacktab
     case deleteForward
     case deleteBackward
+    case deleteWordForward
+    case deleteWordBackward
     case deleteToBeginningOfLine
     case deleteToEndOfLine
     case cancelOperation
@@ -54,6 +68,18 @@ private func make(_ sel:Selector) -> TextTypingCommand? {
     case #selector(K.moveRight(_:)):                                    return .moveRight
     case #selector(K.moveLeftAndModifySelection(_:)):                   return .moveLeftAndModifySelection
     case #selector(K.moveRightAndModifySelection(_:)):                  return .moveRightAndModifySelection
+    case #selector(K.moveWordLeft(_:)):                                 return .moveWordLeft
+    case #selector(K.moveWordRight(_:)):                                return .moveWordRight
+    case #selector(K.moveWordLeftAndModifySelection(_:)):               return .moveWordLeftAndModifySelection
+    case #selector(K.moveWordRightAndModifySelection(_:)):              return .moveWordRightAndModifySelection
+    case #selector(K.moveBackward(_:)):                                 return .moveBackward
+    case #selector(K.moveBackwardAndModifySelection(_:)):               return .moveBackwardAndModifySelection
+    case #selector(K.moveForward(_:)):                                  return .moveForward
+    case #selector(K.moveForwardAndModifySelection(_:)):                return .moveForwardAndModifySelection
+    case #selector(K.moveToBeginningOfParagraph(_:)):                   return .moveToBeginningOfParagraph
+    case #selector(K.moveToBeginningOfParagraphAndModifySelection(_:)): return .moveToBeginningOfParagraphAndModifySelection
+    case #selector(K.moveToEndOfParagraph(_:)):                         return .moveToEndOfParagraph
+    case #selector(K.moveToEndOfParagraphAndModifySelection(_:)):       return .moveToEndOfParagraphAndModifySelection
     case #selector(K.moveToLeftEndOfLine(_:)):                          return .moveToLeftEndOfLine
     case #selector(K.moveToRightEndOfLine(_:)):                         return .moveToRightEndOfLine
     case #selector(K.moveToLeftEndOfLineAndModifySelection(_:)):        return .moveToLeftEndOfLineAndModifySelection
@@ -70,8 +96,11 @@ private func make(_ sel:Selector) -> TextTypingCommand? {
     case #selector(K.insertNewline(_:)):                                return .insertNewline
     case #selector(K.insertTab(_:)):                                    return .insertTab
     case #selector(K.insertBacktab(_:)):                                return .insertBacktab
+    case #selector(K.deleteBackwardByDecomposingPreviousCharacter(_:)): return nil
     case #selector(K.deleteForward(_:)):                                return .deleteForward
     case #selector(K.deleteBackward(_:)):                               return .deleteBackward
+    case #selector(K.deleteWordBackward(_:)):                           return .deleteWordBackward
+    case #selector(K.deleteWordForward(_:)):                            return .deleteWordForward
     case #selector(K.deleteToBeginningOfLine(_:)):                      return .deleteToBeginningOfLine
     case #selector(K.deleteToEndOfLine(_:)):                            return .deleteToEndOfLine
     case #selector(K.cancelOperation(_:)):                              return .cancelOperation
@@ -79,7 +108,10 @@ private func make(_ sel:Selector) -> TextTypingCommand? {
     case #selector(Dummy.noop(_:)):
         return nil
     default:
-        assert(false,"Unhandled editing command: \(sel)")
+        assert({
+            print("Unhandled editing command: \(sel)")
+            return true
+        }())
         return nil
     }
 }

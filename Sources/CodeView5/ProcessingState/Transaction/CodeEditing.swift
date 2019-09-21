@@ -130,6 +130,54 @@ public struct CodeEditing {
                 moveVerticalAxisX = nil
                 source.moveCaretAndModifySelection(to: source.rightCharacterCaretPosition())
                 
+            case .moveWordLeft:
+                moveVerticalAxisX = nil
+                var c = source.bestEffortCursorAtCaret
+                c.charCursor.moveOneSubwordToStart() // Now we're using subword moving just for convenience.
+                source.moveCaret(to: c.position)
+                
+            case .moveWordLeftAndModifySelection:
+                moveVerticalAxisX = nil
+                var c = source.bestEffortCursorAtCaret
+                c.charCursor.moveOneSubwordToStart() // Now we're using subword moving just for convenience.
+                source.moveCaretAndModifySelection(to: c.position)
+                
+            case .moveWordRight:
+                moveVerticalAxisX = nil
+                var c = source.bestEffortCursorAtCaret
+                c.charCursor.moveOneSubwordToEnd() // Now we're using subword moving just for convenience.
+                source.moveCaret(to: c.position)
+                
+            case .moveWordRightAndModifySelection:
+                moveVerticalAxisX = nil
+                var c = source.bestEffortCursorAtCaret
+                c.charCursor.moveOneSubwordToEnd() // Now we're using subword moving just for convenience.
+                source.moveCaretAndModifySelection(to: c.position)
+
+            case .moveBackward:
+                moveVerticalAxisX = nil
+                var c = source.bestEffortCursorAtCaret
+                c.charCursor.moveToStart()
+                source.moveCaret(to: c.position)
+                
+            case .moveBackwardAndModifySelection:
+                moveVerticalAxisX = nil
+                var c = source.bestEffortCursorAtCaret
+                c.charCursor.moveToStart()
+                source.moveCaretAndModifySelection(to: c.position)
+                    
+            case .moveForward:
+                moveVerticalAxisX = nil
+                var c = source.bestEffortCursorAtCaret
+                c.charCursor.moveToEnd()
+                source.moveCaret(to: c.position)
+                
+            case .moveForwardAndModifySelection:
+                moveVerticalAxisX = nil
+                var c = source.bestEffortCursorAtCaret
+                c.charCursor.moveToEnd()
+                source.moveCaretAndModifySelection(to: c.position)
+                
             case .moveToLeftEndOfLine:
                 moveVerticalAxisX = nil
                 let oldPosition = source.caretPosition
@@ -158,22 +206,31 @@ public struct CodeEditing {
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 guard let p = upLinePosition() else { return }
                 source.moveCaret(to: p)
+
+            case .moveUpAndModifySelection:
+                moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
+                guard let p = upLinePosition() else { return }
+                source.moveCaretAndModifySelection(to: p)
                 
             case .moveDown:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 guard let p = downLinePosition() else { return }
                 source.moveCaret(to: p)
                 
-            case .moveUpAndModifySelection:
-                moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
-                guard let p = upLinePosition() else { return }
-                source.moveCaretAndModifySelection(to: p)
-                
             case .moveDownAndModifySelection:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 guard let p = downLinePosition() else { return }
                 source.moveCaretAndModifySelection(to: p)
-                
+            
+            case .moveToBeginningOfParagraph:
+                break
+            case .moveToBeginningOfParagraphAndModifySelection:
+                break
+            case .moveToEndOfParagraph:
+                break
+            case .moveToEndOfParagraphAndModifySelection:
+                break
+            
             case .moveToBeginningOfDocument:
                 moveVerticalAxisX = nil
                 source.moveCaret(to: source.startPosition)
@@ -210,12 +267,6 @@ public struct CodeEditing {
 //                source.insertBacktab(config: config)
                 assert(false, "Unimplemented yet.")
                 
-            case .deleteForward:
-                moveVerticalAxisX = nil
-                if source.selectionRange.isEmpty {
-                    source.moveCaretAndModifySelection(to: source.rightCharacterCaretPosition())
-                }
-                source.replaceCharactersInCurrentSelection(with: "")
                 
             case .deleteBackward:
                 moveVerticalAxisX = nil
@@ -223,7 +274,31 @@ public struct CodeEditing {
                     source.moveCaretAndModifySelection(to: source.leftCharacterCaretPosition())
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
+            case .deleteForward:
+                moveVerticalAxisX = nil
+                if source.selectionRange.isEmpty {
+                    source.moveCaretAndModifySelection(to: source.rightCharacterCaretPosition())
+                }
+                source.replaceCharactersInCurrentSelection(with: "")
+            
+            case .deleteWordBackward:
+                moveVerticalAxisX = nil
+                if source.selectionRange.isEmpty {
+                    var cc = source.bestEffortCursorAtCaret
+                    cc.charCursor.moveOneWordToStart()
+                    source.moveCaretAndModifySelection(to: cc.position)
+                }
+                source.replaceCharactersInCurrentSelection(with: "")
                 
+            case .deleteWordForward:
+                moveVerticalAxisX = nil
+                if source.selectionRange.isEmpty {
+                    var cc = source.bestEffortCursorAtCaret
+                    cc.charCursor.moveOneWordToEnd()
+                    source.moveCaretAndModifySelection(to: cc.position)
+                }
+                source.replaceCharactersInCurrentSelection(with: "")
+            
             case .deleteToBeginningOfLine:
                 moveVerticalAxisX = nil
                 source.moveCaretAndModifySelection(to: source.leftEndPositionOfLine1(at: source.caretPosition.lineOffset))

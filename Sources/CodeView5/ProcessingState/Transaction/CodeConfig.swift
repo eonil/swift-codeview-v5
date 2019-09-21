@@ -29,6 +29,9 @@ public struct CodeConfig {
         public var indentStart = "{"
         /// Decreases indentation level if above line contains this string.
         public var indentEnd = "}"
+        
+//        /// For consecutive non-whitespace string
+//        public var wordSeparators = [" ", ".", ":"]
     }
     public struct Rendering {
         // Treats font object as a value.
