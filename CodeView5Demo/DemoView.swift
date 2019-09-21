@@ -59,9 +59,26 @@ final class DemoView: NSView {
         codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
         codeManagement.send(to: scrollCodeView.codeView)
     }
+    
+    private var wc = CompletionWindowManagement()
+    private var swww = 1
     @IBAction
     public func testClosingWindow(_:AnyObject?) {
-        window?.close()
+        switch swww {
+        case 1:
+            wc.codeView = scrollCodeView.codeView
+            let s = CompletionWindowManagement.State(
+                config: codeManagement.editing.config,
+                source: codeManagement.editing.source,
+                imeState: codeManagement.editing.imeState,
+                completionRange: codeManagement.editing.source.caretPosition..<codeManagement.editing.source.caretPosition)
+            wc.setState(s)
+            swww += 1
+        default :
+//            wc.setState(nil)
+            wc = CompletionWindowManagement()
+            swww = 1
+        }
     }
 
     // MARK: -
