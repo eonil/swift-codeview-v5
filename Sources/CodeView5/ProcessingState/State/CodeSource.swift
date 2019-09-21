@@ -37,9 +37,6 @@ public struct CodeSource: CodeSourceEditing {
         selectionRange = p..<p
     }
     
-    /// Unique identifier to distinguish different snapshot points.
-    /// This is a monotonically incrementing number.
-    public private(set) var version = 1
     /// Assigning new storage invalidates any caret/selection and set them to default value.
     public private(set) var storage = CodeStorage()
     /// Recorded changes performed on this `CodeSource`.
@@ -79,46 +76,19 @@ public struct CodeSource: CodeSourceEditing {
             precondition(isValidPosition(x.upperBound))
         }
     }
-
-    /// - Note:
-    ///     You have to use only valid line offsets.
-    /// - TODO: Optimize this.
-    /// Need to be optimized.
-    /// This would be okay for a while as most people do not install
-    /// too many break-points. But if there are more than 100 break-points,
-    /// this is very likely to make problems.
-    public var breakpointLineOffsets = Set<Int>() {
-        willSet(x) {
-            let s = storage
-            precondition(x.lazy.map({ s.lines.indices.contains($0) }).reduce(true, { $0 && $1 }))
-        }
-    }
 }
 public extension CodeSource {
     /// Lines cannot be `lines.endIndex` becuase character-index cannot be defined
     /// for non-existing lines.
     func isValidPosition(_ p:CodeStoragePosition) -> Bool {
-        let lineIndex = storage.lines.startIndex + p.lineOffset
-        let line = storage.lines[lineIndex]
-        return (0..<storage.lines.count).contains(p.lineOffset)
-            && (0...line.content.utf8.count).contains(p.characterUTF8Offset)
+        guard (0..<storage.lines.count).contains(p.lineOffset) else { return false }
+        let lineContent = storage.lines.atOffset(p.lineOffset).content
+        guard (0...lineContent.utf8.count).contains(p.characterUTF8Offset) else { return false }
+        return true
     }
-//    /// Gets a new valid position that is nearest to supplied position.
-//    func nearestValidPosition(_ p:CodeStoragePosition) -> CodeStoragePosition {
-//        guard !isValidPosition(p) else { return p }
-//        if p.lineIndex < storage.lines.count {
-//            let line = storage.lines[p.lineIndex]
-//            return CodeStoragePosition(lineIndex: p.lineIndex, characterIndex: line.endIndex)
-//        }
-//        else {
-//            return endPosition
-//        }
-//    }
-//    func nearestValidRange(_ r:Range<CodeStoragePosition>) -> Range<CodeStoragePosition> {
-//        let a = nearestValidPosition(r.lowerBound)
-//        let b = nearestValidPosition(r.upperBound)
-//        return a..<b
-//    }
+    func isValidRange(_ r:Range<CodeStoragePosition>) -> Bool {
+        return isValidPosition(r.lowerBound) && isValidPosition(r.upperBound)
+    }
 }
 public extension CodeSource {
     private func position(after p: CodeStoragePosition) -> CodeStoragePosition {
@@ -156,27 +126,11 @@ public extension CodeSource {
         let removedPosition = storage.removeCharacters(in: rangeToReplace)
         let r = storage.insertCharacters(replacementString, at: removedPosition)
         
-        // Update breakpoint positions.
-        let removeLineCount = rangeToReplace.lineOffsetRange.count
-        let newLineCharCount = replacementString.filter({ $0 == "\n" }).count
-        breakpointLineOffsets = Set(breakpointLineOffsets.compactMap({ i in
-            if i <= rangeToReplace.lowerBound.lineOffset {
-                return i
-            }
-            else {
-                let k = i + -removeLineCount + newLineCharCount
-                return k <= rangeToReplace.lowerBound.lineOffset ? nil : k
-            }
-        }))
-        
         // Record changes.
         timeline.recordReplacement(
             base: baseSnapshot,
             in: rangeToReplace,
             with: replacementString)
-        
-        // Increment version.
-        version += 1
         
         // Move carets and selection.
         let q = r.upperBound
@@ -194,20 +148,3 @@ extension CodeSource {
     }
 }
 
-// MARK: BreakPoint Editing
-extension CodeSource {
-    mutating func toggleBreakPoint(at lineIndex: Int) {
-        if breakpointLineOffsets.contains(lineIndex) {
-            breakpointLineOffsets.remove(lineIndex)
-        }
-        else {
-            breakpointLineOffsets.insert(lineIndex)
-        }
-    }
-    mutating func insertBreakPoint(at lineIndex: Int)  {
-        breakpointLineOffsets.insert(lineIndex)
-    }
-    mutating func removeBreakPoint(for lineIndex: Int) {
-        breakpointLineOffsets.remove(lineIndex)
-    }
-}

@@ -74,13 +74,14 @@ private extension CompletionWindowManagement {
         completionWindow.styleMask.formUnion([.unifiedTitleAndToolbar, .fullSizeContentView])
         completionWindow.titleVisibility = .hidden
         completionWindow.titlebarAppearsTransparent = true
+        completionWindow.level = .floating
     }
     var completionWindowFrameInScreen: CGRect? {
         guard let state = state else { return nil }
         guard let codeViewBoundsWidth = codeView?.bounds.width else { return nil }
         let range = state.completionRange
         let layout = state.source.makeLayout(config: state.config, imeState: state.imeState, boundingWidth: codeViewBoundsWidth)
-//        let a = range.lowerBound
+        
         let bottomLineOffset = range.upperBound.lineOffset
         let bottomCharOffsetRange = range.characterUTF8OffsetRangeOfLine(at: bottomLineOffset, in: state.source.storage)
         let bottomSelFrame = layout.frameOfTextUTF8OffsetSubrange(bottomCharOffsetRange, inLineAt: bottomLineOffset)

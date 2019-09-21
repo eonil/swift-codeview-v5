@@ -36,12 +36,14 @@ public struct CodeConfig {
         public var selectionColor = NSColor.selectedTextBackgroundColor
         public var textColor = NSColor.textColor
         public var selectedTextBackgroundColor = NSColor.selectedTextBackgroundColor
-        public var lineNumberFont = NSFont(name: "SF Compact", size: NSFont.smallSystemFontSize) ?? NSFont.systemFont(ofSize: NSFont.smallSystemFontSize)
+        public var lineNumberFont = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         public var lineNumberColor = NSColor.textColor.blended(withFraction: 0.5, of: NSColor.textBackgroundColor) ?? NSColor.textColor
+        public var lineNumberColorOnBreakPoint = NSColor.textColor
         public var breakPointColor = NSColor.controlAccentColor
         
         var lineHeight: CGFloat { -font.descender + font.ascender }
         var breakpointWidth: CGFloat { lineHeight * 3 }
+        var lineNumberAreaWidth: CGFloat { lineHeight * 2 }
         var gapBetweenBreakpointAndBody = CGFloat(5)
         var bodyX: CGFloat { breakpointWidth + gapBetweenBreakpointAndBody }
     }

@@ -7,8 +7,7 @@
 
 import Foundation
 
-
-public enum CodeUserInteractionScanningMessage {
+public enum CodeUserMessage {
     case edit(CodeEditingMessage)
     /// Notes from AppKit action messages.
     case menu(MenuMessage)
@@ -25,13 +24,6 @@ public enum CodeUserInteractionScanningMessage {
     public enum ViewMessage {
         case becomeFirstResponder
         case resignFirstResponder
+        case resize
     }
-    case setPreventedTypingCommands(Set<TextTypingCommand>)
-}
-
-public enum CodeEditingStateRenderingMessage {
-    /// Apply effects on client side.
-    case applyEffect(CodeView2Management.Effect)
-    /// Render snapshot on client side.
-    case stateSnapshot(CodeView2Management.State)
 }

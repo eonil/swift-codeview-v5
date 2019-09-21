@@ -8,27 +8,46 @@
 import Foundation
 import AppKit
 
-/// Represents an GUI level editing transaction of`CodeState`.
+/// Performs layout/space based editing.
 ///
+/// - This is default basic implementation of text editing engine.
 /// - This can perform layout-based editing operations
 ///   - `CodeSourceEditing` can perform only line/character level editings.
 /// - This is supposed to live momentarily only while you are applying an editing command.
 ///
 /// This provides core text processing functionality.
 ///
-struct CodeEditing {
+public struct CodeEditing {
     /// Stored **parameters** to be supplied to each editing operations.
-    var config = CodeConfig()
-    private(set) var state = CodeState()
+    public var config = CodeConfig()
+    var timeline = CodeTimeline()
+    public internal(set) var source = CodeSource()
+    public internal(set) var imeState = IMEState?.none
+    
+    /// Vertical caret movement between lines needs base X coordinate to align them on single line.
+    /// Here the basis X cooridnate will be stored to provide aligned vertical movement.
+    var moveVerticalAxisX = CGFloat?.none
+    func findAxisXForVerticalMovement() -> CGFloat {
+        let p = source.caretPosition
+        let line = source.storage.lines[source.storage.lines.startIndex + p.lineOffset]
+        let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
+        let ss = line.content[..<charIndex]
+        let ctline = CTLine.make(with: ss, font: config.rendering.font)
+        let w = CTLineGetBoundsWithOptions(ctline, []).width
+        return w
+    }
+    
     /// You call methods of `CodeEditor` to modify its state
     /// and check this flag portions of layout space that needs
     /// rendering.
     private(set) var invalidatedRegion = InvalidatedRegion.none
     typealias InvalidatedRegion = CodeEditingInvalidatedRegion
-    
-    init(config x: CodeConfig, state s:CodeState) {
-        config = x
-        state = s
+    mutating func invalidate(_ newRegion:InvalidatedRegion) {
+        switch (invalidatedRegion, newRegion) {
+        case (.none, .none): break
+        case (.none, .some): invalidatedRegion = newRegion
+        default: invalidatedRegion = .all
+        }
     }
     
     // MARK: - External I/O
@@ -40,7 +59,7 @@ struct CodeEditing {
         switch c {
         case let .reset(s):         reset(s)
         case let .edit(s, n):       edit(s, nameForMenu: n)
-        case let .typing(n):    process(n)
+        case let .typing(n):        process(n)
         case let .mouse(n):
             switch n.kind {
             case .down:             processMouseDown(at: n.pointInBounds, in: n.bounds)
@@ -48,27 +67,6 @@ struct CodeEditing {
             case .up:               processMouseUp(at: n.pointInBounds, in: n.bounds)
             }
         }
-    }
-    
-    // MARK: - Quick Access
-    private(set) var timeline: CodeTimeline {
-        get { return state.timeline }
-        set(x) { state.timeline = x }
-    }
-    private(set) var source: CodeSource {
-        get { return state.source }
-        set(x) { state.source = x }
-    }
-    private(set) var imeState: IMEState? {
-        get { return state.imeState }
-        set(x) { state.imeState = x }
-    }
-    private var moveVerticalAxisX: CGFloat? {
-        get { return state.moveVerticalAxisX }
-        set(x) { state.moveVerticalAxisX = x }
-    }
-    private func findAxisXForVerticalMovement() -> CGFloat {
-        return state.findAxisXForVerticalMovement(config: config)
     }
     
     // MARK: - Rendering
@@ -101,8 +99,8 @@ struct CodeEditing {
     /// This command keeps undo/redo stack.
     private mutating func edit(_ s:CodeSource, nameForMenu n:String) {
         source = s
-        state.unrecordAllInsignificantTimelinePoints()
-        state.recordTimePoint(as: .alienEditing(nameForMenu: n))
+        unrecordAllInsignificantTimelinePoints()
+        recordTimePoint(as: .alienEditing(nameForMenu: n))
         render()
     }
     private mutating func process(_ n:TextTypingMessage) {
@@ -113,7 +111,7 @@ struct CodeEditing {
         case let .placeText(s):
             imeState = nil
             source.replaceCharactersInCurrentSelection(with: s)
-            state.recordTimePoint(as: .typingCharacter)
+            recordTimePoint(as: .typingCharacter)
         case let .processEditingCommand(cmd):
             switch cmd {
             case .moveLeft:
@@ -197,8 +195,8 @@ struct CodeEditing {
                 source.selectAll()
                 
             case .insertNewline:
-                state.unrecordAllInsignificantTimelinePoints()
-                state.recordTimePoint(as: .typingNewLine)
+                unrecordAllInsignificantTimelinePoints()
+                recordTimePoint(as: .typingNewLine)
                 moveVerticalAxisX = nil
                 source.insertNewLine(config: config)
                 
@@ -267,9 +265,6 @@ struct CodeEditing {
     private mutating func processMouseDown(at point:CGPoint, in bounds:CGRect) {
         let layout = CodeLayout(config: config, source: source, imeState: imeState, boundingWidth: bounds.width)
         if point.x < layout.config.rendering.breakpointWidth {
-            let lineOffset = layout.clampingLineOffset(at: point.y)
-            // Toggle breakpoint.
-            source.toggleBreakPoint(at: lineOffset)
         }
         else {
             let p = layout.clampingPosition(at: point)
@@ -308,4 +303,46 @@ struct CodeEditing {
 //        state.recordTimePoint(as: .alienEditing(nameForMenu: n))
 //        render()
 //    }
+}
+extension CodeEditing {
+    // MARK: - Undo/Redo Support
+    mutating func undoInTimeline() {
+        timeline.undo()
+        source = timeline.currentPoint.snapshot
+    }
+    mutating func redoInTimeline() {
+        timeline.redo()
+        source = timeline.currentPoint.snapshot
+    }
+    /// Unrecords small changed made by typing or other actions.
+    ///
+    /// Once end-user finished typing a line,
+    /// end-user would like to undo/redo that line at once instead of undo/redo
+    /// them for each characters one by one.
+    /// To provide such behavior, we need to "unrecord" existing small changes
+    /// made by typing small units. This method does that unrecording.
+    /// You are supposed to record a new snapshot point to make
+    /// large unit change.
+    mutating func unrecordAllInsignificantTimelinePoints() {
+        // Replace any existing small typing (character-level) actions
+        // with single large typing action on new-line.
+        let s = source
+        while !timeline.undoablePoints.isEmpty && !timeline.currentPoint.kind.isSignificant {
+            undoInTimeline()
+        }
+        source = s
+    }
+    /// Records a new undo point.
+    ///
+    /// You can treat this as a save-point. Calling undo rolls state back to latest save-point.
+    /// Therefore, you are supposed to call this before making new change.
+    ///
+    mutating func recordTimePoint(as kind: CodeOperationKind) {
+        /// Clean up its timeline before record.
+        /// So undo/redo will produce source snapshot with no storage-level timeline.
+        /// So it can represent snapshot replacement.
+        var sourceToRecord = source
+        sourceToRecord.cleanTimeline()
+        timeline.record(sourceToRecord, as: kind)
+    }
 }

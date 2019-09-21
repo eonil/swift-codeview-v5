@@ -10,12 +10,12 @@ import AppKit
 
 /// Renders `CodeSource` in a flipped space.
 struct CodeRendering {
-    var config = CodeConfig()
+    var config: CodeConfig
+    var breakpointLineOffsets: Set<Int>
     func draw(source: CodeSource, imeState: IMEState?, in dirtyRect: CGRect, with cgctx: CGContext) {
         let h = config.rendering.lineHeight
         let visibleLineOffsets = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
-        let _visibleLineIndices = (source.storage.lines.startIndex+visibleLineOffsets.lowerBound)..<(source.storage.lines.startIndex+visibleLineOffsets.upperBound)
-        let visibleExistingLineOffsets = source.storage.lines.indices.clamped(to: _visibleLineIndices)
+        let visibleExistingLineOffsets = source.storage.lines.offsets.clamped(to: visibleLineOffsets)
         let selectedRange = source.selectionRange
         let selectionIncludedLineOffsetRange = source.selectionRange.includedLineOffsetRange
         let visibleSelectedLineOffsetRange = selectionIncludedLineOffsetRange.clamped(to: visibleLineOffsets)
@@ -28,7 +28,7 @@ struct CodeRendering {
         
         // Draw breakpoints.
         for lineOffset in visibleExistingLineOffsets {
-            if source.breakpointLineOffsets.contains(lineOffset) {
+            if breakpointLineOffsets.contains(lineOffset) {
                 let f = layout.frameOfBreakpointInLine(at: lineOffset)
                 let c = config.rendering.breakPointColor
                 sssn.drawBreakpoint(in: f, color: c)
@@ -64,7 +64,8 @@ struct CodeRendering {
         for lineOffset in visibleExistingLineOffsets {
             let s = "\(lineOffset)"
             let f = layout.frameOfLineNumberArea(at: lineOffset)
-            let c = config.rendering.lineNumberColor
+            let isOnBreakPoint = breakpointLineOffsets.contains(lineOffset)
+            let c = isOnBreakPoint ? config.rendering.lineNumberColorOnBreakPoint : config.rendering.lineNumberColor
             sssn.drawTextRightAligned(s[s.startIndex...], font: config.rendering.lineNumberFont, color: c, in: f)
         }
         

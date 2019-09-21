@@ -4,7 +4,7 @@ import XCTest
 final class CodeSourceEditingTests: XCTestCase {
     func testInsertNewLine() {
         let conf = CodeConfig()
-        let state = CodeState()
+        let state = CodeEditingState()
         var ed = CodeEditing(config: conf, state: state)
         XCTAssertEqual(ed.state.source.storage.lines.count, 1)
         XCTAssertEqual(ed.state.source.storage.lines[0].content, "")
@@ -36,7 +36,7 @@ final class CodeSourceEditingTests: XCTestCase {
     }
     func testDeleteSecondLine() {
         let conf = CodeConfig()
-        let state = CodeState()
+        let state = CodeEditingState()
         var ed = CodeEditing(config: conf, state: state)
         ed.apply(.textTyping(.placeText("aaa")))
         ed.apply(.textTyping(.processEditingCommand(.insertNewline)))
@@ -64,7 +64,7 @@ final class CodeSourceEditingTests: XCTestCase {
     }
     func testInsertTwoAndDeleteOne() {
         let conf = CodeConfig()
-        let state = CodeState()
+        let state = CodeEditingState()
         var ed = CodeEditing(config: conf, state: state)
         XCTAssertEqual(ed.state.source.storage.lines.count, 1)
         XCTAssertEqual(ed.state.source.storage.lines[0].content, "")
@@ -101,7 +101,7 @@ final class CodeSourceEditingTests: XCTestCase {
     }
 """
         let conf = CodeConfig()
-        let state = CodeState()
+        let state = CodeEditingState()
         var ed = CodeEditing(config: conf, state: state)
         ed.apply(.textTyping(.placeText(sample)))
         ed.apply(.textTyping(.processEditingCommand(.moveToBeginningOfDocument)))
@@ -130,7 +130,7 @@ final class CodeSourceEditingTests: XCTestCase {
     }
     func testSelectAllAndDeleteBackward() {
         let conf = CodeConfig()
-        let state = CodeState()
+        let state = CodeEditingState()
         var ed = CodeEditing(config: conf, state: state)
         ed.apply(.textTyping(.placeText("aaa")))
         ed.apply(.textTyping(.processEditingCommand(.insertNewline)))

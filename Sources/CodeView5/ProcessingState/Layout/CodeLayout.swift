@@ -87,7 +87,7 @@ public struct CodeLayout {
     }
     func frameOfLineNumberArea(at offset: Int) -> CGRect {
         let lineFrame = frameOfLine(at: offset)
-        return lineFrame.divided(atDistance: config.rendering.breakpointWidth, from: .minXEdge).slice
+        return lineFrame.divided(atDistance: config.rendering.lineNumberAreaWidth, from: .minXEdge).slice
     }
     /// This does not consider IME state.
     /// Take care that this frame considers breakpoint area and is clipped by line frame.
