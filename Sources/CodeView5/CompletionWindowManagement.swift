@@ -75,6 +75,7 @@ private extension CompletionWindowManagement {
         completionWindow.titleVisibility = .hidden
         completionWindow.titlebarAppearsTransparent = true
         completionWindow.level = .floating
+        completionWindow.isReleasedWhenClosed = true
     }
     var completionWindowFrameInScreen: CGRect? {
         guard let state = state else { return nil }
