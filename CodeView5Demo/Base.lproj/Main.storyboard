@@ -34,6 +34,11 @@
                                                 <action selector="testTextEditing:" target="Ady-hI-5gd" id="iAh-iH-9c7"/>
                                             </connections>
                                         </menuItem>
+                                        <menuItem title="Test Closing Window" keyEquivalent="3" id="VQd-6L-VdD">
+                                            <connections>
+                                                <action selector="testClosingWindow:" target="Ady-hI-5gd" id="p7g-Xv-wMH"/>
+                                            </connections>
+                                        </menuItem>
                                         <menuItem isSeparatorItem="YES" id="Qfd-PG-u0X"/>
                                         <menuItem title="Services" id="NMo-om-nkz">
                                             <modifierMask key="keyEquivalentModifierMask"/>
@@ -720,8 +725,8 @@
                         <rect key="frame" x="0.0" y="0.0" width="480" height="270"/>
                         <autoresizingMask key="autoresizingMask"/>
                         <subviews>
-                            <customView misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="PzS-W2-zeI" customClass="DemoView" customModule="CodeView5Demo" customModuleProvider="target">
-                                <rect key="frame" x="1" y="0.0" width="480" height="270"/>
+                            <customView translatesAutoresizingMaskIntoConstraints="NO" id="PzS-W2-zeI" customClass="DemoView" customModule="CodeView5Demo" customModuleProvider="target">
+                                <rect key="frame" x="0.0" y="0.0" width="480" height="270"/>
                             </customView>
                         </subviews>
                         <constraints>

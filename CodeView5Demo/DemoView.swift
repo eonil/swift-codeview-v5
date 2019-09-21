@@ -37,24 +37,31 @@ final class DemoView: NSView {
         super.init(coder: c)
         install()
     }
+    deinit {
+        
+    }
 
     public override var acceptsFirstResponder: Bool { return true }
     public override func becomeFirstResponder() -> Bool {
         return window?.makeFirstResponder(scrollCodeView) ?? false
     }
     @IBAction
-    public func testTextReloading(_:AnyObject) {
+    public func testTextReloading(_:AnyObject?) {
         codeManagement.process(.userInteraction(.edit(.reset(CodeSource()))))
         codeManagement.send(to: scrollCodeView.codeView)
         codeManagement.process(.userInteraction(.edit(.typing(.placeText("Resets to a new document.")))))
         codeManagement.send(to: scrollCodeView.codeView)
     }
     @IBAction
-    public func testTextEditing(_:AnyObject) {
+    public func testTextEditing(_:AnyObject?) {
         var src = codeManagement.editing.source
         src.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
         codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
         codeManagement.send(to: scrollCodeView.codeView)
+    }
+    @IBAction
+    public func testClosingWindow(_:AnyObject?) {
+        window?.close()
     }
 
     // MARK: -
