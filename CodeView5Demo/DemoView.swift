@@ -56,6 +56,16 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
         codeManagement.send(to: scrollCodeView.codeView)
     }
+    @IBAction
+    public func testBreakpointSetting(_:AnyObject?) {
+        let lineOffsets = codeManagement.editing.source.storage.lines.offsets
+        var breakPoints = codeManagement.breakPointLineOffsets
+        if let lineOffset = lineOffsets.randomElement() {
+            breakPoints.insert(lineOffset)
+        }
+        codeManagement.process(.setBreakPointLineOffsets(breakPoints))
+        codeManagement.send(to: scrollCodeView.codeView)
+    }
     
 //    private var wc = ScrollCodeView()
 //    private var swww = 1

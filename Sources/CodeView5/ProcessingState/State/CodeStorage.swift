@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import BTree
 import SBTL
 import CodeView5CustomNSString
 
@@ -18,7 +17,7 @@ public struct CodeStorage {
 //    /// Line unique key manager.
 //    private var lineKeyManagement = CodeLineKeyManagement()
     
-    private var implLines = List<CodeLine>()
+    private var implLines = BTList<CodeLine>()
     
     public init() {}
 //    /// All keys in this storage for each lines at same indices.

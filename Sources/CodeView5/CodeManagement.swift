@@ -24,6 +24,8 @@ import Foundation
 ///
 public struct CodeManagement {
     public private(set) var editing = CodeEditing()
+    /// This is supposed to stored less than hundred values.
+    /// If this need to store more, this should use copy-friendly types.
     public private(set) var breakPointLineOffsets = Set<Int>()
     /// Defines whow completion window to be rendered.
     /// `nil` means completion window should be disappeared.
@@ -39,6 +41,7 @@ public struct CodeManagement {
     }
     public enum Message {
         case userInteraction(CodeUserMessage)
+        case setBreakPointLineOffsets(Set<Int>)
         case setCompletionRange(Range<CodeStoragePosition>?)
     }
     public mutating func process(_ m:Message) {
@@ -53,6 +56,8 @@ public struct CodeManagement {
             case let .menu(mmm): processMenu(mmm)
             case let .view(mmm): processView(mmm)
             }
+        case let .setBreakPointLineOffsets(bps):
+            breakPointLineOffsets = bps
         case let .setCompletionRange(mm):
             completionWindowState = mm == nil ? nil : CompletionWindowState(aroundRange: mm!)
         }
@@ -81,6 +86,7 @@ public struct CodeManagement {
                 }
             default: return true
             }
+        case .setBreakPointLineOffsets: return true
         case .setCompletionRange: return true
         }
     }
