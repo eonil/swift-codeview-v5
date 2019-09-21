@@ -10,16 +10,18 @@ import BTree
 
 /// Manages undo/redo support.
 public struct CodeTimeline {
-    private(set) var undoablePoints = List<Point>()
-    private(set) var currentPoint = Point()
-    private(set) var redoablePoints = List<Point>()
-    struct Point {
+    public private(set) var undoablePoints = List<Point>()
+    public private(set) var currentPoint = Point()
+    public private(set) var redoablePoints = List<Point>()
+    public struct Point {
         /// Unique identifier to distinguish different snapshot points.
-        /// This is monotonically incrementing number.
-        var version = 0
+        public var version = 0 as Key
         var kind = CodeOperationKind.reloadAll
-        var snapshot = CodeSource()
+        public var snapshot = CodeSource()
     }
+    public typealias Key = Int
+    private var keySeed = 0 as Key
+    
     init() {}
     init(current s:CodeSource) {
         currentPoint = Point(version: 1, kind: .reloadAll, snapshot: s)
@@ -29,7 +31,8 @@ public struct CodeTimeline {
     mutating func record(_ s:CodeSource, as kind: CodeOperationKind) {
         precondition(s.timeline.points.isEmpty)
         undoablePoints.append(currentPoint)
-        currentPoint = Point(version: currentPoint.version + 1, kind: kind, snapshot: s)
+        keySeed += 1
+        currentPoint = Point(version: keySeed, kind: kind, snapshot: s)
         redoablePoints.removeAll()
     }
     mutating func undo() {

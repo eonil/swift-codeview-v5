@@ -7,11 +7,19 @@
 
 import Foundation
 
+private let keyAccess = DispatchQueue(label: "CodeStorageTimeline/Key")
+private var keySeed = 0 as CodeStorageTimeline.Key
+private func makeKey() -> CodeStorageTimeline.Key {
+    return keyAccess.sync {
+        keySeed += 1
+        return keySeed
+    }
+}
+
 /// A timeline to track changes in a code storage.
 /// - This is not for UI level undo/redo support.
 /// - This is designed to provide change-sets.
 public struct CodeStorageTimeline {
-    private var keySeed = 0 as Key
     public private(set) var points = [Point]()
     public struct Point {
         /// Timeline-local unique identifier to identify each point in timeline.
@@ -25,9 +33,8 @@ public struct CodeStorageTimeline {
     public typealias CodeStorageRange = Range<CodeStoragePosition>
     public typealias Key = Int
     mutating func recordReplacement(base snapshot: CodeStorage, in range: CodeStorageRange, with content: String) {
-        keySeed += 1
         let p = Point(
-            key: keySeed,
+            key: makeKey(),
             baseSnapshot: snapshot,
             replacementRange: range,
             replacementContent: content)

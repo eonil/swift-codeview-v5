@@ -261,6 +261,7 @@ public struct CodeEditing {
                 moveVerticalAxisX = nil
                 let tabReplacement = config.editing.makeTabReplacement()
                 source.replaceCharactersInCurrentSelection(with: tabReplacement)
+                recordTimePoint(as: .editingInteraction)
 
             case .insertBacktab:
                 moveVerticalAxisX = nil
@@ -274,12 +275,15 @@ public struct CodeEditing {
                     source.moveCaretAndModifySelection(to: source.leftCharacterCaretPosition())
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
+                recordTimePoint(as: .editingInteraction)
+                
             case .deleteForward:
                 moveVerticalAxisX = nil
                 if source.selectionRange.isEmpty {
                     source.moveCaretAndModifySelection(to: source.rightCharacterCaretPosition())
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
+                recordTimePoint(as: .editingInteraction)
             
             case .deleteWordBackward:
                 moveVerticalAxisX = nil
@@ -289,6 +293,7 @@ public struct CodeEditing {
                     source.moveCaretAndModifySelection(to: cc.position)
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
+                recordTimePoint(as: .editingInteraction)
                 
             case .deleteWordForward:
                 moveVerticalAxisX = nil
@@ -298,16 +303,20 @@ public struct CodeEditing {
                     source.moveCaretAndModifySelection(to: cc.position)
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
+                recordTimePoint(as: .editingInteraction)
             
             case .deleteToBeginningOfLine:
                 moveVerticalAxisX = nil
                 source.moveCaretAndModifySelection(to: source.leftEndPositionOfLine1(at: source.caretPosition.lineOffset))
                 source.replaceCharactersInCurrentSelection(with: "")
+                recordTimePoint(as: .editingInteraction)
                 
             case .deleteToEndOfLine:
                 moveVerticalAxisX = nil
                 source.moveCaretAndModifySelection(to: source.rightEndPositionOfLine1(at: source.caretPosition.lineOffset))
                 source.replaceCharactersInCurrentSelection(with: "")
+                recordTimePoint(as: .editingInteraction)
+                
             case .cancelOperation:
                 break
             }

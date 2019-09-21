@@ -20,8 +20,9 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.send(to: scrollCodeView.codeView)
         
         //
+        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
         let src = codeManagement.editing.source
-//        print("ver: \(src.version)")
         for p in src.timeline.points {
             let oldContent = p.baseSnapshot.lineContents(in: p.replacementRange).joined(separator: "\n")
             let newContent = p.replacementContent
@@ -48,6 +49,8 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.send(to: scrollCodeView.codeView)
         codeManagement.process(.userInteraction(.edit(.typing(.placeText("Resets to a new document.")))))
         codeManagement.send(to: scrollCodeView.codeView)
+        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     @IBAction
     public func testTextEditing(_:AnyObject?) {
@@ -55,6 +58,8 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         src.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
         codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
         codeManagement.send(to: scrollCodeView.codeView)
+        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     @IBAction
     public func testBreakpointSetting(_:AnyObject?) {
@@ -65,30 +70,10 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         }
         codeManagement.process(.setBreakPointLineOffsets(breakPoints))
         codeManagement.send(to: scrollCodeView.codeView)
+        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     
-//    private var wc = ScrollCodeView()
-//    private var swww = 1
-//    @IBAction
-//    public func testClosingWindow(_:AnyObject?) {
-//        switch swww {
-//        case 1:
-//            wc.removeFromSuperview()
-//            wc = ScrollCodeView()
-//            wc.frame = CGRect(x: 0, y: 0, width: 100, height: 100)
-//            addSubview(wc)
-//            var s = codeManagement.completionWindowState!
-//            s.aroundRange = CodeStoragePosition.zero..<CodeStoragePosition.zero
-//            wc.codeView.control(.renderCompletionWindow(s))
-//            swww += 1
-//        default :
-////            wc.setState(nil)
-//            wc.removeFromSuperview()
-//            wc = ScrollCodeView()
-//            swww = 1
-//        }
-//    }
-
     // MARK: -
     private func install() {
         wantsLayer = true
@@ -109,11 +94,15 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     func undo(_:AnyObject?) {
         codeManagement.process(.userInteraction(.menu(.undo)))
         codeManagement.send(to: scrollCodeView.codeView)
+        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     @IBAction
     func redo(_:AnyObject?) {
         codeManagement.process(.userInteraction(.menu(.redo)))
         codeManagement.send(to: scrollCodeView.codeView)
+        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         switch item.action {
