@@ -75,7 +75,7 @@ private extension CompletionWindowManagement {
         let isVisible = state?.completionRange != nil && f != nil && codeView?.window?.firstResponder === codeView
         completionWindow.orderFront(self)
         completionWindow.setIsVisible(isVisible)
-        completionWindow.setFrame(f ?? .zero, display: isVisible)
+        completionWindow.setFrame(f ?? CGRect(origin: .zero, size: windowSize), display: isVisible)
         completionWindow.styleMask.formUnion([.unifiedTitleAndToolbar, .fullSizeContentView])
         completionWindow.titleVisibility = .hidden
         completionWindow.titlebarAppearsTransparent = true
