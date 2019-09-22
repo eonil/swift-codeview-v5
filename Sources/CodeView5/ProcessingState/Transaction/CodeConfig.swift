@@ -32,6 +32,7 @@ public struct CodeConfig {
         
 //        /// For consecutive non-whitespace string
 //        public var wordSeparators = [" ", ".", ":"]
+        public var preventSomeEditingCommandsOnCompletionVisible = true
     }
     public struct Rendering {
         // Treats font object as a value.

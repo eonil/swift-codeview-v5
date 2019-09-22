@@ -68,9 +68,17 @@ public final class CodeView: NSView {
     /// too many break-points. But if there are more than 100 break-points,
     /// this is very likely to make problems.
     public private(set) var breakpointLineOffsets = Set<Int>()
-    private var completionWindowState = CompletionWindowState?.none
+    private var completionWindowState = CompletionWindowState()
+    /// Visibility and range is separated as visibility can be changed by completion content
+    /// and completion content can be different at range.
     public struct CompletionWindowState {
-        public var aroundRange = CodeStoragePosition.zero..<CodeStoragePosition.zero
+        public var wantsVisible = false
+        /// We cannot keep invalid range if detected.
+        /// In that case, this gonna be `nil`.
+        public var aroundRange = Range<CodeStoragePosition>?.none
+        public var isVisible: Bool {
+            return wantsVisible && aroundRange != nil
+        }
     }
 
     // MARK: - External I/O
@@ -98,7 +106,7 @@ public final class CodeView: NSView {
         ///     You need to deal with them yourself if you want.
         ///     Or you can use `CodeView2Management`
         ///     that also deals with completion window.
-        case renderCompletionWindow(CompletionWindowState?)
+        case renderCompletionWindow(CompletionWindowState)
     }
     /// Sends control message.
     public func control(_ m:Control) {
@@ -164,12 +172,11 @@ public final class CodeView: NSView {
         case let .renderCompletionWindow(mm):
             completionWindowState = mm
             typealias CWS = CompletionWindowManagement.State
-            let r = mm?.aroundRange
-            let cs = r == nil ? CWS?.none : CWS(
+            let cs = mm.aroundRange == nil ? CWS?.none : CWS(
                 config: editing.config,
                 source: editing.storage,
                 imeState: editing.imeState,
-                completionRange: r!)
+                completionRange: mm.aroundRange!)
             completionWindowManagement.setState(cs)
         }
     }

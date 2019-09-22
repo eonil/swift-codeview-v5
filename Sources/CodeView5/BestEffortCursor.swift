@@ -7,14 +7,20 @@
 
 import Foundation
 
-extension CodeStorageEditingProtocol {
+public extension CodeStorageEditingProtocol {
     var bestEffortCursorAtCaret: BestEffortCursor {
         return BestEffortCursor(text: text, position: caretPosition) 
     }
 }
-struct BestEffortCursor {
-    let text: CodeTextStorage
-    var position: CodeStoragePosition
+public struct BestEffortCursor {
+    public let text: CodeTextStorage
+    public var position: CodeStoragePosition
+    public init(text x:CodeTextStorage, position p:CodeStoragePosition) {
+        text = x
+        position = p
+    }
+}
+public extension BestEffortCursor {
     var lineContent: Substring {
         return text.lines.atOffset(position.lineOffset).content
     }

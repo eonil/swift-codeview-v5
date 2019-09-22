@@ -19,6 +19,12 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.process(.userInteraction(m))
         codeManagement.send(to: scrollCodeView.codeView)
         
+        let c = codeManagement.editing.storage.bestEffortCursorAtCaret
+        if c.inLineCharCursor.priorChar == "." {
+            codeManagement.process(.setCompletion(wantsVisible: true, aroundRange: c.position..<c.position))
+            codeManagement.send(to: scrollCodeView.codeView)
+        }
+        
         //
         print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
         print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")

@@ -14,7 +14,7 @@ import Foundation
 //        return lineContent.bestEffortCharCursorAtUTF8Offset(p.characterUTF8Offset)
 //    }
 //}
-extension Substring {
+public extension Substring {
     func bestEffortCharCursorAtUTF8Offset(_ utf8Offset:Int) -> BestEffortCharCursor {
         var cc = BestEffortCharCursor(content: self)
         cc.position = utf8.index(startIndex, offsetBy: utf8Offset)
@@ -23,13 +23,15 @@ extension Substring {
 }
 
 /// Tries best to fulfill order but does not guarantee desired result.
-struct BestEffortCharCursor {
-    let content: Substring
-    var position: Substring.Index
-    init(content x:Substring) {
+public struct BestEffortCharCursor {
+    public let content: Substring
+    public var position: Substring.Index
+    public init(content x:Substring) {
         content = x
         position = x.startIndex
     }
+}
+public extension BestEffortCharCursor {
     var utf8Offset: Int { content.utf8.distance(from: content.startIndex, to: position) }
     var isEmpty: Bool { content.isEmpty }
     var isAtStart: Bool { content.startIndex == position }
@@ -39,13 +41,13 @@ struct BestEffortCharCursor {
         guard !isEmpty && !isAtEnd else { return nil }
         return content[position]
     }
-    var charBefore: Character? {
+    var priorChar: Character? {
         guard !isAtStart else { return nil }
         var preview = self
         preview.moveOneCharToStart()
         return preview.char
     }
-    var charAfter: Character? {
+    var nextChar: Character? {
         guard !isAtEnd else { return nil }
         var preview = self
         preview.moveOneCharToEnd()
@@ -60,7 +62,7 @@ struct BestEffortCharCursor {
         position = content.index(after: position)
     }
 }
-extension BestEffortCharCursor {
+public extension BestEffortCharCursor {
     ///
     /// A position moved by one word from current caret.
     /// A "word" is consecutive "letter" characters.
@@ -72,23 +74,23 @@ extension BestEffortCharCursor {
     ///
     mutating func moveOneWordToStart() {
         skipAllNonLettersToStart()
-        while charBefore?.isLetter == true { moveOneCharToStart()}
+        while priorChar?.isLetter == true { moveOneCharToStart()}
     }
     mutating func moveOneWordToEnd() {
         skipAllNonLettersToEnd()
-        while charAfter?.isLetter == true { moveOneCharToEnd()}
+        while nextChar?.isLetter == true { moveOneCharToEnd()}
     }
     mutating func moveOneSubwordToStart() {
-        if charBefore?.isLetter == false {
+        if priorChar?.isLetter == false {
             skipAllNonLettersToStart()
         }
         else {
-            if charBefore?.isUppercase == true {
-                while charBefore?.isUppercase == true { moveOneCharToStart()}
+            if priorChar?.isUppercase == true {
+                while priorChar?.isUppercase == true { moveOneCharToStart()}
             }
             else {
-                while charBefore?.isLowercase == true { moveOneCharToStart()}
-                if charBefore?.isUppercase == true { moveOneCharToStart()}
+                while priorChar?.isLowercase == true { moveOneCharToStart()}
+                if priorChar?.isUppercase == true { moveOneCharToStart()}
             }
         }
     }
@@ -101,7 +103,7 @@ extension BestEffortCharCursor {
                 while char?.isLowercase == true { moveOneCharToEnd()}
                 return
             }
-            if char?.isUppercase == true && charAfter?.isLowercase == true {
+            if char?.isUppercase == true && nextChar?.isLowercase == true {
                 moveOneCharToEnd()
                 while char?.isLowercase == true { moveOneCharToEnd()}
             }
@@ -113,12 +115,12 @@ extension BestEffortCharCursor {
                 ///     XML.Zoo
                 ///     xmlzooo
                 ///
-                while char?.isUppercase == true && charAfter?.isLowercase == false { moveOneCharToEnd() }
+                while char?.isUppercase == true && nextChar?.isLowercase == false { moveOneCharToEnd() }
             }
         }
     }
     mutating func skipAllNonLettersToStart() {
-        while charBefore?.isLetter == false { moveOneCharToStart() }
+        while priorChar?.isLetter == false { moveOneCharToStart() }
     }
     mutating func skipAllNonLettersToEnd() {
         while char?.isLetter == false { moveOneCharToEnd() }
@@ -130,14 +132,4 @@ extension BestEffortCharCursor {
     mutating func moveToEnd() {
         position = content.endIndex
     }
-}
-
-/// Returns `false` if any of input is `nil`.
-///
-///     Foo.BarZoo
-///
-private func areNonNilSameCases(_ a:Character?, _ b:Character?) -> Bool {
-    guard let a1 = a else { return false }
-    guard let b1 = b else { return false }
-    return a1.isLowercase == b1.isLowercase
 }

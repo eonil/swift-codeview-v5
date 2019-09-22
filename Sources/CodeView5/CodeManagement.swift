@@ -28,8 +28,7 @@ public struct CodeManagement {
     /// If this need to store more, this should use copy-friendly types.
     public private(set) var breakPointLineOffsets = Set<Int>()
     /// Defines whow completion window to be rendered.
-    /// `nil` means completion window should be disappeared.
-    public private(set) var completionWindowState = CompletionWindowState?.none
+    public private(set) var completionWindow = CompletionWindowState()
     public typealias CompletionWindowState = CodeView.CompletionWindowState
     /// This is an output state.
     public private(set) var effects = [Effect]()
@@ -37,12 +36,13 @@ public struct CodeManagement {
     
     public init() {}
     public var preventedTypingCommands: Set<TextTypingCommand> {
-        return completionWindowState == nil ? [] : [.moveUp, .moveDown]
+        guard editing.config.editing.preventSomeEditingCommandsOnCompletionVisible else { return [] }
+        return completionWindow.isVisible ? [.moveUp, .moveDown, .insertNewline] : []
     }
     public enum Message {
         case userInteraction(CodeUserMessage)
         case setBreakPointLineOffsets(Set<Int>)
-        case setCompletionRange(Range<CodeStoragePosition>?)
+        case setCompletion(wantsVisible: Bool, aroundRange: Range<CodeStoragePosition>?)
     }
     public mutating func process(_ m:Message) {
         /// Clean up prior output.
@@ -59,15 +59,17 @@ public struct CodeManagement {
             }
         case let .setBreakPointLineOffsets(bps):
             breakPointLineOffsets = bps
-        case let .setCompletionRange(mm):
-            completionWindowState = mm == nil ? nil : CompletionWindowState(aroundRange: mm!)
+        case let .setCompletion(mm):
+            completionWindow.wantsVisible = mm.wantsVisible
+            completionWindow.aroundRange = mm.aroundRange
         }
         /// Remove completion window if target range is invalid.
         /// This can happen as user delete existing characters included in the range.
         /// Hiding completion window is natural choice.
-        if let r = completionWindowState?.aroundRange {
+        
+        if let r = completionWindow.aroundRange {
             if !editing.storage.isValidRange(r) {
-                completionWindowState = nil
+                completionWindow.aroundRange = nil
             }
         }
     }
@@ -88,7 +90,7 @@ public struct CodeManagement {
             default: return true
             }
         case .setBreakPointLineOffsets: return true
-        case .setCompletionRange: return true
+        case .setCompletion: return true
         }
     }
     
@@ -137,16 +139,17 @@ public struct CodeManagement {
         switch mm {
         case let .typing(mmm):
             switch mmm {
-            case let .placeText(s):
-                if [".", ":"].contains(s) {
-                    // Start completion.
-                    let p = editing.storage.caretPosition
-                    completionWindowState = CompletionWindowState(aroundRange: p..<p)
-                }
+//            case let .placeText(s):
+//                if [".", ":"].contains(s) {
+//                    // Start completion.
+//                    let p = editing.storage.caretPosition
+//                    completionWindow = CompletionWindowState(aroundRange: p..<p)
+//                }
             case let .processEditingCommand(mmmm):
                 switch mmmm {
                 case .cancelOperation:
-                    completionWindowState = nil
+                    completionWindow.aroundRange = nil
+                    completionWindow.wantsVisible = false
                 default: break
                 }
             default: break
@@ -155,12 +158,12 @@ public struct CodeManagement {
         }
         
         // Kill completion if caret goes out of its range.
-        if let r = completionWindowState?.aroundRange {
+        if let r = completionWindow.aroundRange {
             if !r.includedLineOffsetRange.contains(editing.storage.caretPosition.lineOffset) {
-                completionWindowState = nil
+                completionWindow.aroundRange = nil
             }
             if editing.storage.caretPosition.characterUTF8Offset < r.lowerBound.characterUTF8Offset {
-                completionWindowState = nil
+                completionWindow.aroundRange = nil
             }
         }
     }
@@ -198,11 +201,14 @@ public struct CodeManagement {
     private mutating func processView(_ mm:CodeView.Note.ViewMessage) {
         switch mm {
         case .becomeFirstResponder:
-            completionWindowState = nil
+            completionWindow.aroundRange = nil
+            completionWindow.wantsVisible = false
         case .resignFirstResponder:
-            completionWindowState = nil
+            completionWindow.aroundRange = nil
+            completionWindow.wantsVisible = false
         case .resize:
-            completionWindowState = nil
+            completionWindow.aroundRange = nil
+            completionWindow.wantsVisible = false
         }
     }
 }

@@ -12,7 +12,7 @@ import AppKit
 ///
 /// Performs line/character based editing operations.
 ///
-protocol CodeStorageEditingProtocol {
+public protocol CodeStorageEditingProtocol {
     var text: CodeTextStorage { get }
     var caretPosition: CodeStoragePosition { get set }
     var selectionAnchorPosition: CodeStoragePosition? { get set }
