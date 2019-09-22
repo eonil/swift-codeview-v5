@@ -47,7 +47,7 @@ public struct CodeManagement {
     public mutating func process(_ m:Message) {
         /// Clean up prior output.
         effects.removeAll()
-        editing.source.cleanTimeline()
+        editing.storage.cleanTimeline()
         /// Check and continue.
         guard shouldProcessMessage(m) else { return }
         switch m {
@@ -66,7 +66,7 @@ public struct CodeManagement {
         /// This can happen as user delete existing characters included in the range.
         /// Hiding completion window is natural choice.
         if let r = completionWindowState?.aroundRange {
-            if !editing.source.isValidRange(r) {
+            if !editing.storage.isValidRange(r) {
                 completionWindowState = nil
             }
         }
@@ -94,7 +94,7 @@ public struct CodeManagement {
     
     private mutating func processEdit(_ mm:CodeEditingMessage) {
         editing.apply(mm)
-        let changes = editing.source.timeline.points
+        let changes = editing.storage.timeline.points
         
         // Adjust breakpoint positions.
         do {
@@ -119,7 +119,7 @@ public struct CodeManagement {
                 case .down:
                     let layout = CodeLayout(
                         config: editing.config,
-                        source: editing.source,
+                        source: editing.storage,
                         imeState: editing.imeState,
                         boundingWidth: mmm.bounds.width)
                     if mmm.pointInBounds.x < editing.config.rendering.breakpointWidth {
@@ -140,7 +140,7 @@ public struct CodeManagement {
             case let .placeText(s):
                 if [".", ":"].contains(s) {
                     // Start completion.
-                    let p = editing.source.caretPosition
+                    let p = editing.storage.caretPosition
                     completionWindowState = CompletionWindowState(aroundRange: p..<p)
                 }
             case let .processEditingCommand(mmmm):
@@ -156,10 +156,10 @@ public struct CodeManagement {
         
         // Kill completion if caret goes out of its range.
         if let r = completionWindowState?.aroundRange {
-            if !r.includedLineOffsetRange.contains(editing.source.caretPosition.lineOffset) {
+            if !r.includedLineOffsetRange.contains(editing.storage.caretPosition.lineOffset) {
                 completionWindowState = nil
             }
-            if editing.source.caretPosition.characterUTF8Offset < r.lowerBound.characterUTF8Offset {
+            if editing.storage.caretPosition.characterUTF8Offset < r.lowerBound.characterUTF8Offset {
                 completionWindowState = nil
             }
         }
@@ -167,22 +167,22 @@ public struct CodeManagement {
     private mutating func processMenu(_ mm:CodeView.Note.MenuMessage) {
         switch mm {
         case .copy:
-            let sss = editing.source.lineContentsInCurrentSelection()
+            let sss = editing.storage.lineContentsInCurrentSelection()
             let s = sss.joined(separator: "\n")
             effects.append(.replacePasteboardContent(s))
         case .cut:
-            let sss = editing.source.lineContentsInCurrentSelection()
+            let sss = editing.storage.lineContentsInCurrentSelection()
             let s = sss.joined(separator: "\n")
-            editing.source.replaceCharactersInCurrentSelection(with: "")
+            editing.storage.replaceCharactersInCurrentSelection(with: "")
             editing.recordTimePoint(as: .alienEditing(nameForMenu: "Cut"))
             editing.invalidate(.all)
             effects.append(.replacePasteboardContent(s))
         case let .paste(s):
-            editing.source.replaceCharactersInCurrentSelection(with: s)
+            editing.storage.replaceCharactersInCurrentSelection(with: s)
             editing.recordTimePoint(as: .alienEditing(nameForMenu: "Paste"))
             editing.invalidate(.all)
         case .selectAll:
-            editing.source.selectAll()
+            editing.storage.selectAll()
             editing.invalidate(.all)
 //        case let .replace(withContent, nameForMenu):
         case .undo:

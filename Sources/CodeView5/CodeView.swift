@@ -139,11 +139,11 @@ public final class CodeView: NSView {
                 // Scroll current line to be visible.
                 let layout = CodeLayout(
                     config: editing.config,
-                    source: editing.source,
+                    source: editing.storage,
                     imeState: editing.imeState,
                     boundingWidth: bounds.width)
                 let f = layout.frameOfLine(
-                    at: editing.source.caretPosition.lineOffset)
+                    at: editing.storage.caretPosition.lineOffset)
                 scrollToVisible(f)
                 switch editing.invalidatedRegion {
                 case .none:                 break
@@ -167,7 +167,7 @@ public final class CodeView: NSView {
             let r = mm?.aroundRange
             let cs = r == nil ? CWS?.none : CWS(
                 config: editing.config,
-                source: editing.source,
+                source: editing.storage,
                 imeState: editing.imeState,
                 completionRange: r!)
             completionWindowManagement.setState(cs)
@@ -290,11 +290,11 @@ public final class CodeView: NSView {
     public override var intrinsicContentSize: NSSize {
         let layout = CodeLayout(
             config: editing.config,
-            source: editing.source,
+            source: editing.storage,
             imeState: editing.imeState,
             boundingWidth: bounds.width)
         let z = layout.measureContentSize(
-            source: editing.source,
+            source: editing.storage,
             imeState: editing.imeState)
         return CGSize(width: 300, height: z.height)
     }
@@ -305,7 +305,7 @@ public final class CodeView: NSView {
             config: editing.config,
             breakpointLineOffsets: breakpointLineOffsets)
         rendering.draw(
-            source: editing.source,
+            source: editing.storage,
             imeState: editing.imeState,
             in: dirtyRect,
             with: cgctx)

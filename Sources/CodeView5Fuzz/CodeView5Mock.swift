@@ -45,8 +45,8 @@ struct CodeView5Mock {
         return t
     }
     func validate() {
-        let ks = Set(target.keys)
-        precondition(ks.count == target.keys.count)
+//        let ks = Set(target.keys)
+//        precondition(ks.count == target.keys.count)
     }
 }
 extension CodeView5Mock {

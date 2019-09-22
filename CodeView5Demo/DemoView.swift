@@ -20,9 +20,9 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.send(to: scrollCodeView.codeView)
         
         //
-        print("editing current source point version: \(codeManagement.editing.timeline.currentPoint.version)")
-//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
-        let src = codeManagement.editing.source
+        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
+        let src = codeManagement.editing.storage
         for p in src.timeline.points {
             let oldContent = p.baseSnapshot.lineContents(in: p.replacementRange).joined(separator: "\n")
             let newContent = p.replacementContent
@@ -49,29 +49,29 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.send(to: scrollCodeView.codeView)
         codeManagement.process(.userInteraction(.edit(.typing(.placeText("Resets to a new document.")))))
         codeManagement.send(to: scrollCodeView.codeView)
-        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
     }
     @IBAction
     public func testTextEditing(_:AnyObject?) {
-        var src = codeManagement.editing.source
+        var src = codeManagement.editing.storage
         src.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
         codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
         codeManagement.send(to: scrollCodeView.codeView)
-        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
     }
     @IBAction
     public func testBreakpointSetting(_:AnyObject?) {
-        let lineOffsets = codeManagement.editing.source.text.lines.offsets
+        let lineOffsets = codeManagement.editing.storage.text.lines.offsets
         var breakPoints = codeManagement.breakPointLineOffsets
         if let lineOffset = lineOffsets.randomElement() {
             breakPoints.insert(lineOffset)
         }
         codeManagement.process(.setBreakPointLineOffsets(breakPoints))
         codeManagement.send(to: scrollCodeView.codeView)
-        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
     }
     
     // MARK: -
@@ -94,15 +94,15 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     func undo(_:AnyObject?) {
         codeManagement.process(.userInteraction(.menu(.undo)))
         codeManagement.send(to: scrollCodeView.codeView)
-        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
     }
     @IBAction
     func redo(_:AnyObject?) {
         codeManagement.process(.userInteraction(.menu(.redo)))
         codeManagement.send(to: scrollCodeView.codeView)
-        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
     }
     func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         switch item.action {

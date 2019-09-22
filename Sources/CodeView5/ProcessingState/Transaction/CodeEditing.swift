@@ -28,15 +28,15 @@ public struct CodeEditing {
     /// This timeline recording can contain multiple changes in `CodeSource.timeline` level.
     ///
     public private(set) var timeline = CodeTimeline()
-    public internal(set) var source = CodeStorage()
+    public internal(set) var storage = CodeStorage()
     public internal(set) var imeState = IMEState?.none
     
     /// Vertical caret movement between lines needs base X coordinate to align them on single line.
     /// Here the basis X cooridnate will be stored to provide aligned vertical movement.
     var moveVerticalAxisX = CGFloat?.none
     func findAxisXForVerticalMovement() -> CGFloat {
-        let p = source.caretPosition
-        let line = source.text.lines[source.text.lines.startIndex + p.lineOffset]
+        let p = storage.caretPosition
+        let line = storage.text.lines[storage.text.lines.startIndex + p.lineOffset]
         let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
         let ss = line.content[..<charIndex]
         let ctline = CTLine.make(with: ss, font: config.rendering.font)
@@ -82,11 +82,11 @@ public struct CodeEditing {
     func typingFrame(in bounds:CGRect) -> CGRect {
         let layout = CodeLayout(
             config: config,
-            source: source,
+            source: storage,
             imeState: imeState,
             boundingWidth: bounds.width)
         let f  = layout.frameOfSelectionInLine(
-            at: source.caretPosition.lineOffset)
+            at: storage.caretPosition.lineOffset)
         return f
     }
     private mutating func render() {
@@ -98,14 +98,14 @@ public struct CodeEditing {
         
     /// Resets whole content at once with clearing all undo/redo stack.
     private mutating func reset(_ s:CodeStorage) {
-        source = s
+        storage = s
         timeline = CodeTimeline(current: s)
         render()
     }
     /// Pushes modified source.
     /// This command keeps undo/redo stack.
     private mutating func edit(_ s:CodeStorage, nameForMenu n:String) {
-        source = s
+        storage = s
         unrecordAllInsignificantTimelinePoints()
         recordTimePoint(as: .alienEditing(nameForMenu: n))
         render()
@@ -113,129 +113,129 @@ public struct CodeEditing {
     private mutating func process(_ n:TextTypingMessage) {
         switch n {
         case let .previewIncompleteText(content, selection):
-            source.replaceCharactersInCurrentSelection(with: "")
+            storage.replaceCharactersInCurrentSelection(with: "")
             imeState = IMEState(incompleteText: content, selectionInIncompleteText: selection)
         case let .placeText(s):
             imeState = nil
-            source.replaceCharactersInCurrentSelection(with: s)
+            storage.replaceCharactersInCurrentSelection(with: s)
             recordTimePoint(as: .typingCharacter)
         case let .processEditingCommand(cmd):
             switch cmd {
             case .moveLeft:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.moveOneCharToStart()
-                source.moveCaret(to: c.position)
+                storage.moveCaret(to: c.position)
                 
             case .moveRight:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.moveOneCharToEnd()
-                source.moveCaret(to: c.position)
+                storage.moveCaret(to: c.position)
 
             case .moveLeftAndModifySelection:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.moveOneCharToStart()
-                source.moveCaretAndModifySelection(to: c.position)
+                storage.moveCaretAndModifySelection(to: c.position)
 
             case .moveRightAndModifySelection:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.moveOneCharToEnd()
-                source.moveCaretAndModifySelection(to: c.position)
+                storage.moveCaretAndModifySelection(to: c.position)
                 
             case .moveWordLeft:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveOneSubwordToStart() // Now we're using subword moving just for convenience.
-                source.moveCaret(to: c.position)
+                storage.moveCaret(to: c.position)
                 
             case .moveWordLeftAndModifySelection:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveOneSubwordToStart() // Now we're using subword moving just for convenience.
-                source.moveCaretAndModifySelection(to: c.position)
+                storage.moveCaretAndModifySelection(to: c.position)
                 
             case .moveWordRight:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveOneSubwordToEnd() // Now we're using subword moving just for convenience.
-                source.moveCaret(to: c.position)
+                storage.moveCaret(to: c.position)
                 
             case .moveWordRightAndModifySelection:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveOneSubwordToEnd() // Now we're using subword moving just for convenience.
-                source.moveCaretAndModifySelection(to: c.position)
+                storage.moveCaretAndModifySelection(to: c.position)
 
             case .moveBackward:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToStart()
-                source.moveCaret(to: c.position)
+                storage.moveCaret(to: c.position)
                 
             case .moveBackwardAndModifySelection:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToStart()
-                source.moveCaretAndModifySelection(to: c.position)
+                storage.moveCaretAndModifySelection(to: c.position)
                     
             case .moveForward:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToEnd()
-                source.moveCaret(to: c.position)
+                storage.moveCaret(to: c.position)
                 
             case .moveForwardAndModifySelection:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToEnd()
-                source.moveCaretAndModifySelection(to: c.position)
+                storage.moveCaretAndModifySelection(to: c.position)
                 
             case .moveToLeftEndOfLine:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToStart()
-                source.moveCaret(to: c.position)
+                storage.moveCaret(to: c.position)
                 
             case .moveToRightEndOfLine:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToEnd()
-                source.moveCaret(to: c.position)
+                storage.moveCaret(to: c.position)
                 
             case .moveToLeftEndOfLineAndModifySelection:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToStart()
-                source.moveCaretAndModifySelection(to: c.position)
+                storage.moveCaretAndModifySelection(to: c.position)
                 
             case .moveToRightEndOfLineAndModifySelection:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToEnd()
-                source.moveCaretAndModifySelection(to: c.position)
+                storage.moveCaretAndModifySelection(to: c.position)
                 
             case .moveUp:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 guard let p = upLinePosition() else { return }
-                source.moveCaret(to: p)
+                storage.moveCaret(to: p)
 
             case .moveUpAndModifySelection:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 guard let p = upLinePosition() else { return }
-                source.moveCaretAndModifySelection(to: p)
+                storage.moveCaretAndModifySelection(to: p)
                 
             case .moveDown:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 guard let p = downLinePosition() else { return }
-                source.moveCaret(to: p)
+                storage.moveCaret(to: p)
                 
             case .moveDownAndModifySelection:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
                 guard let p = downLinePosition() else { return }
-                source.moveCaretAndModifySelection(to: p)
+                storage.moveCaretAndModifySelection(to: p)
             
             case .moveToBeginningOfParagraph:
                 break
@@ -248,34 +248,34 @@ public struct CodeEditing {
             
             case .moveToBeginningOfDocument:
                 moveVerticalAxisX = nil
-                source.moveCaret(to: source.startPosition)
+                storage.moveCaret(to: storage.startPosition)
                 
             case .moveToBeginningOfDocumentAndModifySelection:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.startPosition)
+                storage.moveCaretAndModifySelection(to: storage.startPosition)
                 
             case .moveToEndOfDocument:
                 moveVerticalAxisX = nil
-                source.moveCaret(to: source.endPosition)
+                storage.moveCaret(to: storage.endPosition)
                 
             case .moveToEndOfDocumentAndModifySelection:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.endPosition)
+                storage.moveCaretAndModifySelection(to: storage.endPosition)
                 
             case .selectAll:
                 moveVerticalAxisX = nil
-                source.selectAll()
+                storage.selectAll()
                 
             case .insertNewline:
                 unrecordAllInsignificantTimelinePoints()
                 recordTimePoint(as: .typingNewLine)
                 moveVerticalAxisX = nil
-                source.insertNewLine(config: config)
+                storage.insertNewLine(config: config)
                 
             case .insertTab:
                 moveVerticalAxisX = nil
                 let tabReplacement = config.editing.makeTabReplacement()
-                source.replaceCharactersInCurrentSelection(with: tabReplacement)
+                storage.replaceCharactersInCurrentSelection(with: tabReplacement)
                 recordTimePoint(as: .editingInteraction)
 
             case .insertBacktab:
@@ -286,58 +286,58 @@ public struct CodeEditing {
                 
             case .deleteBackward:
                 moveVerticalAxisX = nil
-                if source.selectionRange.isEmpty {
-                    var c = source.bestEffortCursorAtCaret
+                if storage.selectionRange.isEmpty {
+                    var c = storage.bestEffortCursorAtCaret
                     c.moveOneCharToStart()
-                    source.moveCaretAndModifySelection(to: c.position)
+                    storage.moveCaretAndModifySelection(to: c.position)
                 }
-                source.replaceCharactersInCurrentSelection(with: "")
+                storage.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
                 
             case .deleteForward:
                 moveVerticalAxisX = nil
-                if source.selectionRange.isEmpty {
-                    var c = source.bestEffortCursorAtCaret
+                if storage.selectionRange.isEmpty {
+                    var c = storage.bestEffortCursorAtCaret
                     c.moveOneCharToEnd()
-                    source.moveCaretAndModifySelection(to: c.position)
+                    storage.moveCaretAndModifySelection(to: c.position)
                 }
-                source.replaceCharactersInCurrentSelection(with: "")
+                storage.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
             
             case .deleteWordBackward:
                 moveVerticalAxisX = nil
-                if source.selectionRange.isEmpty {
-                    var cc = source.bestEffortCursorAtCaret
+                if storage.selectionRange.isEmpty {
+                    var cc = storage.bestEffortCursorAtCaret
                     cc.inLineCharCursor.moveOneWordToStart()
-                    source.moveCaretAndModifySelection(to: cc.position)
+                    storage.moveCaretAndModifySelection(to: cc.position)
                 }
-                source.replaceCharactersInCurrentSelection(with: "")
+                storage.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
                 
             case .deleteWordForward:
                 moveVerticalAxisX = nil
-                if source.selectionRange.isEmpty {
-                    var cc = source.bestEffortCursorAtCaret
+                if storage.selectionRange.isEmpty {
+                    var cc = storage.bestEffortCursorAtCaret
                     cc.inLineCharCursor.moveOneWordToEnd()
-                    source.moveCaretAndModifySelection(to: cc.position)
+                    storage.moveCaretAndModifySelection(to: cc.position)
                 }
-                source.replaceCharactersInCurrentSelection(with: "")
+                storage.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
             
             case .deleteToBeginningOfLine:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToStart()
-                source.moveCaretAndModifySelection(to: c.position)
-                source.replaceCharactersInCurrentSelection(with: "")
+                storage.moveCaretAndModifySelection(to: c.position)
+                storage.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
                 
             case .deleteToEndOfLine:
                 moveVerticalAxisX = nil
-                var c = source.bestEffortCursorAtCaret
+                var c = storage.bestEffortCursorAtCaret
                 c.inLineCharCursor.moveToEnd()
-                source.moveCaretAndModifySelection(to: c.position)
-                source.replaceCharactersInCurrentSelection(with: "")
+                storage.moveCaretAndModifySelection(to: c.position)
+                storage.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
                 
             case .cancelOperation:
@@ -347,56 +347,56 @@ public struct CodeEditing {
         render()
     }
     private func upLinePosition() -> CodeStoragePosition? {
-        let p = source.caretPosition
+        let p = storage.caretPosition
         guard 0 < p.lineOffset else { return nil }
         let upLineOffset = p.lineOffset - 1
-        let upLine = source.text.lines.atOffset(upLineOffset)
+        let upLine = storage.text.lines.atOffset(upLineOffset)
         let x = moveVerticalAxisX!
         let f = config.rendering.font
-        let charUTF8Offset = source.characterUTF8Offset(at: x, in: upLine, with: f) ?? upLine.content.utf8.count
+        let charUTF8Offset = storage.characterUTF8Offset(at: x, in: upLine, with: f) ?? upLine.content.utf8.count
         let newPosition = CodeStoragePosition(lineOffset: upLineOffset, characterUTF8Offset: charUTF8Offset)
         return newPosition
     }
     private func downLinePosition() -> CodeStoragePosition? {
-        let p = source.caretPosition
-        guard p.lineOffset < source.text.lines.count-1 else { return nil }
+        let p = storage.caretPosition
+        guard p.lineOffset < storage.text.lines.count-1 else { return nil }
         let downLineOffset = p.lineOffset + 1
-        let downLine = source.text.lines.atOffset(downLineOffset)
+        let downLine = storage.text.lines.atOffset(downLineOffset)
         let x = moveVerticalAxisX!
         let f = config.rendering.font
-        let charUTF8Offset = source.characterUTF8Offset(at: x, in: downLine, with: f) ?? downLine.content.utf8.count
+        let charUTF8Offset = storage.characterUTF8Offset(at: x, in: downLine, with: f) ?? downLine.content.utf8.count
         let newPosition = CodeStoragePosition(lineOffset: downLineOffset, characterUTF8Offset: charUTF8Offset)
         return newPosition
     }
     
     private mutating func processMouseDown(at point:CGPoint, in bounds:CGRect) {
-        let layout = CodeLayout(config: config, source: source, imeState: imeState, boundingWidth: bounds.width)
+        let layout = CodeLayout(config: config, source: storage, imeState: imeState, boundingWidth: bounds.width)
         if point.x < layout.config.rendering.breakpointWidth {
         }
         else {
             let p = layout.clampingPosition(at: point)
-            source.caretPosition = p
-            source.selectionRange = p..<p
-            source.selectionAnchorPosition = p
+            storage.caretPosition = p
+            storage.selectionRange = p..<p
+            storage.selectionAnchorPosition = p
         }
         setNeedsRendering(in: bounds)
     }
     private mutating func processMouseDragged(at point:CGPoint, in bounds:CGRect) {
         // Update caret and selection by mouse dragging.
-        let layout = CodeLayout(config: config, source: source, imeState: imeState, boundingWidth: bounds.width)
+        let layout = CodeLayout(config: config, source: storage, imeState: imeState, boundingWidth: bounds.width)
         let p = layout.clampingPosition(at: point)
-        let oldSource = source
-        source.modifySelectionWithAnchor(to: p)
+        let oldSource = storage
+        storage.modifySelectionWithAnchor(to: p)
         // Render only if caret or selection has been changed.
         let isRenderingInvalidated
-            =  source.caretPosition != oldSource.caretPosition
-            || source.selectionRange != oldSource.selectionRange
+            =  storage.caretPosition != oldSource.caretPosition
+            || storage.selectionRange != oldSource.selectionRange
         if isRenderingInvalidated {
             setNeedsRendering(in: bounds)
         }
     }
     private mutating func processMouseUp(at point:CGPoint, in bounds:CGRect) {
-        source.selectionAnchorPosition = nil
+        storage.selectionAnchorPosition = nil
     }
     
 //    mutating func copy() -> String {
@@ -415,11 +415,11 @@ extension CodeEditing {
     // MARK: - Undo/Redo Support
     mutating func undoInTimeline() {
         timeline.undo()
-        source = timeline.currentPoint.snapshot
+        storage = timeline.currentPoint.snapshot
     }
     mutating func redoInTimeline() {
         timeline.redo()
-        source = timeline.currentPoint.snapshot
+        storage = timeline.currentPoint.snapshot
     }
     /// Unrecords small changed made by typing or other actions.
     ///
@@ -433,11 +433,11 @@ extension CodeEditing {
     mutating func unrecordAllInsignificantTimelinePoints() {
         // Replace any existing small typing (character-level) actions
         // with single large typing action on new-line.
-        let s = source
+        let s = storage
         while !timeline.undoablePoints.isEmpty && !timeline.currentPoint.kind.isSignificant {
             undoInTimeline()
         }
-        source = s
+        storage = s
     }
     /// Records a new undo point.
     ///
@@ -448,7 +448,7 @@ extension CodeEditing {
         /// Clean up its timeline before record.
         /// So undo/redo will produce source snapshot with no storage-level timeline.
         /// So it can represent snapshot replacement.
-        var sourceToRecord = source
+        var sourceToRecord = storage
         sourceToRecord.cleanTimeline()
         timeline.record(sourceToRecord, as: kind)
     }

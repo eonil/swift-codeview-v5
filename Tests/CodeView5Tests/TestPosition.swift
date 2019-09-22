@@ -59,9 +59,9 @@ extension CodeStorage {
         return text.testPosition(line: lineOffset, column: characterOffset)
     }
 }
-extension CodeEditingState {
+extension CodeEditing {
     func testPosition(line lineOffset: Int, column characterOffset: Int) -> PositionInfo {
-        return source.storage.testPosition(line: lineOffset, column: characterOffset)
+        return storage.text.testPosition(line: lineOffset, column: characterOffset)
     }
 }
 

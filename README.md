@@ -11,7 +11,7 @@ Change Tracking
 There are two change trackings .
 
 - In `CodeEditing.timeline`.
-- In `CodeStorage.timeline`. You can access this through `CodeEditing.source.timeline`.
+- In `CodeStorage.timeline`. You can access this through `CodeEditing.storage.timeline`.
 
 At `CodeEditing` level, timeline tracks undo/redo history with unique version number.
 For any changes, it makes a new point in timeline with new version number.
