@@ -13,7 +13,6 @@ import CodeView5
 final class DemoView: NSView, NSUserInterfaceValidations {
     private let scrollCodeView = ScrollCodeView()
     private var codeManagement = CodeManagement()
-//    private let completionWindowManagement = CompletionWindowManagement()
     
     private func process(_ m:CodeView.Note) {
         codeManagement.process(.userInteraction(m))
@@ -21,7 +20,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         
         let c = codeManagement.editing.storage.bestEffortCursorAtCaret
         if c.inLineCharCursor.priorChar == "." {
-            codeManagement.process(.setCompletion(wantsVisible: true, aroundRange: c.position..<c.position))
+            scrollCodeView.codeView.control(.renderCompletionWindow(around: c.position..<c.position))
             codeManagement.send(to: scrollCodeView.codeView)
         }
         

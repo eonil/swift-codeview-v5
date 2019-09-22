@@ -68,20 +68,6 @@ public final class CodeView: NSView {
     /// too many break-points. But if there are more than 100 break-points,
     /// this is very likely to make problems.
     public private(set) var breakpointLineOffsets = Set<Int>()
-    private var completionWindowState = CompletionWindowState()
-    /// Visibility and range is separated as visibility can be changed by completion content
-    /// and completion content can be different at range.
-    public struct CompletionWindowState {
-        /// User's intention whether to see the completion window or not.
-        public var wantsVisible = false
-        /// We cannot keep invalid range if detected.
-        /// In that case, this gonna be `nil`.
-        public var aroundRange = Range<CodeStoragePosition>?.none
-        /// Finally aggregated visibility.
-        public var isVisible: Bool {
-            return wantsVisible && aroundRange != nil
-        }
-    }
 
     // MARK: - External I/O
     /// A view to be contained in completion window if the window becomes visible.
@@ -108,7 +94,7 @@ public final class CodeView: NSView {
         ///     You need to deal with them yourself if you want.
         ///     Or you can use `CodeView2Management`
         ///     that also deals with completion window.
-        case renderCompletionWindow(CompletionWindowState)
+        case renderCompletionWindow(around: Range<CodeStoragePosition>?)
     }
     /// Sends control message.
     public func control(_ m:Control) {
@@ -172,13 +158,12 @@ public final class CodeView: NSView {
             setNeedsDisplay(f)
             
         case let .renderCompletionWindow(mm):
-            completionWindowState = mm
             typealias CWS = CompletionWindowManagement.State
-            let cs = mm.aroundRange == nil ? CWS?.none : CWS(
+            let cs = mm == nil ? CWS?.none : CWS(
                 config: editing.config,
                 source: editing.storage,
                 imeState: editing.imeState,
-                completionRange: mm.aroundRange!)
+                completionRange: mm!)
             completionWindowManagement.setState(cs)
         }
     }
@@ -195,34 +180,12 @@ public final class CodeView: NSView {
     public override var undoManager: UndoManager? { nil }
     public override var acceptsFirstResponder: Bool { true }
     public override func becomeFirstResponder() -> Bool {
-        defer {
-            typing.activate()
-            note?(.view(.becomeFirstResponder))
-        }
+        defer { typing.activate() }
         return super.becomeFirstResponder()
     }
     public override func resignFirstResponder() -> Bool {
         typing.deactivate()
-        defer {
-            note?(.view(.resignFirstResponder))
-        }
         return super.resignFirstResponder()
-    }
-    public override func resize(withOldSuperviewSize oldSize: NSSize) {
-        super.resize(withOldSuperviewSize: oldSize)
-        note?(.view(.resize))
-    }
-    public override func resizeSubviews(withOldSize oldSize: NSSize) {
-        super.resizeSubviews(withOldSize: oldSize)
-        note?(.view(.resize))
-    }
-    public override func viewWillStartLiveResize() {
-        super.viewWillStartLiveResize()
-        note?(.view(.resize))
-    }
-    public override func viewDidEndLiveResize() {
-        super.viewDidEndLiveResize()
-        note?(.view(.resize))
     }
     public override var canBecomeKeyView: Bool { true }
     public override func keyDown(with event: NSEvent) {

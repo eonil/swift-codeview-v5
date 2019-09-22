@@ -19,11 +19,4 @@ public enum CodeUserMessage {
         case undo
         case redo
     }
-    /// Notes sent from AppKit to a `NSView` by managing view instance.
-    case view(ViewMessage)
-    public enum ViewMessage {
-        case becomeFirstResponder
-        case resignFirstResponder
-        case resize
-    }
 }

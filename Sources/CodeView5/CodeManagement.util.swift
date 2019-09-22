@@ -14,7 +14,6 @@ public extension CodeManagement {
         }
         codeView.control(.renderEditing(editing))
         codeView.control(.renderBreakPointLineOffsets(breakPointLineOffsets))
-        codeView.control(.renderCompletionWindow(completionWindow))
     }
 }
 
