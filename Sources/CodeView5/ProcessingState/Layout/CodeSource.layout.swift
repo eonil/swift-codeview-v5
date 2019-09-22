@@ -7,7 +7,7 @@
 
 import Foundation
 
-public extension CodeSource {
+public extension CodeStorage {
     func makeLayout(config: CodeConfig, imeState: IMEState?, boundingWidth: CGFloat) -> CodeLayout {
         return CodeLayout(config: config, source: self, imeState: imeState, boundingWidth: boundingWidth)
     }

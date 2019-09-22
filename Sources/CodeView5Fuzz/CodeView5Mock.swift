@@ -12,7 +12,7 @@ import TestUtil
 struct CodeView5Mock {
     private(set) var prng = ReproduciblePRNG(1_000_000)
     private(set) var mode = Mode.increase
-    private(set) var target = CodeStorage()
+    private(set) var target = CodeTextStorage()
     /// - Returns: Time taken in single operation.
     mutating func step() -> TimeInterval {
         let c = prng.nextWithRotation(in: 0..<mode.ops.count)

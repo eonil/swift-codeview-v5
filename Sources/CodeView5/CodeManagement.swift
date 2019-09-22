@@ -14,10 +14,10 @@ import Foundation
 ///
 /// Tracking Content Changes
 /// ------------------------
-/// To track contet (text) changes, see `CodeSource.timeline`.
-/// It contains changes happen in `CodeSource.storage` since last emission.
+/// To track contet (text) changes, see `CodeStorage.timeline`.
+/// It contains changes happen in `CodeStorage.storage` since last emission.
 /// The timeline will be emptied each time after note emission.
-/// **If `CodeSource.timeline` is empty, it means whole snapshot replacement**.
+/// **If `CodeStorage.timeline` is empty, it means whole snapshot replacement**.
 /// This can happen by content reloading or undo/redo operation.
 /// In that case, you must abandon any existing content
 /// and should replace all from the source.

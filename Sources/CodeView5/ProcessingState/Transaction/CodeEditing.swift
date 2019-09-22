@@ -20,8 +20,15 @@ import AppKit
 public struct CodeEditing {
     /// Stored **parameters** to be supplied to each editing operations.
     public var config = CodeConfig()
+    /// Timeline for undo/redo management.
+    /// This timeline is based on changes in content (`CodeStorage`).
+    /// Selection changes won't be regarded as changes and won't be recorded.
+    /// This is different level of recording compared to `CodeSource.timeline`.
+    /// `CodeSource.timeline` records each "replacement" editings.
+    /// This timeline recording can contain multiple changes in `CodeSource.timeline` level.
+    ///
     public private(set) var timeline = CodeTimeline()
-    public internal(set) var source = CodeSource()
+    public internal(set) var source = CodeStorage()
     public internal(set) var imeState = IMEState?.none
     
     /// Vertical caret movement between lines needs base X coordinate to align them on single line.
@@ -29,7 +36,7 @@ public struct CodeEditing {
     var moveVerticalAxisX = CGFloat?.none
     func findAxisXForVerticalMovement() -> CGFloat {
         let p = source.caretPosition
-        let line = source.storage.lines[source.storage.lines.startIndex + p.lineOffset]
+        let line = source.text.lines[source.text.lines.startIndex + p.lineOffset]
         let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
         let ss = line.content[..<charIndex]
         let ctline = CTLine.make(with: ss, font: config.rendering.font)
@@ -90,14 +97,14 @@ public struct CodeEditing {
     }
         
     /// Resets whole content at once with clearing all undo/redo stack.
-    private mutating func reset(_ s:CodeSource) {
+    private mutating func reset(_ s:CodeStorage) {
         source = s
         timeline = CodeTimeline(current: s)
         render()
     }
     /// Pushes modified source.
     /// This command keeps undo/redo stack.
-    private mutating func edit(_ s:CodeSource, nameForMenu n:String) {
+    private mutating func edit(_ s:CodeStorage, nameForMenu n:String) {
         source = s
         unrecordAllInsignificantTimelinePoints()
         recordTimePoint(as: .alienEditing(nameForMenu: n))
@@ -327,7 +334,7 @@ public struct CodeEditing {
         let p = source.caretPosition
         guard 0 < p.lineOffset else { return nil }
         let upLineOffset = p.lineOffset - 1
-        let upLine = source.storage.lines.atOffset(upLineOffset)
+        let upLine = source.text.lines.atOffset(upLineOffset)
         let x = moveVerticalAxisX!
         let f = config.rendering.font
         let charUTF8Offset = source.characterUTF8Offset(at: x, in: upLine, with: f) ?? upLine.content.utf8.count
@@ -336,9 +343,9 @@ public struct CodeEditing {
     }
     private func downLinePosition() -> CodeStoragePosition? {
         let p = source.caretPosition
-        guard p.lineOffset < source.storage.lines.count-1 else { return nil }
+        guard p.lineOffset < source.text.lines.count-1 else { return nil }
         let downLineOffset = p.lineOffset + 1
-        let downLine = source.storage.lines.atOffset(downLineOffset)
+        let downLine = source.text.lines.atOffset(downLineOffset)
         let x = moveVerticalAxisX!
         let f = config.rendering.font
         let charUTF8Offset = source.characterUTF8Offset(at: x, in: downLine, with: f) ?? downLine.content.utf8.count

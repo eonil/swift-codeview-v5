@@ -12,8 +12,8 @@ import AppKit
 ///
 /// Performs line/character based editing operations.
 ///
-protocol CodeSourceEditing {
-    var storage: CodeStorage { get }
+protocol CodeStorageEditingProtocol {
+    var text: CodeTextStorage { get }
     var caretPosition: CodeStoragePosition { get set }
     var selectionAnchorPosition: CodeStoragePosition? { get set }
     var selectionRange: Range<CodeStoragePosition> { get set }
@@ -21,18 +21,18 @@ protocol CodeSourceEditing {
 }
 
 // MARK: - Query
-extension CodeSourceEditing {
+extension CodeStorageEditingProtocol {
     var startPosition: CodeStoragePosition {
         return CodeStoragePosition(lineOffset: 0, characterUTF8Offset: 0)
     }
     var endPosition: CodeStoragePosition {
         /// `CodeSource` guarantees having one line at least always.
-        return CodeStoragePosition(lineOffset: storage.lines.count-1, characterUTF8Offset: storage.lines.last!.content.utf8.count)
+        return CodeStoragePosition(lineOffset: text.lines.count-1, characterUTF8Offset: text.lines.last!.content.utf8.count)
     }
     func leftCharacterCaretPosition() -> CodeStoragePosition {
         guard caretPosition != startPosition else { return startPosition }
         let p = caretPosition
-        let lineContent = storage.lines[storage.lines.startIndex + p.lineOffset].content
+        let lineContent = text.lines[text.lines.startIndex + p.lineOffset].content
         if 0 < p.characterUTF8Offset {
             let charIndex = lineContent.utf8.index(lineContent.utf8.startIndex, offsetBy: p.characterUTF8Offset)
             let newCharIndex = lineContent.index(before: charIndex)
@@ -46,7 +46,7 @@ extension CodeSourceEditing {
     func rightCharacterCaretPosition() -> CodeStoragePosition {
         guard caretPosition != endPosition else { return endPosition }
         let p = caretPosition
-        let lineContent = storage.lines[storage.lines.startIndex + p.lineOffset].content
+        let lineContent = text.lines[text.lines.startIndex + p.lineOffset].content
         if p.characterUTF8Offset < lineContent.utf8.count {
             let charIndex = lineContent.utf8.index(lineContent.utf8.startIndex, offsetBy: p.characterUTF8Offset)
             let newCharIndex = lineContent.index(after: charIndex)
@@ -62,14 +62,14 @@ extension CodeSourceEditing {
         return q
     }
     func rightEndPositionOfLine1(at lineOffset:Int) -> CodeStoragePosition {
-        let line = storage.lines[storage.lines.startIndex + lineOffset]
+        let line = text.lines[text.lines.startIndex + lineOffset]
         let q = CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: line.content.utf8.count)
         return q
     }
     func endPositionOfUpLine() -> CodeStoragePosition {
         guard caretPosition != startPosition else { return startPosition }
         let lineOffset = caretPosition.lineOffset - 1
-        let lineContent = storage.lines[storage.lines.startIndex + lineOffset].content
+        let lineContent = text.lines[text.lines.startIndex + lineOffset].content
         return CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: lineContent.utf8.count)
     }
     func startPositionOfDownLine() -> CodeStoragePosition {
@@ -100,7 +100,7 @@ extension CodeSourceEditing {
 }
 
 // MARK: - Edit Command
-extension CodeSourceEditing {
+extension CodeStorageEditingProtocol {
     mutating func modifySelectionWithAnchor(to p:CodeStoragePosition) {
         let oldAnchorPosition = selectionAnchorPosition ?? caretPosition
         let a = min(p, oldAnchorPosition)
@@ -127,8 +127,8 @@ extension CodeSourceEditing {
         // Now new selection's lineOffset > 0.
         if config.editing.autoIndent {
             let upLineOffset = caretPosition.lineOffset-1
-            let upLineIndex = storage.lines.startIndex + upLineOffset
-            let upLine = storage.lines[upLineIndex]
+            let upLineIndex = text.lines.startIndex + upLineOffset
+            let upLine = text.lines[upLineIndex]
             let tabReplacement = config.editing.makeTabReplacement()
             let n = upLine.countPrefix(tabReplacement)
             for _ in 0..<n {

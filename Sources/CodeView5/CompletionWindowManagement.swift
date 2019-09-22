@@ -20,7 +20,7 @@ public final class CompletionWindowManagement {
     
     public struct State {
         public let config: CodeConfig
-        public let source: CodeSource
+        public let source: CodeStorage
         public let imeState: IMEState?
         /// Sets completion range.
         /// If this is a non-nil value, a completion window will be shown
@@ -29,7 +29,7 @@ public final class CompletionWindowManagement {
         /// You haeve to supplied them all at once as all parameters must be consistent.
         public init(
             config a: CodeConfig,
-            source b: CodeSource,
+            source b: CodeStorage,
             imeState c: IMEState?,
             completionRange d: Range<CodeStoragePosition>) {
                 config = a
@@ -89,7 +89,7 @@ private extension CompletionWindowManagement {
         let layout = state.source.makeLayout(config: state.config, imeState: state.imeState, boundingWidth: codeViewBoundsWidth)
         
         let bottomLineOffset = range.upperBound.lineOffset
-        let bottomCharOffsetRange = range.characterUTF8OffsetRangeOfLine(at: bottomLineOffset, in: state.source.storage)
+        let bottomCharOffsetRange = range.characterUTF8OffsetRangeOfLine(at: bottomLineOffset, in: state.source.text)
         let bottomSelFrame = layout.frameOfTextUTF8OffsetSubrange(bottomCharOffsetRange, inLineAt: bottomLineOffset)
         
         let frameInCodeView = bottomSelFrame

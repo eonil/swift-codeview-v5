@@ -84,7 +84,7 @@
 //        }
 //    }
 //    public enum Control {
-//        case reset(CodeSource)
+//        case reset(CodeStorage)
 //        /// Pushes modified source.
 //        /// This command keeps undo/redo stack.
 //        case edit(CodeSource, nameForMenu:String)

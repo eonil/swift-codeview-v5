@@ -8,9 +8,9 @@
 import Foundation
 
 public enum CodeEditingMessage {
-    case reset(CodeSource)
+    case reset(CodeStorage)
     /// Generic editing with undo name.
-    case edit(CodeSource, nameForMenu: String)
+    case edit(CodeStorage, nameForMenu: String)
     /// Notes produced from IME.
     /// This may contain some AppKit action messages.
     case typing(TextTypingMessage)

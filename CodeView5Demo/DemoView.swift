@@ -20,13 +20,13 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.send(to: scrollCodeView.codeView)
         
         //
-        print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+        print("editing current source point version: \(codeManagement.editing.timeline.currentPoint.version)")
+//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
         let src = codeManagement.editing.source
         for p in src.timeline.points {
             let oldContent = p.baseSnapshot.lineContents(in: p.replacementRange).joined(separator: "\n")
             let newContent = p.replacementContent
-            print("#\(p.key): `\(oldContent)` -> `\(newContent)`")
+            print("`\(oldContent)` -> `\(newContent)`")
         }
     }
 
@@ -45,12 +45,12 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     }
     @IBAction
     public func testTextReloading(_:AnyObject?) {
-        codeManagement.process(.userInteraction(.edit(.reset(CodeSource()))))
+        codeManagement.process(.userInteraction(.edit(.reset(CodeStorage()))))
         codeManagement.send(to: scrollCodeView.codeView)
         codeManagement.process(.userInteraction(.edit(.typing(.placeText("Resets to a new document.")))))
         codeManagement.send(to: scrollCodeView.codeView)
         print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     @IBAction
     public func testTextEditing(_:AnyObject?) {
@@ -59,11 +59,11 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
         codeManagement.send(to: scrollCodeView.codeView)
         print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     @IBAction
     public func testBreakpointSetting(_:AnyObject?) {
-        let lineOffsets = codeManagement.editing.source.storage.lines.offsets
+        let lineOffsets = codeManagement.editing.source.text.lines.offsets
         var breakPoints = codeManagement.breakPointLineOffsets
         if let lineOffset = lineOffsets.randomElement() {
             breakPoints.insert(lineOffset)
@@ -71,7 +71,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.process(.setBreakPointLineOffsets(breakPoints))
         codeManagement.send(to: scrollCodeView.codeView)
         print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     
     // MARK: -
@@ -95,14 +95,14 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.process(.userInteraction(.menu(.undo)))
         codeManagement.send(to: scrollCodeView.codeView)
         print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     @IBAction
     func redo(_:AnyObject?) {
         codeManagement.process(.userInteraction(.menu(.redo)))
         codeManagement.send(to: scrollCodeView.codeView)
         print("editing ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
+//        print("storage ver: \(codeManagement.editing.source.timeline.points.last?.key.description ?? "")")
     }
     func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         switch item.action {

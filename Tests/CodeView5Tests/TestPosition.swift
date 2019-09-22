@@ -11,14 +11,14 @@ import Foundation
 typealias RangeInfo = (start: PositionInfo, end: PositionInfo)
 
 struct PositionInfo {
-    var storage: CodeStorage
+    var storage: CodeTextStorage
     var lineOffset: Int
     var characterOffset: Int
     var characterUTF8Offset: Int
     var characterIndex: String.Index
     var characterCountBeforePosition: Int
     var characterCountAfterPosition: Int
-    init(storage s: CodeStorage, lineOffset lx: Int, characterOffset cx: Int) {
+    init(storage s: CodeTextStorage, lineOffset lx: Int, characterOffset cx: Int) {
         storage = s
         lineOffset = lx
         characterOffset = cx
@@ -28,7 +28,7 @@ struct PositionInfo {
         characterCountBeforePosition = characterOffset
         characterCountAfterPosition = line.content[characterIndex...].count
     }
-    init(storage s: CodeStorage, position p:CodeStoragePosition) {
+    init(storage s: CodeTextStorage, position p:CodeStoragePosition) {
         storage = s
         lineOffset = p.lineOffset
         let line = s.lines.atOffset(lineOffset)
@@ -43,20 +43,20 @@ struct PositionInfo {
     }
 }
 
-extension CodeStorage {
+extension CodeTextStorage {
     func testPosition(line lineOffset: Int, column characterOffset: Int) -> PositionInfo {
         return PositionInfo(storage: self, lineOffset: lineOffset, characterOffset: characterOffset)
     }
 }
-extension CodeSource {
+extension CodeStorage {
     func caretPositionInfo() -> PositionInfo {
-        return caretPosition.info(in: storage)
+        return caretPosition.info(in: text)
     }
     func selectionRangeInfo() -> RangeInfo {
-        return (selectionRange.lowerBound.info(in: storage), selectionRange.upperBound.info(in: storage))
+        return (selectionRange.lowerBound.info(in: text), selectionRange.upperBound.info(in: text))
     }
     func testPosition(line lineOffset: Int, column characterOffset: Int) -> PositionInfo {
-        return storage.testPosition(line: lineOffset, column: characterOffset)
+        return text.testPosition(line: lineOffset, column: characterOffset)
     }
 }
 extension CodeEditingState {
@@ -66,7 +66,7 @@ extension CodeEditingState {
 }
 
 extension CodeStoragePosition {
-    func info(in s:CodeStorage) -> PositionInfo {
+    func info(in s:CodeTextStorage) -> PositionInfo {
         return PositionInfo(storage: s, position: self)
     }
 }

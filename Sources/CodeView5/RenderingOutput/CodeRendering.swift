@@ -12,10 +12,10 @@ import AppKit
 struct CodeRendering {
     var config: CodeConfig
     var breakpointLineOffsets: Set<Int>
-    func draw(source: CodeSource, imeState: IMEState?, in dirtyRect: CGRect, with cgctx: CGContext) {
+    func draw(source: CodeStorage, imeState: IMEState?, in dirtyRect: CGRect, with cgctx: CGContext) {
         let h = config.rendering.lineHeight
         let visibleLineOffsets = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
-        let visibleExistingLineOffsets = source.storage.lines.offsets.clamped(to: visibleLineOffsets)
+        let visibleExistingLineOffsets = source.text.lines.offsets.clamped(to: visibleLineOffsets)
         let selectedRange = source.selectionRange
         let selectionIncludedLineOffsetRange = source.selectionRange.includedLineOffsetRange
         let visibleSelectedLineOffsetRange = selectionIncludedLineOffsetRange.clamped(to: visibleLineOffsets)
@@ -47,7 +47,7 @@ struct CodeRendering {
         // Draw characters.
         func charactersToDrawWithConsideringIME(of lineOffset: Int) -> Substring {
 //            let lineIndex = source.storage.lines.startIndex + lineOffset
-            let line = source.storage.lines.atOffset(lineOffset)
+            let line = source.text.lines.atOffset(lineOffset)
             guard let imes = imeState else { return line.content }
             guard selectedRange.upperBound.lineOffset == lineOffset else { return line.content }
             let charUTF8Offet = selectedRange.upperBound.characterUTF8Offset
@@ -79,7 +79,7 @@ struct CodeRendering {
             sssn.drawBox(f, color: config.rendering.textColor)
         }
     }
-    private func session(source s: CodeSource, ime: IMEState?) -> CodeRenderingSession {
+    private func session(source s: CodeStorage, ime: IMEState?) -> CodeRenderingSession {
         let cgctx = NSGraphicsContext.current!.cgContext
         cgctx.textMatrix = CGAffineTransform(scaleX: 1, y: -1)
         return CodeRenderingSession(context: cgctx, source: s, imeState: ime)
@@ -87,7 +87,7 @@ struct CodeRendering {
 }
 private struct CodeRenderingSession {
     let context: CGContext
-    let source: CodeSource
+    let source: CodeStorage
     let imeState: IMEState?
     func drawText(_ ss:Substring, font: NSFont, color c: NSColor, in f:CGRect) {
         let ctline = CTLine.make(with: ss, font: font, color: c)

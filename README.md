@@ -6,6 +6,49 @@ An alternative option of Cocoa view to edit code-like text.
 
 
 
+Change Tracking
+---------------------
+There are two change trackings .
+
+- In `CodeEditing.timeline`.
+- In `CodeStorage.timeline`. You can access this through `CodeEditing.source.timeline`.
+
+At `CodeEditing` level, timeline tracks undo/redo history with unique version number.
+For any changes, it makes a new point in timeline with new version number.
+Therefore, if you have same version number, it means same text content. 
+Otherwise, text content has been changed.
+`CodeEditing` level timeline stores `CodeStorage` snapshots.
+You cannot track each changes here.
+
+At `CodeStorage` level, timeline tracks each changes in content. 
+It tracks all changes in text content individually.
+You can correctly track changes.
+
+For both cases, timeline DO NOT track changes in selection. 
+It tracks only changes in text content. Selections won't be regarded as content.
+Selection is stored in `CodeTextStorage` to keep latest selection information
+when we make snapshot.
+
+Anyway, `CodeEditing` removes such changes when they take snapshot
+of `CodeStorage`. This is because that can provide wrong information 
+as `CodeEditing` can swap snapshots for undo/redo.
+Therefore, you need to take care on *version number* of each snapshot.
+
+- If version number is same, there's no change.
+- If version number is different,
+    - and `CodeStorage.timeline` is empty, iI's whole content replacement.
+    - If `CodeStorage.timeline` is not empty, it tells you the individual changes.
+
+
+
+
+
+
+
+
+
+
+
 Design Choices
 -------------------
 - Aims for best maintainanceability. Simplicity over performance.
@@ -68,34 +111,34 @@ Independent Actor
 
 
 
-`CodeSource` vs `CodeStorage`
+`CodeStorage` vs `CodeTextStorage`
 -------------------------------------
-`CodeSource` contains all data to build a state of a `CodeView`.
+`CodeStorage` contains all data to build a state of a `CodeView`.
 It contains configuration, storage and selection.
-`CodeStorage` contains only textual data. 
+`CodeTextStorage` contains only textual data. 
 You can think of relationship like this.
 
     source = configuration + storage + selection
     
-`CodeSource` also processes editing command.
+`CodeStorage` also processes editing command.
 It converts editing commands into modifications 
 on line collections in storage.
 
-`CodeSource` is always a snapshot state of a moment.
-As `CodeSource` is value-semantic, you can freely copy,
+`CodeStorage` is always a snapshot state of a moment.
+As `CodeStorage` is value-semantic, you can freely copy,
 replace and update them independently without worrying
 about unexpected mutations.
 
 `CodeView` supports modification command from external 
 world by exchanging I/O messages, and you are supposed
-to pass `CodeSource` value as a new state.
+to pass `CodeStorage` value as a new state.
 
 
 
 Undo/Redo and `CodeTimeline`
 --------------------------------------
 Undo/redo support is implemented using `CodeTimeline`.
-`CodeTimeline` simply stores copy of all `CodeSource`s 
+`CodeTimeline` simply stores copy of all `CodeStorage`s 
 for each editing moments, and just swaps according to 
 undo/redo command.
 `CodeTimeline` is also pre value-semantic. There's no

@@ -17,18 +17,18 @@ public struct CodeTimeline {
         /// Unique identifier to distinguish different snapshot points.
         public var version = 0 as Key
         var kind = CodeOperationKind.reloadAll
-        public var snapshot = CodeSource()
+        public var snapshot = CodeStorage()
     }
     public typealias Key = Int
     private var keySeed = 0 as Key
     
     init() {}
-    init(current s:CodeSource) {
+    init(current s:CodeStorage) {
         currentPoint = Point(version: 1, kind: .reloadAll, snapshot: s)
     }
     public var canUndo: Bool { !undoablePoints.isEmpty }
     public var canRedo: Bool { !redoablePoints.isEmpty }
-    mutating func record(_ s:CodeSource, as kind: CodeOperationKind) {
+    mutating func record(_ s:CodeStorage, as kind: CodeOperationKind) {
         precondition(s.timeline.points.isEmpty)
         undoablePoints.append(currentPoint)
         keySeed += 1

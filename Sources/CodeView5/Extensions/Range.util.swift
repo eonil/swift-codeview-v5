@@ -16,9 +16,9 @@ public extension Range where Bound == CodeStoragePosition {
         return lowerBound.lineOffset..<upperBound.lineOffset+1
     }
     /// - Parameter lineOffsetInStorage:
-    ///     Offset to a line in `CodeStorage.lines`.
+    ///     Offset to a line in `CodeTextStorage.lines`.
     ///     This must be a valid index in `storage`. Otherwise, program crashes.
-    func characterUTF8OffsetRangeOfLine(at lineOffsetInStorage: Int, in storage:CodeStorage) -> Range<Int> {
+    func characterUTF8OffsetRangeOfLine(at lineOffsetInStorage: Int, in storage:CodeTextStorage) -> Range<Int> {
         let lineIndex = storage.lines.startIndex + lineOffsetInStorage
         precondition(storage.lines.indices.contains(lineIndex))
         let content = storage.lines[lineIndex].content
