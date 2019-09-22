@@ -24,7 +24,9 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     private var codeManagement = CodeManagement()
     
     private func process(_ m:Message) {
+        // Pre-process accumulated effect cleansing.
         codeManagement.clean()
+        // Process message and produce result.
         switch m {
         case let .user(mm):
             codeManagement.process(.userInteraction(mm))
@@ -47,38 +49,35 @@ final class DemoView: NSView, NSUserInterfaceValidations {
             }
             codeManagement.process(.setBreakPointLineOffsets(breakPoints))
         }
-        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
-        
-        // Post-processing.
+        // Post-process auto-completion.
         if let p = codeManagement.editing.storage.timeline.points.last {
-            // Auto-indent.
             let config = codeManagement.editing.config
-            if p.replacementContent == "\n" && config.editing.autoIndent {
+            switch p.replacementContent {
+            case "\n":
+                // Indent only.
                 var s = codeManagement.editing.storage
-                let upLineOffset = s.caretPosition.lineOffset-1
-                let upLineIndex = s.text.lines.startIndex + upLineOffset
-                let upLine = s.text.lines[upLineIndex]
-                let tabReplacement = config.editing.makeTabReplacement()
-                let n = upLine.countPrefix(tabReplacement)
-                for _ in 0..<n {
-                    s.replaceCharactersInCurrentSelection(with: tabReplacement)
-                }
+                let upLineContent = s.text.lines.atOffset(s.caretPosition.lineOffset-1).content
+                let lv = upLineContent.countPrefix(" ") / config.editing.tabSpaceCount
+                let a = String(repeating: " ", count: lv * config.editing.tabSpaceCount)
+                s.replaceCharactersInCurrentSelection(with: a)
                 codeManagement.process(.userInteraction(.edit(.edit(s, nameForMenu: "Completion"))))
-            }
-            // Auto-closing.
-            if p.replacementRange.isEmpty && p.replacementContent == "{" {
+            case "{":
+                // Closing with indent.
                 var s = codeManagement.editing.storage
-                s.replaceCharactersInCurrentSelection(with: "\n    \n}")
-                var c = s.bestEffortCursorAtCaret
-                c.moveOneCharToStart()
-                c.moveOneCharToStart()
-                s.caretPosition = c.position
-                s.selectionRange = c.position..<c.position
-                s.selectionAnchorPosition = nil
+                let lineContent = s.text.lines.atOffset(s.caretPosition.lineOffset).content
+                let lv = lineContent.countPrefix(" ") / config.editing.tabSpaceCount
+                let a = String(repeating: " ", count: lv * config.editing.tabSpaceCount)
+                let b = String(repeating: " ", count: lv.advanced(by: 1) * config.editing.tabSpaceCount)
+                s.replaceCharactersInCurrentSelection(with: "\n\(b)")
+                let p = s.caretPosition
+                s.replaceCharactersInCurrentSelection(with: "\n\(a)}")
+                s.moveCaret(to: p)
                 codeManagement.process(.userInteraction(.edit(.edit(s, nameForMenu: "Completion"))))
+            default:
+                break
             }
         }
+        // Render.
         render()
     }
     private func render() {
@@ -161,10 +160,18 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     }
 }
 
-extension CodeLine {
+private extension CodeStorage {
+    func countIndentationLevelAtCaretLine(with x:CodeConfig) -> Int {
+        let lineContent = text.lines.atOffset(caretPosition.lineOffset).content
+        let prefixSpaceCount = lineContent.countPrefix(" ")
+        let indentationLevel = prefixSpaceCount / x.editing.tabSpaceCount
+        return indentationLevel
+    }
+}
+private extension Substring {
     func countPrefix(_ ch:Character) -> Int {
         var c = 0
-        for ch1 in content {
+        for ch1 in self {
             if ch1 == ch { c += 1 }
             else { break }
         }
@@ -173,7 +180,7 @@ extension CodeLine {
     func countPrefix(_ s:String) -> Int {
         let chc = s.count
         var c = 0
-        var ss = content[content.startIndex...]
+        var ss = self[startIndex...]
         while ss.hasPrefix(s) {
             ss = ss.dropFirst(chc)
             c += 1

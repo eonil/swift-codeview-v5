@@ -16,6 +16,3 @@ public extension CodeManagement {
         codeView.control(.renderBreakPointLineOffsets(breakPointLineOffsets))
     }
 }
-
-
-
