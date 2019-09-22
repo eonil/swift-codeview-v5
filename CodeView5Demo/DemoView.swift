@@ -11,20 +11,72 @@ import AppKit
 import CodeView5
 
 final class DemoView: NSView, NSUserInterfaceValidations {
+    enum Message {
+        case user(CodeUserMessage)
+        case undo
+        case redo
+        case testTextReloading
+        case testTextEditing
+        case testBreakpointResetting
+    }
+    
     private let scrollCodeView = ScrollCodeView()
     private var codeManagement = CodeManagement()
     
-    private func process(_ m:CodeView.Note) {
-        codeManagement.process(.userInteraction(m))
+    private func process(_ m:Message) {
+        codeManagement.clean()
+        switch m {
+        case let .user(mm):
+            codeManagement.process(.userInteraction(mm))
+        case .undo:
+            codeManagement.process(.userInteraction(.menu(.undo)))
+        case .redo:
+            codeManagement.process(.userInteraction(.menu(.redo)))
+        case .testTextReloading:
+            codeManagement.process(.userInteraction(.edit(.reset(CodeStorage()))))
+            codeManagement.process(.userInteraction(.edit(.typing(.placeText("Resets to a new document.")))))
+        case .testTextEditing:
+            var src = codeManagement.editing.storage
+            src.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
+            codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
+        case .testBreakpointResetting:
+            let lineOffsets = codeManagement.editing.storage.text.lines.offsets
+            var breakPoints = codeManagement.breakPointLineOffsets
+            if let lineOffset = lineOffsets.randomElement() {
+                breakPoints.insert(lineOffset)
+            }
+            codeManagement.process(.setBreakPointLineOffsets(breakPoints))
+        }
+        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
+        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
+        
+        // Post-processing.
+        if let p = codeManagement.editing.storage.timeline.points.last {
+            if p.replacementRange.isEmpty && p.replacementContent == "{" {
+                var s = codeManagement.editing.storage
+                s.replaceCharactersInCurrentSelection(with: "\n    \n}")
+                var c = s.bestEffortCursorAtCaret
+                c.moveOneCharToStart()
+                c.moveOneCharToStart()
+                s.caretPosition = c.position
+                s.selectionRange = c.position..<c.position
+                s.selectionAnchorPosition = nil
+                codeManagement.process(.userInteraction(.edit(.edit(s, nameForMenu: "Completion"))))
+            }
+        }
+        render()
+    }
+    private func render() {
+        // Render.
         codeManagement.send(to: scrollCodeView.codeView)
         
+        // Render completion window.
         let c = codeManagement.editing.storage.bestEffortCursorAtCaret
         if c.inLineCharCursor.priorChar == "." {
             scrollCodeView.codeView.control(.renderCompletionWindow(around: c.position..<c.position))
-            codeManagement.send(to: scrollCodeView.codeView)
         }
         
-        //
+        // Render stats.
         print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
         print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
         let src = codeManagement.editing.storage
@@ -50,33 +102,15 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     }
     @IBAction
     public func testTextReloading(_:AnyObject?) {
-        codeManagement.process(.userInteraction(.edit(.reset(CodeStorage()))))
-        codeManagement.send(to: scrollCodeView.codeView)
-        codeManagement.process(.userInteraction(.edit(.typing(.placeText("Resets to a new document.")))))
-        codeManagement.send(to: scrollCodeView.codeView)
-        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
+        process(.testTextReloading)
     }
     @IBAction
     public func testTextEditing(_:AnyObject?) {
-        var src = codeManagement.editing.storage
-        src.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
-        codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
-        codeManagement.send(to: scrollCodeView.codeView)
-        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
+        process(.testTextEditing)
     }
     @IBAction
     public func testBreakpointSetting(_:AnyObject?) {
-        let lineOffsets = codeManagement.editing.storage.text.lines.offsets
-        var breakPoints = codeManagement.breakPointLineOffsets
-        if let lineOffset = lineOffsets.randomElement() {
-            breakPoints.insert(lineOffset)
-        }
-        codeManagement.process(.setBreakPointLineOffsets(breakPoints))
-        codeManagement.send(to: scrollCodeView.codeView)
-        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
+        process(.testBreakpointResetting)
     }
     
     // MARK: -
@@ -91,23 +125,17 @@ final class DemoView: NSView, NSUserInterfaceValidations {
             scrollCodeView.topAnchor.constraint(equalTo: topAnchor),
             scrollCodeView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
-        scrollCodeView.codeView.note = { [weak self] n in self?.process(n) }
+        scrollCodeView.codeView.note = { [weak self] m in self?.process(.user(m)) }
         scrollCodeView.codeView.completionView = NSButton()
     }
     
     @IBAction
     func undo(_:AnyObject?) {
-        codeManagement.process(.userInteraction(.menu(.undo)))
-        codeManagement.send(to: scrollCodeView.codeView)
-        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
+        process(.undo)
     }
     @IBAction
     func redo(_:AnyObject?) {
-        codeManagement.process(.userInteraction(.menu(.redo)))
-        codeManagement.send(to: scrollCodeView.codeView)
-        print("editing storage ver: \(codeManagement.editing.timeline.currentPoint.version)")
-        print("storage changeset count: \(codeManagement.editing.storage.timeline.points.count)")
+        process(.redo)
     }
     func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         switch item.action {

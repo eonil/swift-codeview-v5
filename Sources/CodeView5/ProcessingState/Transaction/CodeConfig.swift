@@ -36,7 +36,7 @@ public struct CodeConfig {
     }
     public struct Rendering {
         // Treats font object as a value.
-        public var font = NSFont(name: "SF Mono", size: NSFont.systemFontSize) ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
+        public var font = selectDefaultFont()
         public var selectionColor = NSColor.selectedTextBackgroundColor
         public var textColor = NSColor.textColor
         public var selectedTextBackgroundColor = NSColor.selectedTextBackgroundColor
@@ -53,4 +53,9 @@ public struct CodeConfig {
     }
     public init() {}
 }
- 
+
+private func selectDefaultFont() -> NSFont {
+    return NSFont(name: "SF Mono", size: NSFont.systemFontSize)
+        ?? NSFont(name: "Menlo", size: NSFont.systemFontSize)
+        ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
+}

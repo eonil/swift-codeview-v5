@@ -26,10 +26,18 @@ public struct CodeManagement {
         case userInteraction(CodeUserMessage)
         case setBreakPointLineOffsets(Set<Int>)
     }
-    public mutating func process(_ m:Message) {
-        /// Clean up prior output.
+    /// Clears accumulated effects and results.
+    /// This does NOT clear undo/redo history.
+    /// At this moment, undo/redo history remains forever.
+    public mutating func clean() {
         effects.removeAll()
         editing.storage.cleanTimeline()
+    }
+    /// This produces and accumulate effects and results.
+    /// You can scan effects and result to process them.
+    /// Call `clean()` to clear accumulated effects and results.
+    public mutating func process(_ m:Message) {
+        // Process.
         switch m {
         case let .userInteraction(mm):
             switch mm {
