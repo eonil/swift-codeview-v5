@@ -46,7 +46,7 @@ extension CodeStorageEditingProtocol {
 }
 
 // MARK: - Edit Command
-extension CodeStorageEditingProtocol {
+public extension CodeStorageEditingProtocol {
     mutating func modifySelectionWithAnchor(to p:CodeStoragePosition) {
         let oldAnchorPosition = selectionAnchorPosition ?? caretPosition
         let a = min(p, oldAnchorPosition)
@@ -65,22 +65,6 @@ extension CodeStorageEditingProtocol {
     }
     mutating func selectAll() {
         selectionRange = startPosition..<endPosition
-    }
-    
-    /// Inserts a new line replacing current selection.
-    mutating func insertNewLine(config: CodeConfig) {
-        replaceCharactersInCurrentSelection(with: "\n")
-        // Now new selection's lineOffset > 0.
-        if config.editing.autoIndent {
-            let upLineOffset = caretPosition.lineOffset-1
-            let upLineIndex = text.lines.startIndex + upLineOffset
-            let upLine = text.lines[upLineIndex]
-            let tabReplacement = config.editing.makeTabReplacement()
-            let n = upLine.countPrefix(tabReplacement)
-            for _ in 0..<n {
-                replaceCharactersInCurrentSelection(with: tabReplacement)
-            }
-        }
     }
 //    mutating func insertBacktab(config: CodeConfig) {
 //        let line = storage.lines[caretPosition.lineIndex]

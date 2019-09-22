@@ -52,6 +52,21 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         
         // Post-processing.
         if let p = codeManagement.editing.storage.timeline.points.last {
+            // Auto-indent.
+            let config = codeManagement.editing.config
+            if p.replacementContent == "\n" && config.editing.autoIndent {
+                var s = codeManagement.editing.storage
+                let upLineOffset = s.caretPosition.lineOffset-1
+                let upLineIndex = s.text.lines.startIndex + upLineOffset
+                let upLine = s.text.lines[upLineIndex]
+                let tabReplacement = config.editing.makeTabReplacement()
+                let n = upLine.countPrefix(tabReplacement)
+                for _ in 0..<n {
+                    s.replaceCharactersInCurrentSelection(with: tabReplacement)
+                }
+                codeManagement.process(.userInteraction(.edit(.edit(s, nameForMenu: "Completion"))))
+            }
+            // Auto-closing.
             if p.replacementRange.isEmpty && p.replacementContent == "{" {
                 var s = codeManagement.editing.storage
                 s.replaceCharactersInCurrentSelection(with: "\n    \n}")
@@ -145,3 +160,25 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         }
     }
 }
+
+extension CodeLine {
+    func countPrefix(_ ch:Character) -> Int {
+        var c = 0
+        for ch1 in content {
+            if ch1 == ch { c += 1 }
+            else { break }
+        }
+        return c
+    }
+    func countPrefix(_ s:String) -> Int {
+        let chc = s.count
+        var c = 0
+        var ss = content[content.startIndex...]
+        while ss.hasPrefix(s) {
+            ss = ss.dropFirst(chc)
+            c += 1
+        }
+        return c
+    }
+}
+

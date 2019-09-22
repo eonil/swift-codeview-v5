@@ -270,7 +270,7 @@ public struct CodeEditing {
                 unrecordAllInsignificantTimelinePoints()
                 recordTimePoint(as: .typingNewLine)
                 moveVerticalAxisX = nil
-                storage.insertNewLine(config: config)
+                storage.replaceCharactersInCurrentSelection(with: "\n")
                 
             case .insertTab:
                 moveVerticalAxisX = nil
