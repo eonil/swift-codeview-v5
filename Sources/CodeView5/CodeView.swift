@@ -72,10 +72,12 @@ public final class CodeView: NSView {
     /// Visibility and range is separated as visibility can be changed by completion content
     /// and completion content can be different at range.
     public struct CompletionWindowState {
+        /// User's intention whether to see the completion window or not.
         public var wantsVisible = false
         /// We cannot keep invalid range if detected.
         /// In that case, this gonna be `nil`.
         public var aroundRange = Range<CodeStoragePosition>?.none
+        /// Finally aggregated visibility.
         public var isVisible: Bool {
             return wantsVisible && aroundRange != nil
         }
