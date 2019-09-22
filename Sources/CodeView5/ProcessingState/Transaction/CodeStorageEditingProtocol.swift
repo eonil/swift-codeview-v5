@@ -29,54 +29,6 @@ extension CodeStorageEditingProtocol {
         /// `CodeSource` guarantees having one line at least always.
         return CodeStoragePosition(lineOffset: text.lines.count-1, characterUTF8Offset: text.lines.last!.content.utf8.count)
     }
-    func leftCharacterCaretPosition() -> CodeStoragePosition {
-        guard caretPosition != startPosition else { return startPosition }
-        let p = caretPosition
-        let lineContent = text.lines[text.lines.startIndex + p.lineOffset].content
-        if 0 < p.characterUTF8Offset {
-            let charIndex = lineContent.utf8.index(lineContent.utf8.startIndex, offsetBy: p.characterUTF8Offset)
-            let newCharIndex = lineContent.index(before: charIndex)
-            let utf8Offset = lineContent.utf8.distance(from: lineContent.utf8.startIndex, to: newCharIndex)
-            return CodeStoragePosition(lineOffset: p.lineOffset, characterUTF8Offset: utf8Offset)
-        }
-        else {
-            return endPositionOfUpLine()
-        }
-    }
-    func rightCharacterCaretPosition() -> CodeStoragePosition {
-        guard caretPosition != endPosition else { return endPosition }
-        let p = caretPosition
-        let lineContent = text.lines[text.lines.startIndex + p.lineOffset].content
-        if p.characterUTF8Offset < lineContent.utf8.count {
-            let charIndex = lineContent.utf8.index(lineContent.utf8.startIndex, offsetBy: p.characterUTF8Offset)
-            let newCharIndex = lineContent.index(after: charIndex)
-            let utf8Offset = lineContent.utf8.distance(from: lineContent.utf8.startIndex, to: newCharIndex)
-            return CodeStoragePosition(lineOffset: p.lineOffset, characterUTF8Offset: utf8Offset)
-        }
-        else {
-            return startPositionOfDownLine()
-        }
-    }
-    func leftEndPositionOfLine1(at lineOffset:Int) -> CodeStoragePosition {
-        let q = CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: 0)
-        return q
-    }
-    func rightEndPositionOfLine1(at lineOffset:Int) -> CodeStoragePosition {
-        let line = text.lines[text.lines.startIndex + lineOffset]
-        let q = CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: line.content.utf8.count)
-        return q
-    }
-    func endPositionOfUpLine() -> CodeStoragePosition {
-        guard caretPosition != startPosition else { return startPosition }
-        let lineOffset = caretPosition.lineOffset - 1
-        let lineContent = text.lines[text.lines.startIndex + lineOffset].content
-        return CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: lineContent.utf8.count)
-    }
-    func startPositionOfDownLine() -> CodeStoragePosition {
-        guard caretPosition != endPosition else { return endPosition }
-        let lineOffset = caretPosition.lineOffset + 1
-        return CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: 0)
-    }
     func characterIndex(at x:CGFloat, in line:CodeLine, with f:NSFont) -> String.Index? {
         let ctline = CTLine.make(with: line.content, font: f)
         let utf16Offset = CTLineGetStringIndexForPosition(ctline, CGPoint(x: x, y: 0))
@@ -91,12 +43,6 @@ extension CodeStorageEditingProtocol {
         let charUTF8Offset = line.content.utf8.distance(from: line.content.utf8.startIndex, to: charIndex)
         return charUTF8Offset
     }
-//    func characterOffset(at x:CGFloat, in line:CodeLine, with g:NSFont) -> Int? {
-//        let ctline = CTLine.make(with: line.content, font: f)
-//        let utf16Offset = CTLineGetStringIndexForPosition(ctline, CGPoint(x: x, y: 0))
-//        guard utf16Offset != kCFNotFound else { return nil }
-//        return line.content.utf16.index(line.content.utf16.startIndex, offsetBy: utf16Offset)
-//    }
 }
 
 // MARK: - Edit Command

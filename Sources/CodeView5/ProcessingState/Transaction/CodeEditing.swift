@@ -123,91 +123,99 @@ public struct CodeEditing {
             switch cmd {
             case .moveLeft:
                 moveVerticalAxisX = nil
-                source.moveCaret(to: source.leftCharacterCaretPosition())
+                var c = source.bestEffortCursorAtCaret
+                c.moveOneCharToStart()
+                source.moveCaret(to: c.position)
                 
             case .moveRight:
                 moveVerticalAxisX = nil
-                source.moveCaret(to: source.rightCharacterCaretPosition())
+                var c = source.bestEffortCursorAtCaret
+                c.moveOneCharToEnd()
+                source.moveCaret(to: c.position)
 
             case .moveLeftAndModifySelection:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.leftCharacterCaretPosition())
+                var c = source.bestEffortCursorAtCaret
+                c.moveOneCharToStart()
+                source.moveCaretAndModifySelection(to: c.position)
 
             case .moveRightAndModifySelection:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.rightCharacterCaretPosition())
+                var c = source.bestEffortCursorAtCaret
+                c.moveOneCharToEnd()
+                source.moveCaretAndModifySelection(to: c.position)
                 
             case .moveWordLeft:
                 moveVerticalAxisX = nil
                 var c = source.bestEffortCursorAtCaret
-                c.charCursor.moveOneSubwordToStart() // Now we're using subword moving just for convenience.
+                c.inLineCharCursor.moveOneSubwordToStart() // Now we're using subword moving just for convenience.
                 source.moveCaret(to: c.position)
                 
             case .moveWordLeftAndModifySelection:
                 moveVerticalAxisX = nil
                 var c = source.bestEffortCursorAtCaret
-                c.charCursor.moveOneSubwordToStart() // Now we're using subword moving just for convenience.
+                c.inLineCharCursor.moveOneSubwordToStart() // Now we're using subword moving just for convenience.
                 source.moveCaretAndModifySelection(to: c.position)
                 
             case .moveWordRight:
                 moveVerticalAxisX = nil
                 var c = source.bestEffortCursorAtCaret
-                c.charCursor.moveOneSubwordToEnd() // Now we're using subword moving just for convenience.
+                c.inLineCharCursor.moveOneSubwordToEnd() // Now we're using subword moving just for convenience.
                 source.moveCaret(to: c.position)
                 
             case .moveWordRightAndModifySelection:
                 moveVerticalAxisX = nil
                 var c = source.bestEffortCursorAtCaret
-                c.charCursor.moveOneSubwordToEnd() // Now we're using subword moving just for convenience.
+                c.inLineCharCursor.moveOneSubwordToEnd() // Now we're using subword moving just for convenience.
                 source.moveCaretAndModifySelection(to: c.position)
 
             case .moveBackward:
                 moveVerticalAxisX = nil
                 var c = source.bestEffortCursorAtCaret
-                c.charCursor.moveToStart()
+                c.inLineCharCursor.moveToStart()
                 source.moveCaret(to: c.position)
                 
             case .moveBackwardAndModifySelection:
                 moveVerticalAxisX = nil
                 var c = source.bestEffortCursorAtCaret
-                c.charCursor.moveToStart()
+                c.inLineCharCursor.moveToStart()
                 source.moveCaretAndModifySelection(to: c.position)
                     
             case .moveForward:
                 moveVerticalAxisX = nil
                 var c = source.bestEffortCursorAtCaret
-                c.charCursor.moveToEnd()
+                c.inLineCharCursor.moveToEnd()
                 source.moveCaret(to: c.position)
                 
             case .moveForwardAndModifySelection:
                 moveVerticalAxisX = nil
                 var c = source.bestEffortCursorAtCaret
-                c.charCursor.moveToEnd()
+                c.inLineCharCursor.moveToEnd()
                 source.moveCaretAndModifySelection(to: c.position)
                 
             case .moveToLeftEndOfLine:
                 moveVerticalAxisX = nil
-                let oldPosition = source.caretPosition
-                let newPosition = source.leftEndPositionOfLine1(at: oldPosition.lineOffset)
-                source.moveCaret(to: newPosition)
+                var c = source.bestEffortCursorAtCaret
+                c.inLineCharCursor.moveToStart()
+                source.moveCaret(to: c.position)
                 
             case .moveToRightEndOfLine:
                 moveVerticalAxisX = nil
-                let oldPosition = source.caretPosition
-                let newPosition = source.rightEndPositionOfLine1(at: oldPosition.lineOffset)
-                source.moveCaret(to: newPosition)
+                var c = source.bestEffortCursorAtCaret
+                c.inLineCharCursor.moveToEnd()
+                source.moveCaret(to: c.position)
                 
             case .moveToLeftEndOfLineAndModifySelection:
                 moveVerticalAxisX = nil
-                let oldPosition = source.caretPosition
-                let newPosition = source.leftEndPositionOfLine1(at: oldPosition.lineOffset)
-                source.moveCaretAndModifySelection(to: newPosition)
+                var c = source.bestEffortCursorAtCaret
+                c.inLineCharCursor.moveToStart()
+                source.moveCaretAndModifySelection(to: c.position)
                 
             case .moveToRightEndOfLineAndModifySelection:
                 moveVerticalAxisX = nil
-                let oldPosition = source.caretPosition
-                let newPosition = source.rightEndPositionOfLine1(at: oldPosition.lineOffset)
-                source.moveCaretAndModifySelection(to: newPosition)
+                var c = source.bestEffortCursorAtCaret
+                c.inLineCharCursor.moveToEnd()
+                source.moveCaretAndModifySelection(to: c.position)
                 
             case .moveUp:
                 moveVerticalAxisX = moveVerticalAxisX ?? findAxisXForVerticalMovement()
@@ -279,7 +287,9 @@ public struct CodeEditing {
             case .deleteBackward:
                 moveVerticalAxisX = nil
                 if source.selectionRange.isEmpty {
-                    source.moveCaretAndModifySelection(to: source.leftCharacterCaretPosition())
+                    var c = source.bestEffortCursorAtCaret
+                    c.moveOneCharToStart()
+                    source.moveCaretAndModifySelection(to: c.position)
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
@@ -287,7 +297,9 @@ public struct CodeEditing {
             case .deleteForward:
                 moveVerticalAxisX = nil
                 if source.selectionRange.isEmpty {
-                    source.moveCaretAndModifySelection(to: source.rightCharacterCaretPosition())
+                    var c = source.bestEffortCursorAtCaret
+                    c.moveOneCharToEnd()
+                    source.moveCaretAndModifySelection(to: c.position)
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
@@ -296,7 +308,7 @@ public struct CodeEditing {
                 moveVerticalAxisX = nil
                 if source.selectionRange.isEmpty {
                     var cc = source.bestEffortCursorAtCaret
-                    cc.charCursor.moveOneWordToStart()
+                    cc.inLineCharCursor.moveOneWordToStart()
                     source.moveCaretAndModifySelection(to: cc.position)
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
@@ -306,7 +318,7 @@ public struct CodeEditing {
                 moveVerticalAxisX = nil
                 if source.selectionRange.isEmpty {
                     var cc = source.bestEffortCursorAtCaret
-                    cc.charCursor.moveOneWordToEnd()
+                    cc.inLineCharCursor.moveOneWordToEnd()
                     source.moveCaretAndModifySelection(to: cc.position)
                 }
                 source.replaceCharactersInCurrentSelection(with: "")
@@ -314,13 +326,17 @@ public struct CodeEditing {
             
             case .deleteToBeginningOfLine:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.leftEndPositionOfLine1(at: source.caretPosition.lineOffset))
+                var c = source.bestEffortCursorAtCaret
+                c.inLineCharCursor.moveToStart()
+                source.moveCaretAndModifySelection(to: c.position)
                 source.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
                 
             case .deleteToEndOfLine:
                 moveVerticalAxisX = nil
-                source.moveCaretAndModifySelection(to: source.rightEndPositionOfLine1(at: source.caretPosition.lineOffset))
+                var c = source.bestEffortCursorAtCaret
+                c.inLineCharCursor.moveToEnd()
+                source.moveCaretAndModifySelection(to: c.position)
                 source.replaceCharactersInCurrentSelection(with: "")
                 recordTimePoint(as: .editingInteraction)
                 

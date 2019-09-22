@@ -9,14 +9,14 @@ import Foundation
 
 extension CodeStorageEditingProtocol {
     var bestEffortCursorAtCaret: BestEffortCursor {
-        return BestEffortCursor(storage: text, position: caretPosition) 
+        return BestEffortCursor(text: text, position: caretPosition) 
     }
 }
 struct BestEffortCursor {
-    let storage: CodeTextStorage
+    let text: CodeTextStorage
     var position: CodeStoragePosition
     var lineContent: Substring {
-        return storage.lines.atOffset(position.lineOffset).content
+        return text.lines.atOffset(position.lineOffset).content
     }
 //    var isOnEmptyLine: Bool {
 //        return lineContent.isEmpty
@@ -51,7 +51,8 @@ struct BestEffortCursor {
 //        guard let i = charIndexAfter else { return nil }
 //        return lineContent[i]
 //    }
-    var charCursor: BestEffortCharCursor {
+    /// Makes a character cursor that can move only in single line.
+    var inLineCharCursor: BestEffortCharCursor {
         get {
             let n = position.characterUTF8Offset
             return lineContent.bestEffortCharCursorAtUTF8Offset(n)
@@ -60,6 +61,40 @@ struct BestEffortCursor {
             position.characterUTF8Offset = x.utf8Offset
         }
     }
+    var isAtFirstLine: Bool { position.lineOffset == 0 }
+    var isAtLastLine: Bool { position.lineOffset == text.lines.offsets.last }
+    mutating func moveToEndOfPriorLine() {
+        guard !isAtFirstLine else { return }
+        let newLineOffset = position.lineOffset - 1
+        let newLineContent = text.lines.atOffset(newLineOffset).content
+        position = CodeStoragePosition(
+            lineOffset: position.lineOffset - 1,
+            characterUTF8Offset: newLineContent.utf8.count)
+    }
+    mutating func moveToStartOfNextLine() {
+        guard !isAtLastLine else { return }
+        position = CodeStoragePosition(
+            lineOffset: position.lineOffset + 1,
+            characterUTF8Offset: 0)
+    }
+    mutating func moveOneCharToStart() {
+        if !inLineCharCursor.isAtStart {
+            inLineCharCursor.moveOneCharToStart()
+        }
+        else {
+            moveToEndOfPriorLine()
+        }
+    }
+    mutating func moveOneCharToEnd() {
+        if !inLineCharCursor.isAtEnd {
+            inLineCharCursor.moveOneCharToEnd()
+        }
+        else {
+            moveToStartOfNextLine()
+        }
+    }
+    
+    
 //    mutating func moveOneCharToStart() {
 //        self.charCursor.moveOneCharToEnd()
 //        let n = position.characterUTF8Offset
