@@ -59,6 +59,7 @@ import AppKit
 public final class CodeView: NSView {
     private let completionWindowManagement = CompletionWindowManagement()
     private let typing = TextTyping()
+    /// Latest rendered editing state.
     private var editing = CodeEditing()
     /// - Note:
     ///     You have to use only valid line offsets.
@@ -95,6 +96,7 @@ public final class CodeView: NSView {
         ///     Or you can use `CodeView2Management`
         ///     that also deals with completion window.
         case renderCompletionWindow(around: Range<CodeStoragePosition>?)
+        case scrollToLineAtOffset(_ lineOffset:Int)
     }
     /// Sends control message.
     public func control(_ m:Control) {
@@ -156,6 +158,16 @@ public final class CodeView: NSView {
                 imeState: editing.imeState,
                 completionRange: mm!)
             completionWindowManagement.setState(cs)
+            
+        case let .scrollToLineAtOffset(lineOffset):
+            let layout = CodeLayout(
+                config: editing.config,
+                source: editing.storage,
+                imeState: editing.imeState,
+                boundingWidth: bounds.width)
+            let f = layout.frameOfLine(
+                at: editing.storage.caretPosition.lineOffset)
+            scrollToVisible(f)
         }
     }
     

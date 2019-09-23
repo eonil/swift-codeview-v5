@@ -83,10 +83,9 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     private func render() {
         // Render.
         codeManagement.send(to: scrollCodeView.codeView)
-        let ed = codeManagement.editing
-        if !ed.storage.timeline.points.isEmpty {
-            scrollCodeView.scrollToLineAtOffset(ed.storage.caretPosition.lineOffset, in: ed)
-        }
+        // Scroll to editing point if any editing happened.
+        let p = codeManagement.editing.storage.caretPosition
+        scrollCodeView.codeView.control(.scrollToLineAtOffset(p.lineOffset))
         
         // Render completion window.
         let c = codeManagement.editing.storage.bestEffortCursorAtCaret
