@@ -85,7 +85,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         codeManagement.send(to: scrollCodeView.codeView)
         // Scroll to editing point if any editing happened.
         let p = codeManagement.editing.storage.caretPosition
-        scrollCodeView.codeView.control(.scrollToLineAtOffset(p.lineOffset))
+        scrollCodeView.showLineAtOffset(p.lineOffset, in: codeManagement.editing)
         
         // Render completion window.
         let c = codeManagement.editing.storage.bestEffortCursorAtCaret

@@ -96,12 +96,6 @@ public final class CodeView: NSView {
         ///     Or you can use `CodeView2Management`
         ///     that also deals with completion window.
         case renderCompletionWindow(around: Range<CodeStoragePosition>?)
-        /// Scrolling is an async command as scrolling has to be done
-        /// after layout of this view adjusted by rendering.
-        /// But esentially scrolling is not a part of rendering
-        /// as it is being controlled by external object.
-        /// Therefore DO NOT send this message as a part of rendering.
-        case scrollToLineAtOffset(_ lineOffset:Int)
     }
     /// Sends control message.
     public func control(_ m:Control) {
@@ -163,16 +157,6 @@ public final class CodeView: NSView {
                 imeState: editing.imeState,
                 completionRange: mm!)
             completionWindowManagement.setState(cs)
-            
-        case let .scrollToLineAtOffset(lineOffset):
-            let layout = CodeLayout(
-                config: editing.config,
-                source: editing.storage,
-                imeState: editing.imeState,
-                boundingWidth: bounds.width)
-            let f = layout.frameOfLine(
-                at: editing.storage.caretPosition.lineOffset)
-            scrollToVisible(f)
         }
     }
     
