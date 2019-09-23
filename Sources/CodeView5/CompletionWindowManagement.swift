@@ -73,8 +73,13 @@ private extension CompletionWindowManagement {
     func setCompletionWindowPosition() {
         let f = completionWindowFrameInScreen
         let isVisible = state?.completionRange != nil && f != nil && codeView?.window?.firstResponder === codeView
-        completionWindow.orderFront(self)
-        completionWindow.setIsVisible(isVisible)
+        // Just calling of `orderFront` and `setIsVisible`
+        // are very expensive like 1000x time more than others.
+        // Do not call them if unnecessary.
+//        completionWindow.orderFront(self)
+        if completionWindow.isVisible != isVisible {
+            completionWindow.setIsVisible(isVisible)
+        }
         completionWindow.setFrame(f ?? CGRect(origin: .zero, size: windowSize), display: isVisible)
         completionWindow.styleMask.formUnion([.unifiedTitleAndToolbar, .fullSizeContentView])
         completionWindow.titleVisibility = .hidden
