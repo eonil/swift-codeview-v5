@@ -23,7 +23,17 @@ public final class ScrollCodeView: NSView {
     /// Exposed to public for convenience.
     /// Use this view to convert points/frames from/to other views.
     public let codeView = CodeView()
-    
+    public func scrollToLineAtOffset(_ lineOffset:Int, in editing: CodeEditing) {
+        // Scroll current line to be visible.
+        let layout = CodeLayout(
+            config: editing.config,
+            source: editing.storage,
+            imeState: editing.imeState,
+            boundingWidth: bounds.width)
+        let f = layout.frameOfLine(
+            at: editing.storage.caretPosition.lineOffset)
+        codeView.scrollToVisible(f)
+    }
     public override init(frame f: NSRect) {
         super.init(frame: f)
         install()

@@ -132,15 +132,6 @@ public final class CodeView: NSView {
                 // Force to resize for new source state.
                 invalidateIntrinsicContentSize()
                 layoutSubtreeIfNeeded()
-                // Scroll current line to be visible.
-                let layout = CodeLayout(
-                    config: editing.config,
-                    source: editing.storage,
-                    imeState: editing.imeState,
-                    boundingWidth: bounds.width)
-                let f = layout.frameOfLine(
-                    at: editing.storage.caretPosition.lineOffset)
-                scrollToVisible(f)
                 switch editing.invalidatedRegion {
                 case .none:                 break
                 case let .some(subbounds):  setNeedsDisplay(subbounds)
