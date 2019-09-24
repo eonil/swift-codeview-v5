@@ -68,6 +68,19 @@ final class DemoView: NSView, NSUserInterfaceValidations {
                 }
             }
             codeManagement.process(.setAnnotation(anno))
+
+            let text = codeManagement.editing.storage.text
+            for _ in 0..<2 {
+                for lineOffset in text.lines.offsets {
+                    let line = text.lines.atOffset(lineOffset)
+                    let utf8Count = line.content.utf8.count
+                    let a = (0..<utf8Count).randomElement() ?? 0
+                    let b = (0..<utf8Count).randomElement() ?? 0
+                    let c = CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: min(a,b))
+                    let d = CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: max(a,b))
+                    codeManagement.process(.setStyle(CodeStyle.all.randomElement() ?? .plain, in: c..<d))
+                }
+            }
         }
         // Post-process auto-completion.
         if let p = codeManagement.editing.storage.timeline.points.last {

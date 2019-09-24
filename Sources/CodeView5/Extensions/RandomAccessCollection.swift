@@ -16,3 +16,11 @@ public extension RandomAccessCollection {
         return 0..<count
     }
 }
+
+public extension RandomAccessCollection where Self: MutableCollection {
+    mutating func set(_ e:Element, atOffset offset:Int) {
+        let idx = index(startIndex, offsetBy: offset)
+        self[idx] = e
+    }
+}
+

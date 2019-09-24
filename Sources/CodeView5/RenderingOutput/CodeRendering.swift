@@ -52,23 +52,10 @@ struct CodeRendering {
             sssn.drawBox(f, color: config.rendering.selectedTextBackgroundColor)
         }
         // Draw characters.
-        func charactersToDrawWithConsideringIME(of lineOffset: Int) -> Substring {
-            let line = storage.text.lines.atOffset(lineOffset)
-            guard let imes = imeState else { return line.content }
-            guard selectedRange.upperBound.lineOffset == lineOffset else { return line.content }
-            let charUTF8Offet = selectedRange.upperBound.characterUTF8Offset
-            let charIndex = line.content.indexFromUTF8Offset(charUTF8Offet)
-            let s = line.content.replacingCharacters(in: charIndex..<charIndex, with: imes.incompleteText)
-            return s[s.startIndex...]
-        }
         for lineOffset in visibleLineOffsets {
-            let s = charactersToDrawWithConsideringIME(of: lineOffset)
             let f = layout.frameOfTextInLine(at: lineOffset)
-//            let c = visibleSelectedLineOffsetRange.contains(lineOffset)
-//                ? config.rendering.selectedTextCharacterColor
-//                : config.rendering.textColor
-            let c = config.rendering.textColor
-            sssn.drawText(s, font: config.rendering.font, color: c, in: f)
+            let x = storage.makeAttributedStringFromContentInLine(at: lineOffset, with: imeState, config: config)
+            sssn.drawText(x, fontAscender: config.rendering.font.ascender, in: f)
         }
         
 //        // Draw debug info.
@@ -156,14 +143,23 @@ private struct CodeRenderingSession {
     let context: CGContext
     let storage: CodeStorage
     let imeState: IMEState?
-    func drawText(_ ss:Substring, font: NSFont, color c: NSColor, in f:CGRect) {
-        let ctline = CTLine.make(with: ss, font: font, color: c)
+    /// Number of styles must be same with number of UTF-8 code units in supplied substring.
+    func drawText(_ x:NSAttributedString, fontAscender: CGFloat, in frame:CGRect) {
+        let ctline = CTLineCreateWithAttributedString(x)
         // First line need to be moved down by line-height
-        // as CG places it above zero point.
+        // as CoreGraphics places it above zero point.
         context.textPosition = CGPoint(
-            x: f.minX,
-            y: font.ascender + f.minY)
+            x: frame.minX,
+            y: fontAscender + frame.minY)
         CTLineDraw(ctline, context)
+    }
+    func drawText(_ ss:Substring, font: NSFont, color c: NSColor, in frame:CGRect) {
+        let s = String(ss)
+        let x = NSAttributedString(string: s, attributes: [
+            .font: font,
+            .foregroundColor: c.cgColor,
+        ])
+        drawText(x, fontAscender: font.ascender, in: frame)
     }
     func drawTextRightAligned(_ ss:Substring, font: NSFont, color c: NSColor, in f:CGRect) {
         let ctline = CTLine.make(with: ss, font: font, color: c)
@@ -203,5 +199,97 @@ private struct CodeRenderingSession {
         context.addPath(p)
         context.setFillColor(c.cgColor)
         context.fillPath()
+    }
+}
+
+
+
+
+// MARK: - IMECompositedLineCharsForDrawing
+extension CodeStorage {
+    func makeAttributedStringFromContentInLine(at lineOffset:Int, with imeState:IMEState?, config:CodeConfig) -> NSAttributedString {
+        let s = IMECompositedLineCharsForDrawing.with(self, imeState: imeState, lineOffset: lineOffset)
+        let x = NSMutableAttributedString()
+        let fxs = s.fragments.map({ $0.makeAttributedString(config: config) })
+        for fx in fxs {
+            x.append(fx)
+        }
+        return x
+    }
+}
+/// Informations need to draw characters in a line correctly with IME state.
+/// - If there's any text-in-completion with IME, there will not be any selection.
+/// - If there's no IME state to consider in target line, only starting characters and styles will be set.
+///   - All other parameters will remain empty, but it still will yield correct drawing.
+///
+private struct IMECompositedLineCharsForDrawing {
+    var fragments = [Fragment]()
+    struct Fragment {
+        var chars: Substring
+        var kind: Kind
+        enum Kind {
+            case nonIME
+            case imeUnselected
+            case imeSelected
+        }
+        var styles: ArraySlice<CodeStyle>
+        func makeAttributedString(config:CodeConfig) -> NSAttributedString {
+            let x = NSMutableAttributedString(string: String(chars))
+            var utf8Count = 0
+            var utf16Count = 0
+            for ch in chars {
+                let style = styles.atOffset(utf8Count)
+                let detail = config.rendering.styling[style] ?? CodeConfig.Rendering.StyleDetail()
+                x.setAttributes([
+                    .font: detail.font,
+                    .foregroundColor: detail.color.cgColor,
+                ], range: NSRange(location: utf16Count, length: ch.utf16.count))
+                utf8Count += ch.utf8.count
+                utf16Count += ch.utf16.count
+            }
+            return x
+        }
+    }
+}
+extension IMECompositedLineCharsForDrawing {
+    static func with(_ storage:CodeStorage, imeState: IMEState?, lineOffset: Int) -> IMECompositedLineCharsForDrawing {
+        typealias F = IMECompositedLineCharsForDrawing.Fragment
+        let line = storage.text.lines.atOffset(lineOffset)
+        var x = IMECompositedLineCharsForDrawing()
+        if let ime = imeState, storage.caretPosition.lineOffset == lineOffset {
+            let imeCharOffset = storage.caretPosition.characterUTF8Offset
+            let inIMESelRange = ime.selectionInIncompleteTextAsUTF8CodeUnitOffset
+            let imeText = ime.incompleteText
+            let imePart1 = imeText.subcontentInUTF8OffsetRange(..<inIMESelRange.lowerBound)
+            let imePart2 = imeText.subcontentInUTF8OffsetRange(inIMESelRange)
+            let imePart3 = imeText.subcontentInUTF8OffsetRange(inIMESelRange.upperBound...)
+            x.fragments.append(F(
+                chars: line.content.subcontentInUTF8OffsetRange(0..<imeCharOffset),
+                kind: .nonIME,
+                styles: line.characterStyles.subcontentInOffsetRange(0..<imeCharOffset)))
+            x.fragments.append(F(
+                chars: imePart1,
+                kind: .imeUnselected,
+                styles: CodeStyle.plain.repeatingSlice(count: inIMESelRange.lowerBound)))
+            x.fragments.append(F(
+                chars: imePart2,
+                kind: .imeSelected,
+                styles: CodeStyle.plain.repeatingSlice(count: inIMESelRange.count)))
+            x.fragments.append(F(
+                chars: imePart3,
+                kind: .imeUnselected,
+                styles: CodeStyle.plain.repeatingSlice(count: imePart3.utf8.count)))
+            x.fragments.append(F(
+                chars: line.content.subcontentInUTF8OffsetRange(imeCharOffset...),
+                kind: .nonIME,
+                styles: line.characterStyles.subcontentInOffsetRange(imeCharOffset...)))
+        }
+        else {
+            x.fragments.append(F(
+                chars: line.content,
+                kind: .nonIME,
+                styles: line.characterStyles))
+        }
+        return x
     }
 }

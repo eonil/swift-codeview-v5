@@ -43,7 +43,4 @@ public extension StringProtocol {
         let fullRange = 0..<utf8OffsetRange.upperBound
         return subcontentInUTF8OffsetRange(fullRange)
     }
-    func allSubcontent() -> SubSequence {
-        return subcontentInUTF8OffsetRange(0...)
-    }
 }

@@ -75,6 +75,9 @@ public struct CodeEditing {
             }
         }
     }
+    mutating func applyStyle(_ s:CodeStyle, in range:Range<CodeStoragePosition>) {
+        storage.setCharacterStyle(s, in: range)
+    }
     
     // MARK: - Rendering
     /// Frame of currently typing area.

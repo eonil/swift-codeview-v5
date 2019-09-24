@@ -10,6 +10,9 @@ import Foundation
 import SBTL
 import CodeView5CustomNSString
 
+/// Stores lines and characters.
+/// This is simple passive dumb storage.
+/// There's no concept of versioning or history or timeline.
 public struct CodeTextStorage {
 //    /// Unique keys for each lines.
 //    /// This is unique only in current storage scope.
@@ -38,6 +41,9 @@ public struct CodeTextStorage {
         get { Lines(of: self) }
         set(x) { self = x.core }
     }
+    /// Guarantees that offsets and indices are always same.
+    /// Anyway, I recommend you to use `atOffset`/`set(_,atOffset)` methods
+    /// to be clear.
     public struct Lines: RandomAccessCollection, MutableCollection, RangeReplaceableCollection {
         fileprivate private(set) var core: CodeTextStorage
         public init() { core = CodeTextStorage() }
@@ -64,28 +70,47 @@ public struct CodeTextStorage {
 
 // MARK: Editing
 extension CodeTextStorage {
-    /// You can get single string by calling `join(separator: "\n")` on returning array.
-    public func lineContents(in range: Range<CodeStoragePosition>) -> [Substring] {
-        guard !range.isEmpty else { return [Substring()] }
+    public typealias LineCharacterRange = (lineOffset: Int, characterUTF8OffsetRange: Range<Int>)
+    public func characterRangesOfLines(in range: Range<CodeStoragePosition>) -> [LineCharacterRange] {
         switch range.includedLineOffsetRange.count {
         case 0:
-            return [Substring()]
+            let p = range.lowerBound
+            let x = p.characterUTF8Offset
+            return [(p.lineOffset, x..<x)]
         case 1:
             let lineOffset = range.lowerBound.lineOffset
-            let lineIndex = lines.startIndex + lineOffset
             let charUTF8OffsetRange = range.characterUTF8OffsetRangeOfLine(at: lineOffset, in: self)
-            let ss = lines[lineIndex].content.subcontentInUTF8OffsetRange(charUTF8OffsetRange)
-            return [ss]
+            return [(lineOffset, charUTF8OffsetRange)]
         default:
-            var sss = [Substring]()
+            var rs = [LineCharacterRange]()
             for lineOffset in range.includedLineOffsetRange {
-                let lineIndex = lines.startIndex + lineOffset
                 let charUTF8OffsetRange = range.characterUTF8OffsetRangeOfLine(at: lineOffset, in: self)
-                let charContent = lines[lineIndex].content.subcontentInUTF8OffsetRange(charUTF8OffsetRange)
-                sss.append(charContent)
+                rs.append((lineOffset, charUTF8OffsetRange))
             }
-            return sss
+            return rs
         }
+    }
+    /// You can get single string by calling `join(separator: "\n")` on returning array.
+    public func lineContents(in range: Range<CodeStoragePosition>) -> [Substring] {
+        let lineCharRanges = characterRangesOfLines(in: range)
+        return lineCharRanges.map({ lines.atOffset($0.lineOffset).content.subcontentInUTF8OffsetRange($0.characterUTF8OffsetRange) })
+//        switch range.includedLineOffsetRange.count {
+//        case 0:
+//            return [Substring()]
+//        case 1:
+//            let lineOffset = range.lowerBound.lineOffset
+//            let charUTF8OffsetRange = range.characterUTF8OffsetRangeOfLine(at: lineOffset, in: self)
+//            let ss = lines.atOffset(lineOffset).content.subcontentInUTF8OffsetRange(charUTF8OffsetRange)
+//            return [ss]
+//        default:
+//            var sss = [Substring]()
+//            for lineOffset in range.includedLineOffsetRange {
+//                let charUTF8OffsetRange = range.characterUTF8OffsetRangeOfLine(at: lineOffset, in: self)
+//                let charContent = lines.atOffset(lineOffset).content.subcontentInUTF8OffsetRange(charUTF8OffsetRange)
+//                sss.append(charContent)
+//            }
+//            return sss
+//        }
     }
     /// - Returns:
     ///     Position where the characters removed.
@@ -95,11 +120,11 @@ extension CodeTextStorage {
         let firstLineOffset = range.lowerBound.lineOffset
         let firstLineIndex = lines.startIndex + firstLineOffset
         let firstLineCharUTF8OffsetRange = 0..<range.lowerBound.characterUTF8Offset
-        let firstLineChars = lines[firstLineOffset].content.subcontentInUTF8OffsetRange(firstLineCharUTF8OffsetRange)
+        let firstLineChars = lines.atOffset(firstLineOffset).content.subcontentInUTF8OffsetRange(firstLineCharUTF8OffsetRange)
         let lastLineOffset = range.upperBound.lineOffset
         let lastLineIndex = lines.startIndex + lastLineOffset
         let lastLineCharUTF8OffsetRange = range.upperBound.characterUTF8Offset...
-        let lastLineChars = lines[lastLineIndex].content.subcontentInUTF8OffsetRange(lastLineCharUTF8OffsetRange)
+        let lastLineChars = lines.atOffset(lastLineOffset).content.subcontentInUTF8OffsetRange(lastLineCharUTF8OffsetRange)
         lines.removeSubrange(firstLineIndex...lastLineIndex)
         var newContent = firstLineChars
         newContent.append(contentsOf: lastLineChars)
@@ -120,10 +145,10 @@ extension CodeTextStorage {
             // Insert into existing line.
             let chs = lineChars.first!
             let lineIndex = lines.startIndex + p.lineOffset
-            var line = lines[lineIndex]
+            var line = lines.atOffset(p.lineOffset)
             let charIndex = line.content.indexFromUTF8Offset(p.characterUTF8Offset)
             line.insert(contentsOf: chs, at: charIndex)
-            lines[lineIndex] = line
+            lines.set(line, atOffset: lineIndex)
             return p..<CodeStoragePosition(
                 lineOffset: p.lineOffset,
                 characterUTF8Offset: p.characterUTF8Offset + chs.utf8.count)
@@ -162,10 +187,10 @@ extension CodeTextStorage {
     }
 }
 
-// MARK: Temporary. I think I need re-design in SBTL...
-extension Int: SBTLValueProtocol {
-    public var sum: Int { self }
-}
+//// MARK: Temporary. I think I need re-design in SBTL...
+//extension Int: SBTLValueProtocol {
+//    public var sum: Int { self }
+//}
 
 //// MARK: Conversion to Legacy
 //extension CodeTextStorage {

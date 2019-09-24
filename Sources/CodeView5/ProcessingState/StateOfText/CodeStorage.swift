@@ -112,8 +112,10 @@ public extension CodeStorage {
     }
     /// Replaces characters in current selection.
     ///
-    /// This is **the only mutator** to modify underlying `CodeTextStorage`.
-    /// Therefore, thsi can track *all* changes correctly.
+    /// This is **the only mutator** to modify underlying **text content** of `CodeTextStorage`.
+    /// Therefore, thsi can track *all* changes in **text content** correctly.
+    ///
+    /// - Note: Style informations can be updated independently.
     ///
     /// - Parameter selection: What to select after replacement operation.
     mutating func replaceCharactersInCurrentSelection(with s:String) {
@@ -137,6 +139,16 @@ public extension CodeStorage {
         caretPosition = q
         selectionRange = q..<q
         selectionAnchorPosition = q
+    }
+    /// Changes styles of characters in range.
+    /// **This does not make timeline entry** as this won't be considered as textual content update.
+    mutating func setCharacterStyle(_ s:CodeStyle, in range:Range<CodeStoragePosition>) {
+        let lineCharRanges = text.characterRangesOfLines(in: range)
+        for (lineOffset, charRange) in lineCharRanges {
+            var line = text.lines.atOffset(lineOffset)
+            line.setCharacterStyle(s, inUTF8OffsetRange: charRange)
+            text.lines.set(line, atOffset: lineOffset)
+        }
     }
 }
 

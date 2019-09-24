@@ -22,6 +22,10 @@ public struct CodeManagement {
     public init() {}
     public enum Message {
         case userInteraction(CodeUserMessage)
+        /// This does not modify textual content,
+        /// therefore does not make any timeline entries.
+        /// No new undo/redo nor change-sets.
+        case setStyle(CodeStyle, in: Range<CodeStoragePosition>)
         case setAnnotation(CodeAnnotation)
     }
     /// Clears accumulated effects and results.
@@ -42,6 +46,8 @@ public struct CodeManagement {
             case let .edit(mmm): processEdit(mmm)
             case let .menu(mmm): processMenu(mmm)
             }
+        case let .setStyle(s, range):
+            editing.applyStyle(s, in: range)
         case let .setAnnotation(anno):
             annotation = anno
         }
