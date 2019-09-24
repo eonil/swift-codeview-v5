@@ -61,14 +61,7 @@ public final class CodeView: NSView {
     private let typing = TextTyping()
     /// Latest rendered editing state.
     private var editing = CodeEditing()
-    /// - Note:
-    ///     You have to use only valid line offsets.
-    /// - TODO: Optimize this.
-    /// Need to be optimized.
-    /// This would be okay for a while as most people do not install
-    /// too many break-points. But if there are more than 100 break-points,
-    /// this is very likely to make problems.
-    public private(set) var breakpointLineOffsets = Set<Int>()
+    private var annotation = CodeAnnotation()
 
     // MARK: - External I/O
     /// A view to be contained in completion window if the window becomes visible.
@@ -85,7 +78,7 @@ public final class CodeView: NSView {
         }
         /// Render editing state on client side.
         case renderEditing(CodeEditing)
-        case renderBreakPointLineOffsets(Set<Int>)
+        case renderAnnotation(CodeAnnotation)
         /// Render completion window state.
         /// Defines whow completion window to be rendered.
         /// `nil` means completion window should be disappeared.
@@ -140,14 +133,14 @@ public final class CodeView: NSView {
                 }
             }
             
-        case let .renderBreakPointLineOffsets(mm):
-            breakpointLineOffsets = mm
-            let f = CGRect(
-                x: 0,
-                y: 0,
-                width: editing.config.rendering.breakpointWidth,
-                height: bounds.height)
-            setNeedsDisplay(f)
+        case let .renderAnnotation(mm):
+            annotation = mm
+            let layout = editing.makeLayout(in: bounds.width)
+            /// - TODO: Optimize using binary search.
+            for lineOffset in mm.lineAnnotations.keys {
+                let f = layout.frameOfLine(at: lineOffset)
+                setNeedsDisplay(f)
+            }
             
         case let .renderCompletionWindow(mm):
             typealias CWS = CompletionWindowManagement.State
@@ -252,13 +245,9 @@ public final class CodeView: NSView {
         }
     }
     public override var intrinsicContentSize: NSSize {
-        let layout = CodeLayout(
-            config: editing.config,
-            source: editing.storage,
-            imeState: editing.imeState,
-            boundingWidth: bounds.width)
+        let layout = editing.makeLayout(in: bounds.width)
         let z = layout.measureContentSize(
-            source: editing.storage,
+            storage: editing.storage,
             imeState: editing.imeState)
         return CGSize(width: 300, height: z.height)
     }
@@ -267,11 +256,13 @@ public final class CodeView: NSView {
         let cgctx = NSGraphicsContext.current!.cgContext
         let rendering = CodeRendering(
             config: editing.config,
-            breakpointLineOffsets: breakpointLineOffsets)
-        rendering.draw(
-            source: editing.storage,
+            storage: editing.storage,
             imeState: editing.imeState,
+            annotation: annotation,
+            bounds: bounds)
+        rendering.draw(
             in: dirtyRect,
             with: cgctx)
     }
 }
+

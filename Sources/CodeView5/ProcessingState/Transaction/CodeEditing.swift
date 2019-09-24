@@ -82,7 +82,7 @@ public struct CodeEditing {
     func typingFrame(in bounds:CGRect) -> CGRect {
         let layout = CodeLayout(
             config: config,
-            source: storage,
+            storage: storage,
             imeState: imeState,
             boundingWidth: bounds.width)
         let f  = layout.frameOfSelectionInLine(
@@ -370,7 +370,7 @@ public struct CodeEditing {
     }
     
     private mutating func processMouseDown(at point:CGPoint, in bounds:CGRect) {
-        let layout = CodeLayout(config: config, source: storage, imeState: imeState, boundingWidth: bounds.width)
+        let layout = makeLayout(in: bounds.width)
         if point.x < layout.config.rendering.breakpointWidth {
         }
         else {
@@ -383,7 +383,7 @@ public struct CodeEditing {
     }
     private mutating func processMouseDragged(at point:CGPoint, in bounds:CGRect) {
         // Update caret and selection by mouse dragging.
-        let layout = CodeLayout(config: config, source: storage, imeState: imeState, boundingWidth: bounds.width)
+        let layout = CodeLayout(config: config, storage: storage, imeState: imeState, boundingWidth: bounds.width)
         let p = layout.clampingPosition(at: point)
         let oldSource = storage
         storage.modifySelectionWithAnchor(to: p)

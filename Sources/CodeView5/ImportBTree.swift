@@ -7,6 +7,6 @@
 
 import BTree
 
-typealias BTSet<K> = SortedSet<K> where K:Comparable
-typealias BTMap<K,V> = Map<K,V> where K:Comparable
-typealias BTList<T> = List<T>
+public typealias BTSet<K> = SortedSet<K> where K:Comparable
+public typealias BTMap<K,V> = Map<K,V> where K:Comparable
+public typealias BTList<T> = List<T>

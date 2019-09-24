@@ -37,13 +37,17 @@ public struct CodeConfig {
     public struct Rendering {
         // Treats font object as a value.
         public var font = selectDefaultFont()
+        public var textLineBackgroundColor = NSColor(hue: 0, saturation: 0, brightness: 0, alpha: 1)
+        public var currentTextLineBackgroundColor = NSColor(hue: 0, saturation: 0, brightness: 0.1, alpha: 1)
         public var selectionColor = NSColor.selectedTextBackgroundColor
-        public var textColor = NSColor.textColor
-        public var selectedTextBackgroundColor = NSColor.selectedTextBackgroundColor
+        public var textColor = NSColor(hue: 0, saturation: 0, brightness: 0.8, alpha: 1)
+        public var selectedTextBackgroundColor = NSColor(hue: 0, saturation: 0, brightness: 0.3, alpha: 1)
+        public var selectedTextCharacterColor = NSColor(hue: 0, saturation: 0, brightness: 1, alpha: 1)
         public var lineNumberFont = NSFont.monospacedDigitSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         public var lineNumberColor = NSColor.textColor.blended(withFraction: 0.5, of: NSColor.textBackgroundColor) ?? NSColor.textColor
         public var lineNumberColorOnBreakPoint = NSColor.textColor
         public var breakPointColor = NSColor.controlAccentColor
+        public var annotationFont = NSFont.systemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
         
         var lineHeight: CGFloat { -font.descender + font.ascender }
         var breakpointWidth: CGFloat { lineHeight * 3 }

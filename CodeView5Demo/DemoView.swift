@@ -43,11 +43,31 @@ final class DemoView: NSView, NSUserInterfaceValidations {
             codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
         case .testBreakpointResetting:
             let lineOffsets = codeManagement.editing.storage.text.lines.offsets
-            var breakPoints = codeManagement.breakPointLineOffsets
-            if let lineOffset = lineOffsets.randomElement() {
-                breakPoints.insert(lineOffset)
+            var anno = CodeAnnotation()
+            for _ in 0..<40 {
+                if let lineOffset = lineOffsets.randomElement() {
+                    anno.breakPoints.insert(lineOffset)
+                }
             }
-            codeManagement.process(.setBreakPointLineOffsets(breakPoints))
+            for _ in 0..<40 {
+                if let lineOffset = lineOffsets.randomElement() {
+                    let sevs = [.info, .warn, .error] as [CodeLineAnnotation.Diagnostic.Severity]
+                    let s = sevs.randomElement() ?? .error
+                    switch s {
+                    case .info:
+                        anno.lineAnnotations[lineOffset] = CodeLineAnnotation(
+                            diagnostics: [.init(message: "Informative note.", severity: .info)])
+                    case .warn:
+                        anno.lineAnnotations[lineOffset] = CodeLineAnnotation(
+                            diagnostics: [.init(message: "Warning.", severity: .warn)])
+                    case .error:
+                        anno.lineAnnotations[lineOffset] = CodeLineAnnotation(
+                            diagnostics: [.init(message: "Error.", severity: .error)])
+                    }
+                    
+                }
+            }
+            codeManagement.process(.setAnnotation(anno))
         }
         // Post-process auto-completion.
         if let p = codeManagement.editing.storage.timeline.points.last {

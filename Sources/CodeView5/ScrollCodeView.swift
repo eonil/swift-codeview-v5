@@ -26,7 +26,7 @@ public final class ScrollCodeView: NSView {
     public func showLineAtOffset(_ lineOffset: Int, in editing: CodeEditing) {
         let layout = CodeLayout(
             config: editing.config,
-            source: editing.storage,
+            storage: editing.storage,
             imeState: editing.imeState,
             boundingWidth: bounds.width)
         let f = layout.frameOfLine(

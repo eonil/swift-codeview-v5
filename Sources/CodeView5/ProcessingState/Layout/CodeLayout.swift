@@ -10,12 +10,12 @@ import AppKit
 
 public struct CodeLayout {
     let config: CodeConfig
-    let source: CodeStorage
+    let storage: CodeStorage
     let imeState: IMEState?
     let boundingWidth: CGFloat
 
-    func measureContentSize(source :CodeStorage, imeState: IMEState?) -> CGSize {
-        return CGSize(width: 500, height: config.rendering.lineHeight * CGFloat(source.text.lines.count))
+    func measureContentSize(storage :CodeStorage, imeState: IMEState?) -> CGSize {
+        return CGSize(width: 500, height: config.rendering.lineHeight * CGFloat(storage.text.lines.count))
     }
     /// Finds index to a line WITHOUT considering existence of target line.
     func potentialLineOffset(at y:CGFloat) -> Int {
@@ -27,14 +27,14 @@ public struct CodeLayout {
     /// Finds offset to a line at a point.
     func clampingLineOffset(at y:CGFloat) -> Int {
         let lineOffset = potentialLineOffset(at: y)
-        return lineOffset.clamping(in: source.text.lines.offsets)
+        return lineOffset.clamping(in: storage.text.lines.offsets)
     }
     /// Finds offset of a character in a line at a point.
     /// - Returns: `nil` if supplied point is not belong to any character in the line.
     func clampingCharacterUTF8Offset(at x:CGFloat, inLineAt lineOffset:Int, with f:NSFont) -> Int {
         let x1 = x - config.rendering.bodyX
         let hh = config.rendering.lineHeight / 2
-        let line = source.text.lines.atOffset(lineOffset)
+        let line = storage.text.lines.atOffset(lineOffset)
         let ctline = CTLine.make(with: line.content, font: f)
         let f = ctline.bounds
         let xs = f.minX...f.maxX
@@ -57,17 +57,17 @@ public struct CodeLayout {
     /// - Returns: `nil` if supplied point is not belong to any character in any line.
     func clampingPosition(at p:CGPoint) -> CodeStoragePosition {
         let lineOffset = potentialLineOffset(at: p.y)
-        let storedLineOffsets = source.text.lines.offsets
+        let storedLineOffsets = storage.text.lines.offsets
         if storedLineOffsets.contains(lineOffset) {
             let charUTF8Offset = clampingCharacterUTF8Offset(at: p.x, inLineAt: lineOffset, with: config.rendering.font)
             return CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: charUTF8Offset)
         }
         else {
             if lineOffset < storedLineOffsets.lowerBound {
-                return source.startPosition
+                return storage.startPosition
             }
             if lineOffset >= storedLineOffsets.upperBound {
-                return source.endPosition
+                return storage.endPosition
             }
             fatalError("Unreachable code.")
         }
@@ -81,7 +81,7 @@ public struct CodeLayout {
     }
     /// This does not consider IME state.
     public func frameOfTextInLine(at lineOffset: Int) -> CGRect {
-        let s = source.text.lines.atOffset(lineOffset).content
+        let s = storage.text.lines.atOffset(lineOffset).content
         let r = 0..<s.utf8.count
         return frameOfTextUTF8OffsetSubrange(r, inLineAt: lineOffset)
     }
@@ -94,7 +94,7 @@ public struct CodeLayout {
     /// Therefore can be different with result of `frameOfTextSubrange` for same input.
     public func frameOfTextUTF8OffsetSubrange(_ charUTF8OffsetRange:Range<Int>, inLineAt lineOffset: Int) -> CGRect {
         let lineFrame = frameOfLine(at: lineOffset)
-        let lineContent = source.text.lines.atOffset(lineOffset).content
+        let lineContent = storage.text.lines.atOffset(lineOffset).content
         let subframeInTextBounds = lineContent.frameOfCharactersInUTF8OffsetSubrange(charUTF8OffsetRange, withFont: config.rendering.font)
         let subtextFrame = subframeInTextBounds.offsetBy(dx: config.rendering.bodyX, dy: lineFrame.minY)
         return CGRect(
@@ -104,7 +104,7 @@ public struct CodeLayout {
             height: lineFrame.height)
     }
     public func frameOfTextUTF8OffsetSubrange(_ charUTF8OffsetRange:PartialRangeFrom<Int>, inLineAt lineOffset: Int) -> CGRect {
-        let lineContent = source.text.lines.atOffset(lineOffset).content
+        let lineContent = storage.text.lines.atOffset(lineOffset).content
         return frameOfTextUTF8OffsetSubrange(charUTF8OffsetRange.lowerBound..<lineContent.utf8.count, inLineAt: lineOffset)
     }
     public func frameOfTextUTF8OffsetSubrange(_ charUTF8OffsetRange:PartialRangeUpTo<Int>, inLineAt lineOffset: Int) -> CGRect {
@@ -115,16 +115,16 @@ public struct CodeLayout {
     ///     Index to a line in code-storage.
     ///     This must be a valid index. Otherwise program crashes.
     func frameOfSelectionInLine(at lineOffset: Int) -> CGRect {
-        precondition(source.text.lines.offsets.contains(lineOffset))
-        let selRange = source.selectionRange
-        let selCharUTF8OffsetRange = selRange.characterUTF8OffsetRangeOfLine(at: lineOffset, in: source.text)
+        precondition(storage.text.lines.offsets.contains(lineOffset))
+        let selRange = storage.selectionRange
+        let selCharUTF8OffsetRange = selRange.characterUTF8OffsetRangeOfLine(at: lineOffset, in: storage.text)
         let selFrame = frameOfTextUTF8OffsetSubrange(selCharUTF8OffsetRange, inLineAt: lineOffset)
         return selFrame
     }
     func frameOfIMESelection() -> CGRect? {
         guard let imes = imeState else { return nil }
-        let lineFrame = frameOfLine(at: source.caretPosition.lineOffset)
-        let caretOrSelFrame = frameOfCaret() ?? frameOfSelectionInLine(at: source.caretPosition.lineOffset)
+        let lineFrame = frameOfLine(at: storage.caretPosition.lineOffset)
+        let caretOrSelFrame = frameOfCaret() ?? frameOfSelectionInLine(at: storage.caretPosition.lineOffset)
         let s = imes.incompleteText
         let r = imes.selectionInIncompleteTextAsUTF8CodeUnitOffset
         let x = caretOrSelFrame.maxX
@@ -136,9 +136,9 @@ public struct CodeLayout {
     ///     `nil` if caret cannot be displayed.
     ///     For example, if there's a selection, caret will not be rendered.
     public func frameOfCaret() -> CGRect? {
-        guard source.selectionRange.isEmpty && (imeState?.selectionInIncompleteText.isEmpty ?? true) else { return nil }
-        let p = source.caretPosition
-        let line = source.text.lines.atOffset(p.lineOffset)
+        guard storage.selectionRange.isEmpty && (imeState?.selectionInIncompleteText.isEmpty ?? true) else { return nil }
+        let p = storage.caretPosition
+        let line = storage.text.lines.atOffset(p.lineOffset)
         let chars = line.content.subcontentInUTF8OffsetRange(..<p.characterUTF8Offset)
         let x = CTLine.make(with: chars, font: config.rendering.font).bounds.width
         let y = config.rendering.lineHeight * CGFloat(p.lineOffset)

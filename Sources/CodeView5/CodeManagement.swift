@@ -14,9 +14,7 @@ import Foundation
 ///
 public struct CodeManagement {
     public private(set) var editing = CodeEditing()
-    /// This is supposed to stored less than hundred values.
-    /// If this need to store more, this should use copy-friendly types.
-    public private(set) var breakPointLineOffsets = Set<Int>()
+    public private(set) var annotation = CodeAnnotation()
     /// This is an output state.
     public private(set) var effects = [Effect]()
     public typealias Effect = CodeView.Control.Effect
@@ -24,7 +22,7 @@ public struct CodeManagement {
     public init() {}
     public enum Message {
         case userInteraction(CodeUserMessage)
-        case setBreakPointLineOffsets(Set<Int>)
+        case setAnnotation(CodeAnnotation)
     }
     /// Clears accumulated effects and results.
     /// This does NOT clear undo/redo history.
@@ -44,8 +42,8 @@ public struct CodeManagement {
             case let .edit(mmm): processEdit(mmm)
             case let .menu(mmm): processMenu(mmm)
             }
-        case let .setBreakPointLineOffsets(bps):
-            breakPointLineOffsets = bps
+        case let .setAnnotation(anno):
+            annotation = anno
         }
     }
     private mutating func processEdit(_ mm:CodeEditingMessage) {
@@ -58,7 +56,8 @@ public struct CodeManagement {
                 let replacementString = change.replacementContent
                 let removeLineCount = rangeToReplace.lineOffsetRange.count
                 let newLineCharCount = replacementString.filter({ $0 == "\n" }).count
-                breakPointLineOffsets = Set(breakPointLineOffsets.compactMap({ i in
+                // Move or kill break-points.
+                annotation.breakPoints = Set(annotation.breakPoints.compactMap({ i in
                     if i <= rangeToReplace.lowerBound.lineOffset {
                         return i
                     }
@@ -67,6 +66,20 @@ public struct CodeManagement {
                         return k <= rangeToReplace.lowerBound.lineOffset ? nil : k
                     }
                 }))
+                // Move or kill line-annotations.
+                let lineAnnos = annotation.lineAnnotations.compactMap({ (i,x) -> (Int,CodeLineAnnotation)? in
+                    if i <= rangeToReplace.lowerBound.lineOffset {
+                        return (i,x)
+                    }
+                    else {
+                        let k = i + -removeLineCount + newLineCharCount
+                        return k <= rangeToReplace.lowerBound.lineOffset ? nil : (k,x)
+                    }
+                })
+                annotation.lineAnnotations.removeAll()
+                for (i,x) in lineAnnos {
+                    annotation.lineAnnotations[i] = x
+                }
             }
             switch mm {
             case let .mouse(mmm):
@@ -74,13 +87,12 @@ public struct CodeManagement {
                 case .down:
                     let layout = CodeLayout(
                         config: editing.config,
-                        source: editing.storage,
+                        storage: editing.storage,
                         imeState: editing.imeState,
                         boundingWidth: mmm.bounds.width)
                     if mmm.pointInBounds.x < editing.config.rendering.breakpointWidth {
                         let lineOffset = layout.clampingLineOffset(at: mmm.pointInBounds.y)
-                        // Toggle breakpoint.
-                        toggleBreakPoint(at: lineOffset)
+                        annotation.toggleBreakPoint(at: lineOffset)
                     }
                 default: break
                 }
@@ -120,20 +132,3 @@ public struct CodeManagement {
     }
 }
 
-// MARK: BreakPoint Editing
-extension CodeManagement {
-    mutating func toggleBreakPoint(at lineOffset: Int) {
-        if breakPointLineOffsets.contains(lineOffset) {
-            breakPointLineOffsets.remove(lineOffset)
-        }
-        else {
-            breakPointLineOffsets.insert(lineOffset)
-        }
-    }
-    mutating func insertBreakPoint(at lineOffset: Int)  {
-        breakPointLineOffsets.insert(lineOffset)
-    }
-    mutating func removeBreakPoint(for lineOffset: Int) {
-        breakPointLineOffsets.remove(lineOffset)
-    }
-}

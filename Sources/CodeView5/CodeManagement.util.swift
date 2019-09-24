@@ -13,6 +13,6 @@ public extension CodeManagement {
             codeView.control(.applyEffect(effect))
         }
         codeView.control(.renderEditing(editing))
-        codeView.control(.renderBreakPointLineOffsets(breakPointLineOffsets))
+        codeView.control(.renderAnnotation(annotation))
     }
 }
