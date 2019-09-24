@@ -21,7 +21,7 @@ public extension Range where Bound == CodeStoragePosition {
     func characterUTF8OffsetRangeOfLine(at lineOffsetInStorage: Int, in storage:CodeTextStorage) -> Range<Int> {
         let lineIndex = storage.lines.startIndex + lineOffsetInStorage
         precondition(storage.lines.indices.contains(lineIndex))
-        let content = storage.lines[lineIndex].content
+        let content = storage.lines[lineIndex].characters
         let a = lowerBound.lineOffset == lineOffsetInStorage ? lowerBound.characterUTF8Offset : 0
         let b = upperBound.lineOffset == lineOffsetInStorage ? upperBound.characterUTF8Offset : content.utf8.count
         return a..<b

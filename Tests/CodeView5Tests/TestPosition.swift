@@ -23,20 +23,20 @@ struct PositionInfo {
         lineOffset = lx
         characterOffset = cx
         let line = storage.lines.atOffset(lx)
-        characterIndex = line.content.index(line.content.startIndex, offsetBy: characterOffset)
-        characterUTF8Offset = line.content.utf8OffsetFromIndex(characterIndex)
+        characterIndex = line.characters.index(line.characters.startIndex, offsetBy: characterOffset)
+        characterUTF8Offset = line.characters.utf8OffsetFromIndex(characterIndex)
         characterCountBeforePosition = characterOffset
-        characterCountAfterPosition = line.content[characterIndex...].count
+        characterCountAfterPosition = line.characters[characterIndex...].count
     }
     init(storage s: CodeTextStorage, position p:CodeStoragePosition) {
         storage = s
         lineOffset = p.lineOffset
         let line = s.lines.atOffset(lineOffset)
         characterUTF8Offset = p.characterUTF8Offset
-        characterIndex = line.content.indexFromUTF8Offset(characterUTF8Offset)
-        characterOffset = line.content.distance(from: line.content.startIndex, to: characterIndex)
+        characterIndex = line.characters.indexFromUTF8Offset(characterUTF8Offset)
+        characterOffset = line.characters.distance(from: line.characters.startIndex, to: characterIndex)
         characterCountBeforePosition = characterOffset
-        characterCountAfterPosition = line.content[characterIndex...].count
+        characterCountAfterPosition = line.characters[characterIndex...].count
     }
     var csp: CodeStoragePosition {
         return CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: characterUTF8Offset)

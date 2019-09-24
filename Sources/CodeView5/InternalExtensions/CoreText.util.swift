@@ -17,7 +17,18 @@ extension CTLine {
         ])
         return CTLineCreateWithAttributedString(x)
     }
-    var bounds: CGRect {
+    @available(*, deprecated: 0)
+    var __bounds: CGRect {
         return CTLineGetBoundsWithOptions(self, [])
+    }
+    var bounds: CGRect {
+        return CTLineGetBoundsWithOptions(self, [.includeLanguageExtents])
+    }
+    var typographicBounds: (width:CGFloat, ascent:CGFloat, descent:CGFloat, leading:CGFloat) {
+        var ascent = 0 as CGFloat
+        var descent = 0 as CGFloat
+        var leading = 0 as CGFloat
+        let width = CTLineGetTypographicBounds(self, &ascent, &descent, &leading)
+        return (CGFloat(width), ascent, descent, leading)
     }
 }

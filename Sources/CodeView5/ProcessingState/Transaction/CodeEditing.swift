@@ -37,9 +37,9 @@ public struct CodeEditing {
     func findAxisXForVerticalMovement() -> CGFloat {
         let p = storage.caretPosition
         let line = storage.text.lines[storage.text.lines.startIndex + p.lineOffset]
-        let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
-        let ss = line.content[..<charIndex]
-        let ctline = CTLine.make(with: ss, font: config.rendering.font)
+        let charIndex = line.characters.utf8.index(line.characters.utf8.startIndex, offsetBy: p.characterUTF8Offset)
+        let ss = line.characters[..<charIndex]
+        let ctline = CTLine.make(with: ss, font: config.rendering.standardFont)
         let w = CTLineGetBoundsWithOptions(ctline, []).width
         return w
     }
@@ -56,6 +56,14 @@ public struct CodeEditing {
         default: invalidatedRegion = .all
         }
     }
+    
+//    public private(set) var invalidatedRegion2 = invalidatedRegion2.none
+//    public enum invalidatedRegion2 {
+//        case none
+//        /// For the case when user is editing only in single line.
+//        case singleLine(lineAtOffset: Int)
+//        case all
+//    }
     
     // MARK: - External I/O
     typealias Message = CodeEditingMessage
@@ -92,9 +100,6 @@ public struct CodeEditing {
             at: storage.caretPosition.lineOffset)
         return f
     }
-    private mutating func render() {
-        invalidatedRegion = .all
-    }
     private mutating func setNeedsRendering(in bounds:CGRect) {
         invalidatedRegion = .some(bounds: bounds)
     }
@@ -103,7 +108,7 @@ public struct CodeEditing {
     private mutating func reset(_ s:CodeStorage) {
         storage = s
         timeline = CodeTimeline(current: s)
-        render()
+        invalidatedRegion = .all
     }
     /// Pushes modified source.
     /// This command keeps undo/redo stack.
@@ -111,7 +116,7 @@ public struct CodeEditing {
         storage = s
         unrecordAllInsignificantTimelinePoints()
         recordTimePoint(as: .alienEditing(nameForMenu: n))
-        render()
+        invalidatedRegion = .all
     }
     private mutating func process(_ n:TextTypingMessage) {
         switch n {
@@ -347,7 +352,7 @@ public struct CodeEditing {
                 break
             }
         }
-        render()
+        invalidatedRegion = .all
     }
     private func upLinePosition() -> CodeStoragePosition? {
         let p = storage.caretPosition
@@ -355,8 +360,8 @@ public struct CodeEditing {
         let upLineOffset = p.lineOffset - 1
         let upLine = storage.text.lines.atOffset(upLineOffset)
         let x = moveVerticalAxisX!
-        let f = config.rendering.font
-        let charUTF8Offset = storage.characterUTF8Offset(at: x, in: upLine, with: f) ?? upLine.content.utf8.count
+        let f = config.rendering.standardFont
+        let charUTF8Offset = storage.characterUTF8Offset(at: x, in: upLine, with: f) ?? upLine.characters.utf8.count
         let newPosition = CodeStoragePosition(lineOffset: upLineOffset, characterUTF8Offset: charUTF8Offset)
         return newPosition
     }
@@ -366,8 +371,8 @@ public struct CodeEditing {
         let downLineOffset = p.lineOffset + 1
         let downLine = storage.text.lines.atOffset(downLineOffset)
         let x = moveVerticalAxisX!
-        let f = config.rendering.font
-        let charUTF8Offset = storage.characterUTF8Offset(at: x, in: downLine, with: f) ?? downLine.content.utf8.count
+        let f = config.rendering.standardFont
+        let charUTF8Offset = storage.characterUTF8Offset(at: x, in: downLine, with: f) ?? downLine.characters.utf8.count
         let newPosition = CodeStoragePosition(lineOffset: downLineOffset, characterUTF8Offset: charUTF8Offset)
         return newPosition
     }

@@ -36,7 +36,13 @@ public struct CodeConfig {
     }
     public struct Rendering {
         // Treats font object as an immutable value.
-        public var font = defaultFont
+        
+        /// This is the standard of all layout calculation.
+        /// We do not support variable line-height.
+        /// All lines have same constant height by selection of this font.
+        /// Text with different line height will be rendered aligned to baseline of standard font.
+        /// Therefore non-stadnard large glyphs can overlap.
+        public var standardFont = defaultFont
         public var textLineBackgroundColor = NSColor(hue: 0, saturation: 0, brightness: 0, alpha: 1)
         public var currentTextLineBackgroundColor = NSColor(hue: 0, saturation: 0, brightness: 0.1, alpha: 1)
         public var selectionColor = NSColor.selectedTextBackgroundColor
@@ -73,11 +79,12 @@ public struct CodeConfig {
             public var color = grey(0.6)
         }
         
-        var lineHeight: CGFloat { -font.descender + font.ascender }
-        var breakpointWidth: CGFloat { lineHeight * 3 }
-        var lineNumberAreaWidth: CGFloat { lineHeight * 2 }
+        /// This is grid-fitting value.
+        var gridFittingLineHeight: CGFloat { ceil(-standardFont.descender + standardFont.ascender + standardFont.leading) }
+        var breakpointWidth: CGFloat { gridFittingLineHeight * 3 }
+        var lineNumberAreaWidth: CGFloat { gridFittingLineHeight * 2 }
         var gapBetweenBreakpointAndBody = CGFloat(5)
-        var bodyX: CGFloat { breakpointWidth + gapBetweenBreakpointAndBody }
+        var bodyX: CGFloat { ceil(breakpointWidth + gapBetweenBreakpointAndBody) }
     }
     public init() {}
 }

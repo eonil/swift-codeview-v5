@@ -31,8 +31,8 @@ extension Substring {
         let ss2 = subcontentInUTF8OffsetRange(r)
         let line1 = CTLine.make(with: ss1, font: f)
         let line2 = CTLine.make(with: ss2, font: f)
-        let b1 = line1.bounds
-        let b2 = line2.bounds
+        let b1 = line1.__bounds
+        let b2 = line2.__bounds
         return CGRect(
             x: b1.maxX,
             y: b2.minY,

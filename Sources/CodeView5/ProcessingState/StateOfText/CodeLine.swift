@@ -27,7 +27,7 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
     public typealias SubSequence = Substring.SubSequence
     
     /// `CodeLine` ensures this to store all characters in UTF-8 encoded form in memory.
-    public private(set) var content = Substring()
+    public private(set) var characters = Substring()
     private(set) var precomputedCharacterCount = 0
     /// - Styles matches to each UTF-8 code units at same offset.
     /// - Styles for same character must have same value.
@@ -35,50 +35,64 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
     ///     This is very likely to contain duplicated data
     ///     that can be optimized easily.
     private(set) var characterStyles = ArraySlice<CodeStyle>()
+    /// If this key is equal, contents are guaranteed to be equal.
+    /// If this key is different, contents are potentially different.
+    private(set) var contentEqualityKey = makeKey()
     
     public init() {}
     public init(_ s:Substring) {
         let c = s.count
-        content = s
-        content.makeContiguousUTF8()
-        assert(content.isContiguousUTF8)
+        characters = s
+        characters.makeContiguousUTF8()
+        assert(characters.isContiguousUTF8)
         precomputedCharacterCount = c
         /// Using interning can accelerate initial creation of code lines.
         characterStyles = CodeStyle.plain.repeatingSlice(count: s.utf8.count)
     }
     init(content s: Substring, precomputedCharacterCount cc: Int, characterStyles ss: ArraySlice<CodeStyle>) {
-        content = s
-        content.makeContiguousUTF8()
-        assert(content.isContiguousUTF8)
+        characters = s
+        characters.makeContiguousUTF8()
+        assert(characters.isContiguousUTF8)
         precomputedCharacterCount = cc
         characterStyles = ss
     }
     
     public var count: Int { precomputedCharacterCount }
-    public var startIndex: Index { content.startIndex }
-    public var endIndex: Index { content.endIndex }
-    public func index(after i: Index) -> Index { content.index(after: i) }
-    public func index(before i: Index) -> Index { content.index(before: i) }
-    public subscript(_ i: Index) -> Character { content[i] }
-    public subscript(_ r: Range<Index>) -> SubSequence { content[r] }
+    public var startIndex: Index { characters.startIndex }
+    public var endIndex: Index { characters.endIndex }
+    public func index(after i: Index) -> Index { characters.index(after: i) }
+    public func index(before i: Index) -> Index { characters.index(before: i) }
+    public subscript(_ i: Index) -> Character { characters[i] }
+    public subscript(_ r: Range<Index>) -> SubSequence { characters[r] }
     public mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
-        let q = subrange.relative(to: content)
-        let a = content.utf8.distance(from: content.startIndex, to: q.lowerBound)
-        let b = content.utf8.distance(from: content.startIndex, to: q.upperBound)
+        let q = subrange.relative(to: characters)
+        let a = characters.utf8.distance(from: characters.startIndex, to: q.lowerBound)
+        let b = characters.utf8.distance(from: characters.startIndex, to: q.upperBound)
         
-        let removingCharacters = content[subrange]
+        let removingCharacters = characters[subrange]
         let removingCharacterCount = removingCharacters.count
         let insertingCharacters = String(newElements).contiguized()
         let insertingCharacterCount = insertingCharacters.count
-        content.replaceSubrange(subrange, with: insertingCharacters)
-        content.makeContiguousUTF8()
-        assert(content.isContiguousUTF8)
+        characters.replaceSubrange(subrange, with: insertingCharacters)
+        characters.makeContiguousUTF8()
+        assert(characters.isContiguousUTF8)
         precomputedCharacterCount += -removingCharacterCount + insertingCharacterCount
         
         characterStyles.replaceSubrange(a..<b, with: repeatElement(.plain, count: insertingCharacters.utf8.count))
+        contentEqualityKey = makeKey()
     }
     public mutating func setCharacterStyle(_ s:CodeStyle, inUTF8OffsetRange range:Range<Int>) {
         characterStyles.replaceSubrange(range, with: repeatElement(s, count: range.count))
+        contentEqualityKey = makeKey()
     }
 }
 
+
+private let keyContext = DispatchQueue(label: "CodeLine/Key")
+private var keySeed = 0
+private func makeKey() -> Int {
+    return keyContext.sync {
+        keySeed += 1
+        return keySeed
+    }
+}

@@ -73,7 +73,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
             for _ in 0..<2 {
                 for lineOffset in text.lines.offsets {
                     let line = text.lines.atOffset(lineOffset)
-                    let utf8Count = line.content.utf8.count
+                    let utf8Count = line.characters.utf8.count
                     let a = (0..<utf8Count).randomElement() ?? 0
                     let b = (0..<utf8Count).randomElement() ?? 0
                     let c = CodeStoragePosition(lineOffset: lineOffset, characterUTF8Offset: min(a,b))
@@ -89,7 +89,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
             case "\n":
                 // Indent only.
                 var s = codeManagement.editing.storage
-                let upLineContent = s.text.lines.atOffset(s.caretPosition.lineOffset-1).content
+                let upLineContent = s.text.lines.atOffset(s.caretPosition.lineOffset-1).characters
                 let lv = upLineContent.countPrefix(" ") / config.editing.tabSpaceCount
                 let a = String(repeating: " ", count: lv * config.editing.tabSpaceCount)
                 s.replaceCharactersInCurrentSelection(with: a)
@@ -97,7 +97,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
             case "{":
                 // Closing with indent.
                 var s = codeManagement.editing.storage
-                let lineContent = s.text.lines.atOffset(s.caretPosition.lineOffset).content
+                let lineContent = s.text.lines.atOffset(s.caretPosition.lineOffset).characters
                 let lv = lineContent.countPrefix(" ") / config.editing.tabSpaceCount
                 let a = String(repeating: " ", count: lv * config.editing.tabSpaceCount)
                 let b = String(repeating: " ", count: lv.advanced(by: 1) * config.editing.tabSpaceCount)
@@ -198,7 +198,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
 
 private extension CodeStorage {
     func countIndentationLevelAtCaretLine(with x:CodeConfig) -> Int {
-        let lineContent = text.lines.atOffset(caretPosition.lineOffset).content
+        let lineContent = text.lines.atOffset(caretPosition.lineOffset).characters
         let prefixSpaceCount = lineContent.countPrefix(" ")
         let indentationLevel = prefixSpaceCount / x.editing.tabSpaceCount
         return indentationLevel

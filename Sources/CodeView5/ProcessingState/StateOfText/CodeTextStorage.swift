@@ -93,7 +93,7 @@ extension CodeTextStorage {
     /// You can get single string by calling `join(separator: "\n")` on returning array.
     public func lineContents(in range: Range<CodeStoragePosition>) -> [Substring] {
         let lineCharRanges = characterRangesOfLines(in: range)
-        return lineCharRanges.map({ lines.atOffset($0.lineOffset).content.subcontentInUTF8OffsetRange($0.characterUTF8OffsetRange) })
+        return lineCharRanges.map({ lines.atOffset($0.lineOffset).characters.subcontentInUTF8OffsetRange($0.characterUTF8OffsetRange) })
 //        switch range.includedLineOffsetRange.count {
 //        case 0:
 //            return [Substring()]
@@ -120,11 +120,11 @@ extension CodeTextStorage {
         let firstLineOffset = range.lowerBound.lineOffset
         let firstLineIndex = lines.startIndex + firstLineOffset
         let firstLineCharUTF8OffsetRange = 0..<range.lowerBound.characterUTF8Offset
-        let firstLineChars = lines.atOffset(firstLineOffset).content.subcontentInUTF8OffsetRange(firstLineCharUTF8OffsetRange)
+        let firstLineChars = lines.atOffset(firstLineOffset).characters.subcontentInUTF8OffsetRange(firstLineCharUTF8OffsetRange)
         let lastLineOffset = range.upperBound.lineOffset
         let lastLineIndex = lines.startIndex + lastLineOffset
         let lastLineCharUTF8OffsetRange = range.upperBound.characterUTF8Offset...
-        let lastLineChars = lines.atOffset(lastLineOffset).content.subcontentInUTF8OffsetRange(lastLineCharUTF8OffsetRange)
+        let lastLineChars = lines.atOffset(lastLineOffset).characters.subcontentInUTF8OffsetRange(lastLineCharUTF8OffsetRange)
         lines.removeSubrange(firstLineIndex...lastLineIndex)
         var newContent = firstLineChars
         newContent.append(contentsOf: lastLineChars)
@@ -146,7 +146,7 @@ extension CodeTextStorage {
             let chs = lineChars.first!
             let lineIndex = lines.startIndex + p.lineOffset
             var line = lines.atOffset(p.lineOffset)
-            let charIndex = line.content.indexFromUTF8Offset(p.characterUTF8Offset)
+            let charIndex = line.characters.indexFromUTF8Offset(p.characterUTF8Offset)
             line.insert(contentsOf: chs, at: charIndex)
             lines.set(line, atOffset: lineIndex)
             return p..<CodeStoragePosition(
@@ -157,8 +157,8 @@ extension CodeTextStorage {
             let lineIndex = lines.startIndex + p.lineOffset
             let line = lines.remove(at: lineIndex)
             // Split it into two parts.
-            var firstLine = CodeLine(line.content.subcontentInUTF8OffsetRange(..<p.characterUTF8Offset))
-            var lastLine = CodeLine(line.content.subcontentInUTF8OffsetRange(p.characterUTF8Offset...))
+            var firstLine = CodeLine(line.characters.subcontentInUTF8OffsetRange(..<p.characterUTF8Offset))
+            var lastLine = CodeLine(line.characters.subcontentInUTF8OffsetRange(p.characterUTF8Offset...))
             
             // Prepare for offset-based operation.
             let lineOffsetRange = 0..<lineChars.count

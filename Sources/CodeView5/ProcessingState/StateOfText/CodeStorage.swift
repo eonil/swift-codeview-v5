@@ -81,7 +81,7 @@ public extension CodeStorage {
     /// for non-existing lines.
     func isValidPosition(_ p:CodeStoragePosition) -> Bool {
         guard (0..<text.lines.count).contains(p.lineOffset) else { return false }
-        let lineContent = text.lines.atOffset(p.lineOffset).content
+        let lineContent = text.lines.atOffset(p.lineOffset).characters
         guard (0...lineContent.utf8.count).contains(p.characterUTF8Offset) else { return false }
         return true
     }
@@ -93,17 +93,17 @@ public extension CodeStorage {
     private func position(after p: CodeStoragePosition) -> CodeStoragePosition {
         let lineIndex = text.lines.startIndex + p.lineOffset
         let line = text.lines[lineIndex]
-        let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
-        let newCharIndex = line.content.index(after: charIndex)
-        let newCharUTF8Offset = line.content.utf8.distance(from: line.content.utf8.startIndex, to: newCharIndex)
+        let charIndex = line.characters.utf8.index(line.characters.utf8.startIndex, offsetBy: p.characterUTF8Offset)
+        let newCharIndex = line.characters.index(after: charIndex)
+        let newCharUTF8Offset = line.characters.utf8.distance(from: line.characters.utf8.startIndex, to: newCharIndex)
         return CodeStoragePosition(lineOffset: p.lineOffset, characterUTF8Offset: newCharUTF8Offset)
     }
     private func position(before p: CodeStoragePosition) -> CodeStoragePosition {
         let lineIndex = text.lines.startIndex + p.lineOffset
         let line = text.lines[lineIndex]
-        let charIndex = line.content.utf8.index(line.content.utf8.startIndex, offsetBy: p.characterUTF8Offset)
-        let newCharIndex = line.content.index(before: charIndex)
-        let newCharUTF8Offset = line.content.utf8.distance(from: line.content.utf8.startIndex, to: newCharIndex)
+        let charIndex = line.characters.utf8.index(line.characters.utf8.startIndex, offsetBy: p.characterUTF8Offset)
+        let newCharIndex = line.characters.index(before: charIndex)
+        let newCharUTF8Offset = line.characters.utf8.distance(from: line.characters.utf8.startIndex, to: newCharIndex)
         return CodeStoragePosition(lineOffset: p.lineOffset, characterUTF8Offset: newCharUTF8Offset)
     }
     /// You can get single string by calling `join(separator: "\n")` on returning array.

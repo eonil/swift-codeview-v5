@@ -22,7 +22,7 @@ public struct BestEffortCursor {
 }
 public extension BestEffortCursor {
     var lineContent: Substring {
-        return text.lines.atOffset(position.lineOffset).content
+        return text.lines.atOffset(position.lineOffset).characters
     }
 //    var isOnEmptyLine: Bool {
 //        return lineContent.isEmpty
@@ -72,7 +72,7 @@ public extension BestEffortCursor {
     mutating func moveToEndOfPriorLine() {
         guard !isAtFirstLine else { return }
         let newLineOffset = position.lineOffset - 1
-        let newLineContent = text.lines.atOffset(newLineOffset).content
+        let newLineContent = text.lines.atOffset(newLineOffset).characters
         position = CodeStoragePosition(
             lineOffset: position.lineOffset - 1,
             characterUTF8Offset: newLineContent.utf8.count)

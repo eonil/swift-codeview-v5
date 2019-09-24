@@ -27,20 +27,20 @@ extension CodeStorageEditingProtocol {
     }
     var endPosition: CodeStoragePosition {
         /// `CodeSource` guarantees having one line at least always.
-        return CodeStoragePosition(lineOffset: text.lines.count-1, characterUTF8Offset: text.lines.last!.content.utf8.count)
+        return CodeStoragePosition(lineOffset: text.lines.count-1, characterUTF8Offset: text.lines.last!.characters.utf8.count)
     }
     func characterIndex(at x:CGFloat, in line:CodeLine, with f:NSFont) -> String.Index? {
-        let ctline = CTLine.make(with: line.content, font: f)
+        let ctline = CTLine.make(with: line.characters, font: f)
         let utf16Offset = CTLineGetStringIndexForPosition(ctline, CGPoint(x: x, y: 0))
         guard utf16Offset != kCFNotFound else { return nil }
-        return line.content.utf16.index(line.content.utf16.startIndex, offsetBy: utf16Offset)
+        return line.characters.utf16.index(line.characters.utf16.startIndex, offsetBy: utf16Offset)
     }
     func characterUTF8Offset(at x:CGFloat, in line:CodeLine, with f:NSFont) -> Int? {
-        let ctline = CTLine.make(with: line.content, font: f)
+        let ctline = CTLine.make(with: line.characters, font: f)
         let utf16Offset = CTLineGetStringIndexForPosition(ctline, CGPoint(x: x, y: 0))
         guard utf16Offset != kCFNotFound else { return nil }
-        let charIndex = line.content.utf16.index(line.content.utf16.startIndex, offsetBy: utf16Offset)
-        let charUTF8Offset = line.content.utf8.distance(from: line.content.utf8.startIndex, to: charIndex)
+        let charIndex = line.characters.utf16.index(line.characters.utf16.startIndex, offsetBy: utf16Offset)
+        let charUTF8Offset = line.characters.utf8.distance(from: line.characters.utf8.startIndex, to: charIndex)
         return charUTF8Offset
     }
 }

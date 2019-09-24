@@ -259,7 +259,8 @@ public final class CodeView: NSView {
             storage: editing.storage,
             imeState: editing.imeState,
             annotation: annotation,
-            bounds: bounds)
+            bounds: bounds,
+            scale: window?.backingScaleFactor ?? 1)
         rendering.draw(
             in: dirtyRect,
             with: cgctx)

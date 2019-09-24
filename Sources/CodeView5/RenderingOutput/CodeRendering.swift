@@ -9,23 +9,30 @@ import Foundation
 import AppKit
 
 /// Renders `CodeStorage` in a flipped space.
+///
+/// Discussion
+/// ----------
+/// It seems CoreText/CoreGraphics is rasterizing every glyph for every time I call draw.
+/// Therefore,
+///
 struct CodeRendering {
     var config: CodeConfig
     var storage: CodeStorage
     var imeState: IMEState?
     var annotation: CodeAnnotation
     var bounds: CGRect
+    var scale: CGFloat
     func draw(in dirtyRect: CGRect, with cgctx: CGContext) {
-        let h = config.rendering.lineHeight
+        let h = config.rendering.gridFittingLineHeight
         let potentiallyVisibleLineOffsets = Int(floor(dirtyRect.minY / h))..<Int(ceil(dirtyRect.maxY / h))
         let visibleLineOffsets = storage.text.lines.offsets.clamped(to: potentiallyVisibleLineOffsets)
         
         drawText(in: dirtyRect, with: cgctx, visibleLineOffsets: visibleLineOffsets)
-        drawAnnotation(in: dirtyRect, with: cgctx, visibleLineOffsets: visibleLineOffsets)
         drawLineNumbers(in: dirtyRect, with: cgctx, visibleLineOffsets: visibleLineOffsets)
+        drawAnnotation(in: dirtyRect, with: cgctx, visibleLineOffsets: visibleLineOffsets)
     }
     private func drawText(in dirtyRect: CGRect, with cgctx: CGContext, visibleLineOffsets: Range<Int>) {
-        let selectedRange = storage.selectionRange
+//        let selectedRange = storage.selectionRange
         let selectionIncludedLineOffsetRange = storage.selectionRange.includedLineOffsetRange
         let visibleSelectedLineOffsetRange = selectionIncludedLineOffsetRange.clamped(to: visibleLineOffsets)
         let sssn = session(storage: storage, ime: imeState)
@@ -38,7 +45,7 @@ struct CodeRendering {
                 sssn.drawBox(f, color: config.rendering.currentTextLineBackgroundColor)
             }
             else {
-                sssn.drawBox(f, color: config.rendering.textLineBackgroundColor)
+//                sssn.drawBox(f, color: config.rendering.textLineBackgroundColor)
             }
         }
         
@@ -53,9 +60,24 @@ struct CodeRendering {
         }
         // Draw characters.
         for lineOffset in visibleLineOffsets {
-            let f = layout.frameOfTextInLine(at: lineOffset)
-            let x = storage.makeAttributedStringFromContentInLine(at: lineOffset, with: imeState, config: config)
-            sssn.drawText(x, fontAscender: config.rendering.font.ascender, in: f)
+            let line = storage.text.lines[lineOffset]
+            guard !line.characters.isEmpty else { continue }
+            let lineKey = line.contentEqualityKey
+            let textAreaFrame = layout.frameOfLineTextArea(at: lineOffset)
+            if let ctp = CachedTextPixelsCache.sharedCodeLineCache.find(lineKey) {
+                cgctx.draw(ctp, at: textAreaFrame.origin)
+            }
+            else {
+                let s = storage.makeAttributedStringFromContentInLine(at: lineOffset, with: imeState, config: config)
+                let ctLine = CTLineCreateWithAttributedString(s)
+                if let ctp = cgctx.makeCachedTextPixels(config: config, scale: scale, with: ctLine) {
+                    CachedTextPixelsCache.sharedCodeLineCache.insert(ctp, for: lineKey)
+                    cgctx.draw(ctp, at: textAreaFrame.origin)
+                }
+            }
+            
+                // Keep this line for later layout validation.
+                // sssn.drawText(s, fontAscender: config.rendering.baseFont.ascender, in: textAreaFrame)
         }
         
 //        // Draw debug info.
@@ -130,7 +152,28 @@ struct CodeRendering {
             let f = layout.frameOfLineNumberArea(at: lineOffset)
             let isOnBreakPoint = annotation.breakPoints.contains(lineOffset)
             let c = isOnBreakPoint ? config.rendering.lineNumberColorOnBreakPoint : config.rendering.lineNumberColor
-            sssn.drawTextRightAligned(s[s.startIndex...], font: config.rendering.lineNumberFont, color: c, in: f)
+            func makeCTP() -> CachedTextPixels? {
+                if let ctp = CachedTextPixelsCache
+                    .sharedLineNumberCache
+                    .find(lineOffset) {
+                    return ctp
+                }
+                else {
+                    let ctLine = CTLine.make(
+                        with: s[s.startIndex...],
+                        font: config.rendering.lineNumberFont,
+                        color: c)
+                    guard let ctp = cgctx.makeCachedTextPixels(
+                        config: config,
+                        scale: scale,
+                        with: ctLine) else { return nil }
+                    CachedTextPixelsCache.sharedLineNumberCache.insert(ctp, for: lineOffset)
+                    return ctp
+                }
+            }
+            if let ctp = makeCTP() {
+                cgctx.draw(ctp, at: f.origin)
+            }
         }
     }
     private func session(storage s: CodeStorage, ime: IMEState?) -> CodeRenderingSession {
@@ -144,14 +187,27 @@ private struct CodeRenderingSession {
     let storage: CodeStorage
     let imeState: IMEState?
     /// Number of styles must be same with number of UTF-8 code units in supplied substring.
-    func drawText(_ x:NSAttributedString, fontAscender: CGFloat, in frame:CGRect) {
-        let ctline = CTLineCreateWithAttributedString(x)
+    func drawText(_ ctLine:CTLine, fontAscender: CGFloat, to ctx:CGContext) {
+        // First line need to be moved down by line-height
+        // as CoreGraphics places it above zero point.
+        ctx.textPosition = CGPoint(
+            x: 0,
+            y: 0)
+        CTLineDraw(ctLine, ctx)
+    }
+    /// Number of styles must be same with number of UTF-8 code units in supplied substring.
+    func drawText(_ ctLine:CTLine, fontAscender: CGFloat, in frame:CGRect) {
         // First line need to be moved down by line-height
         // as CoreGraphics places it above zero point.
         context.textPosition = CGPoint(
             x: frame.minX,
             y: fontAscender + frame.minY)
-        CTLineDraw(ctline, context)
+        CTLineDraw(ctLine, context)
+    }
+    /// Number of styles must be same with number of UTF-8 code units in supplied substring.
+    func drawText(_ x:NSAttributedString, fontAscender: CGFloat, in frame:CGRect) {
+        let ctLine = CTLineCreateWithAttributedString(x)
+        drawText(ctLine, fontAscender: fontAscender, in: frame)
     }
     func drawText(_ ss:Substring, font: NSFont, color c: NSColor, in frame:CGRect) {
         let s = String(ss)
@@ -161,15 +217,18 @@ private struct CodeRenderingSession {
         ])
         drawText(x, fontAscender: font.ascender, in: frame)
     }
-    func drawTextRightAligned(_ ss:Substring, font: NSFont, color c: NSColor, in f:CGRect) {
-        let ctline = CTLine.make(with: ss, font: font, color: c)
-        let w = ctline.bounds.width
+    func drawTextRightAligned(_ ctLine:CTLine, fontAscender:CGFloat, in frame:CGRect) {
+        let w = ctLine.__bounds.width
         // First line need to be moved down by line-height
         // as CG places it above zero point.
         context.textPosition = CGPoint(
-            x: f.maxX - w,
-            y: font.ascender + f.minY)
-        CTLineDraw(ctline, context)
+            x: frame.maxX - w,
+            y: fontAscender + frame.minY)
+        CTLineDraw(ctLine, context)
+    }
+    func drawTextRightAligned(_ ss:Substring, font: NSFont, color c: NSColor, in f:CGRect) {
+        let ctLine = CTLine.make(with: ss, font: font, color: c)
+        drawTextRightAligned(ctLine, fontAscender: font.ascender, in: f)
     }
     func drawBreakpoint(in f:CGRect, color c:NSColor) {
         let w = f.width
@@ -264,7 +323,7 @@ extension IMECompositedLineCharsForDrawing {
             let imePart2 = imeText.subcontentInUTF8OffsetRange(inIMESelRange)
             let imePart3 = imeText.subcontentInUTF8OffsetRange(inIMESelRange.upperBound...)
             x.fragments.append(F(
-                chars: line.content.subcontentInUTF8OffsetRange(0..<imeCharOffset),
+                chars: line.characters.subcontentInUTF8OffsetRange(0..<imeCharOffset),
                 kind: .nonIME,
                 styles: line.characterStyles.subcontentInOffsetRange(0..<imeCharOffset)))
             x.fragments.append(F(
@@ -280,16 +339,19 @@ extension IMECompositedLineCharsForDrawing {
                 kind: .imeUnselected,
                 styles: CodeStyle.plain.repeatingSlice(count: imePart3.utf8.count)))
             x.fragments.append(F(
-                chars: line.content.subcontentInUTF8OffsetRange(imeCharOffset...),
+                chars: line.characters.subcontentInUTF8OffsetRange(imeCharOffset...),
                 kind: .nonIME,
                 styles: line.characterStyles.subcontentInOffsetRange(imeCharOffset...)))
         }
         else {
             x.fragments.append(F(
-                chars: line.content,
+                chars: line.characters,
                 kind: .nonIME,
                 styles: line.characterStyles))
         }
         return x
     }
 }
+
+
+
