@@ -7,7 +7,7 @@
 
 import Foundation
 
-public extension Range where Bound == CodeStoragePosition {
+extension Range where Bound == CodeStoragePosition {
     var lineOffsetRange: Range<Int> {
         return lowerBound.lineOffset..<upperBound.lineOffset
     }

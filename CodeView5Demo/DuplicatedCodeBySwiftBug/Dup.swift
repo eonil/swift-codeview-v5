@@ -1,13 +1,31 @@
 //
-//  File.swift
-//  
+//  Dup.swift
+//  CodeView5Demo
 //
-//  Created by Henry Hathaway on 9/11/19.
+//  Created by Henry Hathaway on 9/25/19.
+//  Copyright © 2019 Henry Hathaway. All rights reserved.
 //
 
 import Foundation
 
-public extension StringProtocol {
+extension RandomAccessCollection {
+    func atOffset(_ offset:Int) -> Element {
+        let idx = index(startIndex, offsetBy: offset)
+        return self[idx]
+    }
+    var offsets: Range<Int> {
+        return 0..<count
+    }
+}
+
+extension RandomAccessCollection where Self: MutableCollection {
+    mutating func set(_ e:Element, atOffset offset:Int) {
+        let idx = index(startIndex, offsetBy: offset)
+        self[idx] = e
+    }
+}
+
+extension StringProtocol {
     /// Though it's not been documented, it is actually O(1).
     func indexFromUTF8Offset(_ utf8Offset:Int) -> Index {
         return utf8.index(utf8.startIndex, offsetBy: utf8Offset)
