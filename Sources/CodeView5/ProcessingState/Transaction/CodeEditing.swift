@@ -31,6 +31,8 @@ public struct CodeEditing {
     public internal(set) var storage = CodeStorage()
     public internal(set) var imeState = IMEState?.none
     
+    public init() {}
+    
     /// Vertical caret movement between lines needs base X coordinate to align them on single line.
     /// Here the basis X cooridnate will be stored to provide aligned vertical movement.
     var moveVerticalAxisX = CGFloat?.none
