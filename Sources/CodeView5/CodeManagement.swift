@@ -15,9 +15,6 @@ import Foundation
 public struct CodeManagement {
     public private(set) var editing = CodeEditing()
     public private(set) var annotation = CodeAnnotation()
-    /// This is an output state.
-    public private(set) var effects = [Effect]()
-    public typealias Effect = CodeView.Control.Effect
     
     public init() {}
     public enum Message {
@@ -32,7 +29,6 @@ public struct CodeManagement {
     /// This does NOT clear undo/redo history.
     /// At this moment, undo/redo history remains forever.
     public mutating func clean() {
-        effects.removeAll()
         editing.storage.cleanTimeline()
     }
     /// This produces and accumulate effects and results.

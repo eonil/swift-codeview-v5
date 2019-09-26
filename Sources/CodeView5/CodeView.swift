@@ -71,11 +71,6 @@ public final class CodeView: NSView {
         set(x) { completionWindowManagement.completionView = x }
     }
     public enum Control {
-        /// Apply effects on client side.
-        case applyEffect(Effect)
-        public enum Effect {
-            case replacePasteboardContent(String)
-        }
         /// Render editing state on client side.
         case renderEditing(CodeEditing)
         case renderAnnotation(CodeAnnotation)
@@ -108,12 +103,6 @@ public final class CodeView: NSView {
     // MARK: -
     private func process(_ m:Control) {
         switch m {
-        case let .applyEffect(effect):
-            switch effect {
-            case let .replacePasteboardContent(s):
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(s, forType: .string)
-            }
         case let .renderEditing(mm):
             editing = mm
             do {
