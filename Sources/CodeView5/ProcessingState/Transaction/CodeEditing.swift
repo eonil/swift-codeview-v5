@@ -81,6 +81,14 @@ public struct CodeEditing {
             case .dragged:          processMouseDragged(at: n.pointInBounds, in: n.bounds)
             case .up:               processMouseUp(at: n.pointInBounds, in: n.bounds)
             }
+        case .undo:
+            guard timeline.canUndo else { break }
+            undoInTimeline()
+            invalidate(.all)
+        case .redo:
+            guard timeline.canRedo else { break }
+            redoInTimeline()
+            invalidate(.all)
         }
     }
     mutating func applyStyle(_ s:CodeStyle, in range:Range<CodeStoragePosition>) {

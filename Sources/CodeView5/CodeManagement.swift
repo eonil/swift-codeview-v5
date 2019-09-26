@@ -21,7 +21,7 @@ public struct CodeManagement {
     
     public init() {}
     public enum Message {
-        case userInteraction(CodeUserMessage)
+        case performEditing(CodeEditingMessage)
         /// This does not modify textual content,
         /// therefore does not make any timeline entries.
         /// No new undo/redo nor change-sets.
@@ -41,15 +41,9 @@ public struct CodeManagement {
     public mutating func process(_ m:Message) {
         // Process.
         switch m {
-        case let .userInteraction(mm):
-            switch mm {
-            case let .edit(mmm): processEdit(mmm)
-            case let .menu(mmm): processMenu(mmm)
-            }
-        case let .setStyle(s, range):
-            editing.applyStyle(s, in: range)
-        case let .setAnnotation(anno):
-            annotation = anno
+        case let .performEditing(mm):   processEdit(mm)
+        case let .setStyle(s, range):   editing.applyStyle(s, in: range)
+        case let .setAnnotation(anno):  annotation = anno
         }
     }
     private mutating func processEdit(_ mm:CodeEditingMessage) {
@@ -104,36 +98,6 @@ public struct CodeManagement {
                 }
             default: break
             }
-        }
-    }
-    private mutating func processMenu(_ mm:CodeView.Note.MenuMessage) {
-        switch mm {
-        case .copy:
-            let sss = editing.storage.lineContentsInCurrentSelection()
-            let s = sss.joined(separator: "\n")
-            effects.append(.replacePasteboardContent(s))
-        case .cut:
-            let sss = editing.storage.lineContentsInCurrentSelection()
-            let s = sss.joined(separator: "\n")
-            editing.storage.replaceCharactersInCurrentSelection(with: "")
-            editing.recordTimePoint(as: .alienEditing(nameForMenu: "Cut"))
-            editing.invalidate(.all)
-            effects.append(.replacePasteboardContent(s))
-        case let .paste(s):
-            editing.storage.replaceCharactersInCurrentSelection(with: s)
-            editing.recordTimePoint(as: .alienEditing(nameForMenu: "Paste"))
-            editing.invalidate(.all)
-        case .selectAll:
-            editing.storage.selectAll()
-            editing.invalidate(.all)
-        case .undo:
-            guard editing.timeline.canUndo else { break }
-            editing.undoInTimeline()
-            editing.invalidate(.all)
-        case .redo:
-            guard editing.timeline.canRedo else { break }
-            editing.redoInTimeline()
-            editing.invalidate(.all)
         }
     }
 }

@@ -95,13 +95,13 @@ public final class CodeView: NSView {
         process(m)
     }
     public var note: ((Note) -> Void)?
-    public typealias Note = CodeUserMessage
+    public typealias Note = CodeEditingMessage
     
     // MARK: - Initialization
     private func install() {
         wantsLayer = true
         layer?.backgroundColor = NSColor.clear.cgColor
-        typing.note = { [weak self] n in self?.note?(.edit(.typing(n))); () }
+        typing.note = { [weak self] n in self?.note?(.typing(n)); () }
         completionWindowManagement.codeView = self
     }
     
@@ -184,7 +184,7 @@ public final class CodeView: NSView {
             kind: .down,
             pointInBounds: pv,
             bounds: bounds)
-        note?(.edit(.mouse(mm)))
+        note?(.mouse(mm))
     }
     public override func mouseDragged(with event: NSEvent) {
         typing.processEvent(event)
@@ -196,7 +196,7 @@ public final class CodeView: NSView {
             kind: .dragged,
             pointInBounds: pv,
             bounds: bounds)
-        note?(.edit(.mouse(mm)))
+        note?(.mouse(mm))
     }
     public override func mouseUp(with event: NSEvent) {
         typing.processEvent(event)
@@ -206,44 +206,12 @@ public final class CodeView: NSView {
             kind: .up,
             pointInBounds: pv,
             bounds: bounds)
-        note?(.edit(.mouse(mm)))
-    }
-    public override func selectAll(_ sender: Any?) {
-        note?(.menu(.selectAll))
-    }
-    @IBAction
-    func copy(_:AnyObject) {
-        note?(.menu(.copy))
-    }
-    @IBAction
-    func cut(_:AnyObject) {
-        note?(.menu(.cut))
-    }
-    @IBAction
-    func paste(_:AnyObject) {
-        guard let s = NSPasteboard.general.string(forType: .string) else { return }
-        note?(.menu(.paste(s)))
+        note?(.mouse(mm))
     }
     /// Defined to make `noop(_:)` selector to cheat compiler.
     @objc
     func noop(_:AnyObject) {}
     
-    public func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
-        /// Checks for synchronization state to prevent consecutive calling.
-        /// If we don't check for synchronized state, consecutive calling of these items
-        /// will prevent execution of code in other context, therefore nothing really
-        /// will be processed.
-        switch item.action {
-        case #selector(copy(_:)):
-            return true
-        case #selector(cut(_:)):
-            return true
-        case #selector(paste(_:)):
-            return true
-        default:
-            return true
-        }
-    }
     public override var intrinsicContentSize: NSSize {
         let layout = editing.makeLayout(in: bounds.width)
         let z = layout.measureContentSize(
@@ -266,4 +234,3 @@ public final class CodeView: NSView {
             with: cgctx)
     }
 }
-

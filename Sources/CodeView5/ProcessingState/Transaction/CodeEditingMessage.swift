@@ -24,4 +24,6 @@ public enum CodeEditingMessage {
             case down, dragged, up
         }
     }
+    case undo
+    case redo
 }

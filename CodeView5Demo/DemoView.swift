@@ -12,7 +12,7 @@ import CodeView5
 
 final class DemoView: NSView, NSUserInterfaceValidations {
     enum Message {
-        case user(CodeUserMessage)
+        case user(CodeEditingMessage)
         case undo
         case redo
         case testTextReloading
@@ -29,18 +29,18 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         // Process message and produce result.
         switch m {
         case let .user(mm):
-            codeManagement.process(.userInteraction(mm))
+            codeManagement.process(.performEditing(mm))
         case .undo:
-            codeManagement.process(.userInteraction(.menu(.undo)))
+            codeManagement.process(.performEditing(.undo))
         case .redo:
-            codeManagement.process(.userInteraction(.menu(.redo)))
+            codeManagement.process(.performEditing(.redo))
         case .testTextReloading:
-            codeManagement.process(.userInteraction(.edit(.reset(CodeStorage()))))
-            codeManagement.process(.userInteraction(.edit(.typing(.placeText("Resets to a new document.")))))
+            codeManagement.process(.performEditing(.reset(CodeStorage())))
+            codeManagement.process(.performEditing(.typing(.placeText("Resets to a new document."))))
         case .testTextEditing:
             var src = codeManagement.editing.storage
             src.replaceCharactersInCurrentSelection(with: "\nPerforms an editing...")
-            codeManagement.process(.userInteraction(.edit(.edit(src, nameForMenu: "Test"))))
+            codeManagement.process(.performEditing(.edit(src, nameForMenu: "Test")))
         case .testBreakpointResetting:
             let lineOffsets = codeManagement.editing.storage.text.lines.offsets
             var anno = CodeAnnotation()
@@ -93,7 +93,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
                 let lv = upLineContent.countPrefix(" ") / config.editing.tabSpaceCount
                 let a = String(repeating: " ", count: lv * config.editing.tabSpaceCount)
                 s.replaceCharactersInCurrentSelection(with: a)
-                codeManagement.process(.userInteraction(.edit(.edit(s, nameForMenu: "Completion"))))
+                codeManagement.process(.performEditing(.edit(s, nameForMenu: "Completion")))
             case "{":
                 // Closing with indent.
                 var s = codeManagement.editing.storage
@@ -105,7 +105,7 @@ final class DemoView: NSView, NSUserInterfaceValidations {
                 let p = s.caretPosition
                 s.replaceCharactersInCurrentSelection(with: "\n\(a)}")
                 s.moveCaret(to: p)
-                codeManagement.process(.userInteraction(.edit(.edit(s, nameForMenu: "Completion"))))
+                codeManagement.process(.performEditing(.edit(s, nameForMenu: "Completion")))
             default:
                 break
             }
