@@ -160,6 +160,11 @@ public final class CodeView: NSView {
     }
     public override func resignFirstResponder() -> Bool {
         typing.deactivate()
+        /// - These cached are access only by this `CodeView` instances.
+        /// - Losing first-responder position means user is very unlikely to access soon again.
+        /// - Provide some space for other document.
+        CachedTextPixelsCache.sharedCodeLineCache.removeAll()
+        CachedTextPixelsCache.sharedLineNumberCache.removeAll()
         return super.resignFirstResponder()
     }
     public override var canBecomeKeyView: Bool { true }
