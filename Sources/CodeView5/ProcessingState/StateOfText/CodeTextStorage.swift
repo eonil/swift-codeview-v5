@@ -146,8 +146,8 @@ extension CodeTextStorage {
             let chs = lineChars.first!
             let lineIndex = lines.startIndex + p.lineOffset
             var line = lines.atOffset(p.lineOffset)
-            let charIndex = line.characters.indexFromUTF8Offset(p.characterUTF8Offset)
-            line.insert(contentsOf: chs, at: charIndex)
+//            let charIndex = line.characters.indexFromUTF8Offset(p.characterUTF8Offset)
+            line.insert(contentsOf: chs, at: p.characterUTF8Offset)
             lines.set(line, atOffset: lineIndex)
             return p..<CodeStoragePosition(
                 lineOffset: p.lineOffset,

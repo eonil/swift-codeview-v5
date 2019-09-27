@@ -95,6 +95,7 @@ public final class CodeView: NSView {
     // MARK: - Initialization
     private func install() {
         wantsLayer = true
+        canDrawConcurrently = true
         layer?.backgroundColor = NSColor.clear.cgColor
         typing.note = { [weak self] n in self?.note?(.typing(n)); () }
         completionWindowManagement.codeView = self
@@ -165,6 +166,13 @@ public final class CodeView: NSView {
     public override func keyDown(with event: NSEvent) {
         typing.processEvent(event)
     }
+    public override func viewDidHide() {
+        super.viewDidHide()
+    }
+    public override func viewDidUnhide() {
+        super.viewDidUnhide()
+    }
+    
     public override func mouseDown(with event: NSEvent) {
         typing.processEvent(event)
         let pw = event.locationInWindow

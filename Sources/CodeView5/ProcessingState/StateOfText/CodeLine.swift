@@ -8,27 +8,33 @@
 
 import Foundation
 
-/// A opque collection of characters representing a line.
+/// A opaque collection of stuffs for each UTF-8 code units representing a line.
+///
+/// This represents a collection of stuffs for each UTF-8 code units with no new-lines.
+/// Character contents always must be kept to be a valid UTF-8 code unit sequence
+/// to build proper Unicode string.
+///
+/// Collection and indexings are provided only for easy of unified position representation.
+/// You actually cannot access each element through this type.
+/// See individual properties to access each content.
+///
 ///
 /// Features
 /// --------
 /// - Ensures all characters are in UTF-8 encoded form in memory.
 /// - Provides O(1) access UTF-8 encoded representation.
-/// - Provides O(1) access to `Character` count.
-/// - Provides O(1) access to UTF-16 code unit count.
 ///
 /// - Note:
 ///     This type is like `String`, but does not conform `StringProtocol`
 ///     Because it's been prohibited by Swift designers.
 ///
-public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
-    public typealias Element = Character
-    public typealias Index = Substring.Index
-    public typealias SubSequence = Substring.SubSequence
+public struct CodeLine: RandomAccessCollection {
+    public typealias Element = Void
+    public typealias Index = Int
+    public typealias SubSequence = Slice<CodeLine>
     
     /// `CodeLine` ensures this to store all characters in UTF-8 encoded form in memory.
     public private(set) var characters = Substring()
-    private(set) var precomputedCharacterCount = 0
     /// - Styles matches to each UTF-8 code units at same offset.
     /// - Styles for same character must have same value.
     /// - Note:
@@ -41,45 +47,44 @@ public struct CodeLine: BidirectionalCollection, RangeReplaceableCollection {
     
     public init() {}
     public init(_ s:Substring) {
-        let c = s.count
+        assert(s.isContiguousUTF8)
         characters = s
         characters.makeContiguousUTF8()
         assert(characters.isContiguousUTF8)
-        precomputedCharacterCount = c
         /// Using interning can accelerate initial creation of code lines.
         characterStyles = CodeStyle.plain.repeatingSlice(count: s.utf8.count)
     }
-    init(content s: Substring, precomputedCharacterCount cc: Int, characterStyles ss: ArraySlice<CodeStyle>) {
+    init(content s: Substring, characterStyles ss: ArraySlice<CodeStyle>) {
+        assert(s.isContiguousUTF8)
         characters = s
         characters.makeContiguousUTF8()
         assert(characters.isContiguousUTF8)
-        precomputedCharacterCount = cc
         characterStyles = ss
     }
     
-    public var count: Int { precomputedCharacterCount }
-    public var startIndex: Index { characters.startIndex }
-    public var endIndex: Index { characters.endIndex }
-    public func index(after i: Index) -> Index { characters.index(after: i) }
-    public func index(before i: Index) -> Index { characters.index(before: i) }
-    public subscript(_ i: Index) -> Character { characters[i] }
-    public subscript(_ r: Range<Index>) -> SubSequence { characters[r] }
-    public mutating func replaceSubrange<C, R>(_ subrange: R, with newElements: C) where C : Collection, R : RangeExpression, Element == C.Element, Index == R.Bound {
-        let q = subrange.relative(to: characters)
-        let a = characters.utf8.distance(from: characters.startIndex, to: q.lowerBound)
-        let b = characters.utf8.distance(from: characters.startIndex, to: q.upperBound)
-        
-        let removingCharacters = characters[subrange]
-        let removingCharacterCount = removingCharacters.count
-        let insertingCharacters = String(newElements).contiguized()
-        let insertingCharacterCount = insertingCharacters.count
-        characters.replaceSubrange(subrange, with: insertingCharacters)
+    public var count: Int { characters.utf8.count }
+    public var startIndex: Int { 0 }
+    public var endIndex: Int { characters.utf8.count }
+    public subscript(_ i: Index) -> Void { Void() }
+    public subscript(_ r: Range<Index>) -> SubSequence { Slice<CodeLine>(base: self, bounds: r) }
+    public mutating func replaceSubrange<R>(_ subrange: R, with newElements: Substring) where R : RangeExpression, Index == R.Bound {
+        precondition(newElements.isContiguousUTF8, "You can use only contiguous UTF-8 encoded string.")
+        let q = subrange.relative(to: self)
+        let insertingCharacters = newElements
+        let c = characters.indexFromUTF8Offset(q.lowerBound)
+        let d = characters.indexFromUTF8Offset(q.upperBound)
+        characters.replaceSubrange(c..<d, with: insertingCharacters)
         characters.makeContiguousUTF8()
         assert(characters.isContiguousUTF8)
-        precomputedCharacterCount += -removingCharacterCount + insertingCharacterCount
         
-        characterStyles.replaceSubrange(a..<b, with: repeatElement(.plain, count: insertingCharacters.utf8.count))
+        characterStyles.replaceSubrange(q, with: repeatElement(.plain, count: insertingCharacters.utf8.count))
         contentEqualityKey = makeKey()
+    }
+    public mutating func insert(contentsOf s:Substring, at i:Index) {
+        replaceSubrange(i..<i, with: s)
+    }
+    public mutating func append(contentsOf s:Substring) {
+        insert(contentsOf: s, at: endIndex)
     }
     public mutating func setCharacterStyle(_ s:CodeStyle, inUTF8OffsetRange range:Range<Int>) {
         characterStyles.replaceSubrange(range, with: repeatElement(s, count: range.count))

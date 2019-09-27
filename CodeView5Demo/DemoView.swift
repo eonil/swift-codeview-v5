@@ -15,9 +15,14 @@ final class DemoView: NSView, NSUserInterfaceValidations {
         case user(CodeEditingMessage)
         case undo
         case redo
+        case copy
+        case cut
+        case paste
+        case selectAll
         case testTextReloading
         case testTextEditing
         case testBreakpointResetting
+        case testToggleVisibility
     }
     
     private let scrollCodeView = ScrollCodeView()
@@ -34,6 +39,35 @@ final class DemoView: NSView, NSUserInterfaceValidations {
             codeManagement.process(.performEditing(.undo))
         case .redo:
             codeManagement.process(.performEditing(.redo))
+        case .copy:
+            let copiedString = codeManagement
+                .editing
+                .storage
+                .lineContentsInCurrentSelection()
+                .joined(separator: "\n")
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(copiedString, forType: .string)
+        case .cut:
+            let copiedString = codeManagement
+                .editing
+                .storage
+                .lineContentsInCurrentSelection()
+                .joined(separator: "\n")
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(copiedString, forType: .string)
+            var x = codeManagement.editing.storage
+            x.replaceCharactersInCurrentSelection(with: "")
+            codeManagement.process(.performEditing(.edit(x, nameForMenu: "Cut")))
+        case .paste:
+            guard let stringToPaste = NSPasteboard.general.string(forType: .string) else { return }
+            var x = codeManagement.editing.storage
+            x.replaceCharactersInCurrentSelection(with: stringToPaste)
+            codeManagement.process(.performEditing(.edit(x, nameForMenu: "Paste")))
+        case .selectAll:
+            guard let stringToPaste = NSPasteboard.general.string(forType: .string) else { return }
+            var x = codeManagement.editing.storage
+            x.selectAll()
+            codeManagement.process(.performEditing(.edit(x, nameForMenu: "Select All")))
         case .testTextReloading:
             codeManagement.process(.performEditing(.reset(CodeStorage())))
             codeManagement.process(.performEditing(.typing(.placeText("Resets to a new document."))))
@@ -81,7 +115,10 @@ final class DemoView: NSView, NSUserInterfaceValidations {
                     codeManagement.process(.setStyle(CodeStyle.all.randomElement() ?? .plain, in: c..<d))
                 }
             }
+        case .testToggleVisibility:
+            scrollCodeView.isHidden = !scrollCodeView.isHidden
         }
+        
         // Post-process auto-completion.
         if let p = codeManagement.editing.storage.timeline.points.last {
             let config = codeManagement.editing.config
@@ -162,6 +199,10 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     public func testBreakpointSetting(_:AnyObject?) {
         process(.testBreakpointResetting)
     }
+    @IBAction
+    public func testToggleVisibility(_:AnyObject?) {
+        process(.testToggleVisibility)
+    }
     
     // MARK: -
     private func install() {
@@ -186,6 +227,22 @@ final class DemoView: NSView, NSUserInterfaceValidations {
     @IBAction
     func redo(_:AnyObject?) {
         process(.redo)
+    }
+    @IBAction
+    func copy(_:AnyObject?) {
+        process(.copy)
+    }
+    @IBAction
+    func cut(_:AnyObject?) {
+        process(.cut)
+    }
+    @IBAction
+    func paste(_:AnyObject?) {
+        process(.paste)
+    }
+    @IBAction
+    override func selectAll(_ sender: Any?) {
+        process(.selectAll)
     }
     func validateUserInterfaceItem(_ item: NSValidatedUserInterfaceItem) -> Bool {
         switch item.action {

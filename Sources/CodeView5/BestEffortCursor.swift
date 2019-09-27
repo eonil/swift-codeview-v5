@@ -101,6 +101,17 @@ public extension BestEffortCursor {
     }
     
     
+    mutating func moveToStart() {
+        position.lineOffset = 0
+        position.characterUTF8Offset = 0
+    }
+    mutating func moveToEnd() {
+        position.lineOffset = text.lines.endIndex
+        position.characterUTF8Offset = 0
+        inLineCharCursor.moveToEnd()
+    }
+    
+    
 //    mutating func moveOneCharToStart() {
 //        self.charCursor.moveOneCharToEnd()
 //        let n = position.characterUTF8Offset
